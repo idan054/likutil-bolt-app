@@ -23,17 +23,7 @@ export const WooCommerceSettingsForm: React.FC<WooCommerceSettingsFormProps> = (
   };
 
   return (
-    <div className="space-y-4">
-      <FormField
-        label="כתובת החנות"
-        type="text"
-        value={data.storeUrl}
-        onChange={handleChange('storeUrl')}
-        placeholder="example.com"
-        disabled={isSubmitting}
-        required
-      />
-
+    <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
       <FormField
         label="Consumer Key"
         type="text"
@@ -42,18 +32,18 @@ export const WooCommerceSettingsForm: React.FC<WooCommerceSettingsFormProps> = (
         placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         disabled={isSubmitting}
         required
-        className="font-mono text-sm"
+        className="w-full font-mono text-sm"
       />
 
       <FormField
         label="Consumer Secret"
-        type="password"
+        type="text"
         value={data.consumerSecret}
         onChange={handleChange('consumerSecret')}
         placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         disabled={isSubmitting}
         required
-        className="font-mono text-sm"
+        className="w-full font-mono text-sm"
       />
     </div>
   );
