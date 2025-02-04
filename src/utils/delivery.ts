@@ -1,6 +1,5 @@
-import type { DeliveryProvider } from '../components/delivery/DeliverySelector';
 
-export const getDeliveryProviderTitle = (provider: DeliveryProvider): string => {
+export const getDeliveryProviderTitle = (provider: string): string => {
   switch (provider) {
     case 'mahirLi':
       return 'מהיר לי';
@@ -13,7 +12,8 @@ export const getDeliveryProviderTitle = (provider: DeliveryProvider): string => 
   }
 };
 
-export const getDeliveryUrl = (provider: DeliveryProvider): string => {
+export const getDeliveryUrl = (provider: string): string => {
+  
   switch (provider) {
     case 'cargo':
       return 'https://www.cargo-ship.co.il/Baldar/Deliveries.aspx';

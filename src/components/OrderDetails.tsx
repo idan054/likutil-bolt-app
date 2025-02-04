@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { OrderDetails as OrderDetailsType } from '../types/order';
-import type { DeliveryProvider } from './delivery/DeliverySelector';
 import { OrderHeader } from './order/OrderHeader';
 import { ShippingMethod } from './order/ShippingMethod';
 import { CustomerNote } from './order/CustomerNote';
@@ -14,6 +13,7 @@ import { LocalPickupAlert } from './ui/LocalPickupAlert';
 import { useOrderCompletion } from '../hooks/useOrderCompletion';
 import { useDeliveryCreation } from '../hooks/useDeliveryCreation';
 import { CheckCircle, Loader2, Printer, Truck } from 'lucide-react';
+import { LocalPickupSection } from './order/LocalPickupSection';
 
 interface OrderDetailsProps {
   order: OrderDetailsType;
@@ -28,7 +28,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 }) => {
   const [showLocalPickupAlert, setShowLocalPickupAlert] = useState(false);
   const [showLocalPickup, setShowLocalPickup] = useState<boolean>(true);
-  const [selectedDeliveryProvider, setSelectedDeliveryProvider] = useState<DeliveryProvider | null>(null);
+  const [selectedDeliveryProvider, setSelectedDeliveryProvider] = useState<string | null>(null);
   
   const isLocalPickup = order.shipping_lines[0]?.method_id === 'local_pickup';
 
@@ -101,43 +101,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
           <div className="mt-4 border-t pt-6">
             {isLocalPickup && showLocalPickup ? (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold">
-                    איסוף עצמי
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={handleComplete}
-                      disabled={isCompleting}
-                      className="flex items-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isCompleting ? (
-                        <Loader2 className="animate-spin" size={20} />
-                      ) : (
-                        <CheckCircle size={20} />
-                      )}
-                      <span>סיום</span>
-                    </button>
-                    <button
-                      onClick={() => window.print()}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors w-full justify-center"
-                    >
-                      <Printer size={20} />
-                      <span>הדפסת מדבקה</span>
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setShowLocalPickup(false)}
-                    className="flex items-center gap-2 bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors w-full justify-center"
-                  >
-                    <Truck size={20} />
-                    <span>שלח בכל זאת</span>
-                  </button>
-                </div>
-              </div>
+              <LocalPickupSection
+                isCompleting={isCompleting}
+                onComplete={handleComplete}
+                onSendAnyway={() => setShowLocalPickup(false)}
+              />
             ) : (
               <DeliverySelector
                 onSelect={setSelectedDeliveryProvider}

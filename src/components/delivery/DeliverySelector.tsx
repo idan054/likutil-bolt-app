@@ -5,16 +5,13 @@ import { LocalPickupMarker } from '../order/LocalPickupMarker';
 import { DeliveryCarousel } from './selector/DeliveryCarousel';
 import { DeliveryCompanyInfo } from './selector/DeliveryCompanyInfo';
 import { useDeliveryIntegrations } from '../../hooks/settings/useDeliveryIntegrations';
-import { useDeliverySelection } from '../../hooks/useDeliverySelection';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
-import type { DeliveryProvider } from './DeliverySelector';
 import type { DeliveryTaskResponse } from '../../services/delivery/types';
 
-export type DeliveryProvider = 'mahirLi' | 'cargo' | 'sale4u';
 
 interface DeliverySelectorProps {
-  onSelect: (provider: DeliveryProvider) => void;
-  selectedProvider: DeliveryProvider | null;
+  onSelect: (provider: string) => void;
+  selectedProvider: string | null;
   customerId: number | null;
   isLocalPickup?: boolean;
   isCreating: boolean;
