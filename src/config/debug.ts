@@ -3,6 +3,11 @@ export const DEBUG_CONFIG = {
   // Authentication
   AUTH: {
     ENABLED: false,           // Master switch for auth debugging
+    WOO_CREDENTIALS: {
+      STORE_URL: 'spider3d.co.il',
+      CONSUMER_KEY: 'ck_05f6046c52108486eb869a377784ba50d3a6ebf6',
+      CONSUMER_SECRET: 'cs_ff7af9474b569f67fbd24e48cf4226751cd05133'
+    },
     AUTO_LOGIN: false,        // Automatically log in with debug user
     MOCK_USER: {
       uid: 'debug-user-123',
