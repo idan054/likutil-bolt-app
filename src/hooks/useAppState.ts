@@ -3,12 +3,10 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { useSettings } from './settings';
 import { useProcessingOrders } from './useProcessingOrders';
-import { useDebugAuth } from './useDebugAuth';
 import { toast } from 'react-hot-toast';
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);
-  const { isEnabled: isDebugMode, mockUser } = useDebugAuth();
   const { settings, isLoading: isLoadingSettings, updateSettings } = useSettings();
   const { 
     orders, 
@@ -20,7 +18,7 @@ export const useAppState = () => {
 
   // Handle initialization and data fetching
   useEffect(() => {
-    const currentUser = isDebugMode ? mockUser : user;
+    const currentUser = user;
     
     if (!loading) {
       if (currentUser && settings) {
@@ -28,7 +26,7 @@ export const useAppState = () => {
       }
       setIsInitialized(true);
     }
-  }, [user, loading, settings, refetchOrders, isDebugMode, mockUser]);
+  }, [user, loading, settings, refetchOrders]);
 
   const handleSettingsSave = useCallback(async (formData) => {
     const toastId = 'settings-save';

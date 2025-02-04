@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
-import { USE_DEBUG_AUTH, DEBUG_USER } from '../config/constants';
+// import { USE_DEBUG_AUTH, DEBUG_USER } from '../config/constants';
 import { sendDeliveryRequest } from '../services/delivery/request/api';
 import { saveUserPhone, getUserPhone } from '../services/delivery/request/storage';
 import { getUserData } from '../services/user/user.service';
@@ -15,7 +15,7 @@ export const useDeliveryRequest = () => {
   const { integrations } = useDeliveryIntegrations();
 
   const loadSavedPhone = useCallback(async () => {
-    const userId = USE_DEBUG_AUTH ? DEBUG_USER.uid : user?.uid;
+    const userId = user?.uid;
     if (!userId) return null;
 
     try {
@@ -27,7 +27,7 @@ export const useDeliveryRequest = () => {
   }, [user?.uid]);
 
   const submitRequest = useCallback(async (integration: DeliveryIntegration, phone: string) => {
-    const userId = USE_DEBUG_AUTH ? DEBUG_USER.uid : user?.uid;
+    const userId =  user?.uid;
     if (!userId) return;
 
     setIsSubmitting(true);

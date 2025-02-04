@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { SettingsFormData } from '../../../types/settings';
-import { DEBUG_CONFIG, IS_DEV } from '../../../config/debug';
 import { FormField } from '../../ui/FormField';
 
 
@@ -16,14 +15,14 @@ export const WooCommerceSettingsForm: React.FC<WooCommerceSettingsFormProps> = (
   isSubmitting,
 }) => {
   useEffect(() => {
-    if (IS_DEV && DEBUG_CONFIG.AUTH.WOO_CREDENTIALS) {
-      onChange({
-        ...data,
-        storeUrl: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.STORE_URL,
-        consumerKey: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.CONSUMER_KEY,
-        consumerSecret: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.CONSUMER_SECRET,
-      });
-    }
+    // if (IS_DEV && DEBUG_CONFIG.AUTH.WOO_CREDENTIALS) {
+    //   onChange({
+    //     ...data,
+    //     storeUrl: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.STORE_URL,
+    //     consumerKey: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.CONSUMER_KEY,
+    //     consumerSecret: DEBUG_CONFIG.AUTH.WOO_CREDENTIALS.CONSUMER_SECRET,
+    //   });
+    // }
   }, []);
 
   const handleChange = (field: keyof SettingsFormData) => (
