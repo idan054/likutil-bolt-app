@@ -4,13 +4,13 @@ import { createDelivery } from '../services/delivery/delivery.service';
 import { useDeliveryIntegrations } from './settings/useDeliveryIntegrations';
 import { showErrorToast } from '../utils/error';
 import { successMessages } from '../config/messages/success';
-import type { OrderDetails } from '../types/order';
-import type { DeliveryProvider } from '../components/delivery/DeliverySelector';
+// import type { OrderDetails } from '../types/order';
 import type { DeliveryTaskResponse } from '../services/delivery/types';
 
 interface UseDeliveryCreationProps {
-  order: OrderDetails;
-  provider: DeliveryProvider;
+  // order: OrderDetails;
+  order: any;
+  provider: string;
   onSuccess: () => void;
 }
 

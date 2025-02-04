@@ -34,7 +34,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     ) : (
       <>
         <a
-          href={deliveryResponse.label}
+          href={deliveryResponse.print_label}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

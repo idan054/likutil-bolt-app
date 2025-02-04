@@ -1,12 +1,11 @@
 import { createDeliveryTask } from './api/delivery';
 import { mapOrderToDeliveryTask } from './mappers';
-import type { OrderDetails } from '../../types/order';
-import type { DeliveryProvider } from '../../components/delivery/DeliverySelector';
 import type { DeliveryTaskResponse } from './types';
 
 interface CreateDeliveryParams {
-  order: OrderDetails;
-  provider: DeliveryProvider;
+  // order: OrderDetails;
+  order: any;
+  provider: string;
   apiKey: string;
   packNum?: string;
 }

@@ -24,11 +24,16 @@ export interface DeliveryTaskRequest {
 }
 
 export interface DeliveryTaskResponse {
-  task_id: number;
-  public_id: string;
-  original_order_id: string;
-  destination_region_str: string;
-  label: string;
-  barcode: string;
-  tracking_link: string;
+  // task_id: number;
+  // public_id: string;
+  // original_order_id: string;
+  // destination_region_str: string;
+  // label: string;
+  // barcode: string;
+  // tracking_link: string;
+
+  print_label: string;
+  control_panel_link: string;
+  provider: string;
+  track_number: string;
 }

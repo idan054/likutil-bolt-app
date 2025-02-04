@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { OrderDetails as OrderDetailsType } from '../types/order';
 import { OrderHeader } from './order/OrderHeader';
 import { ShippingMethod } from './order/ShippingMethod';
 import { CustomerNote } from './order/CustomerNote';
@@ -16,7 +15,8 @@ import { CheckCircle, Loader2, Printer, Truck } from 'lucide-react';
 import { LocalPickupSection } from './order/LocalPickupSection';
 
 interface OrderDetailsProps {
-  order: OrderDetailsType;
+  // order: OrderDetailsType;
+  order: any;
   onReset: () => void;
   onComplete: () => void;
 }
