@@ -7,6 +7,7 @@ import { DeliveryCompanyInfo } from './selector/DeliveryCompanyInfo';
 import { useDeliveryIntegrations } from '../../hooks/settings/useDeliveryIntegrations';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { DeliveryTaskResponse } from '../../services/delivery/types';
+import { Ban, CheckCheck, CheckCircle, Loader2 } from 'lucide-react';
 
 
 interface DeliverySelectorProps {
@@ -79,6 +80,29 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
           isCompleting={isCompleting}
         />
       )}
+
+    {/* Add spacing */}
+    <div className="h-8"></div>
+
+{!selectedProvider && (
+        <button
+          onClick={onComplete}
+          disabled={isCompleting}
+                    className="flex items-center justify-center gap-2 bg-[#eff6ff] text-[#2563eb] px-6 py-3 rounded-lg hover:bg-blue-100 transition-colors min-w-[120px] font-normal mr-auto disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isCompleting ? (
+            <Loader2 className="animate-spin" size={20} />
+          ) : (
+            <CheckCheck size={24} />
+            // <CheckCircle size={20} />
+            // <Ban size={20} />
+          )}
+          <span>סיום מהיר</span>
+        </button>
+      )}
+ 
+
+
     </div>
   );
 };
