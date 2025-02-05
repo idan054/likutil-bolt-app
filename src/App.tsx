@@ -8,7 +8,7 @@ import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
-// FROM BACKUP
+// FROM MAC
 export const App: React.FC = () => {
   const { isInitialized, hasSettings, isLoading } = useAppState();
 
