@@ -1,32 +1,11 @@
 import { getApiConfig } from './config';
 import { ApiError, type ApiRequestConfig } from './types';
 
-export const apiClient = async <T>({ method, path, body}: ApiRequestConfig): Promise<T> => {
-  // Get API configuration
+export const apiClient = async <T>({ method, path, body }: ApiRequestConfig): Promise<T> => {
   const config = getApiConfig();
-
-
-    // Log full request details
-    const requestDetails = {
-      timestamp: new Date().toISOString(),
-      method,
-      path,
-      headers: config?.headers,
-      body: body || null,
-      baseUrl: config?.baseUrl
-    };
-
-    
   if (!config) {
-    console.error('[apiClient] Configuration error:', {
-    
-      timestamp: new Date().toISOString(),
-      error: 'API configuration not available',
-    });
-    throw new Error(`API configuration not available - Method: ${method}, Path: ${path}. Full Details: ${requestDetails}`);
+    throw new Error('API configuration not available');
   }
-
-  // console.info('[apiClient] Full request details:', requestDetails);
 
   const { baseUrl, headers } = config;
   const url = `${baseUrl}${path}`;

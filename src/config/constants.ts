@@ -1,5 +1,14 @@
+// Environment & Debug Settings
+export const IS_DEBUG = import.meta.env.DEV;
+export const USE_DEBUG_AUTH = IS_DEBUG;
 
-
+// Debug user data
+export const DEBUG_USER = {
+  uid: 'debug-user-123',
+  email: 'debug@example.com',
+  displayName: 'Debug User',
+  photoURL: 'https://wwfgifts-files.worldwildlife.org/wwfgifts/images/capuchin-monkey-large-photo.jpg',
+} as const;
 
 // Firebase Config
 export const FIREBASE_CONFIG = {

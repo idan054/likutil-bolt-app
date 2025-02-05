@@ -7,6 +7,7 @@ import { UserMenu } from '../auth/UserMenu';
 import { SettingsModal } from '../settings/SettingsModal';
 import { auth } from '../../config/firebase';
 import { useSettings } from '../../hooks/useSettings';
+import { useDebugAuth } from '../../hooks/useDebugAuth';
 
 interface HeaderProps {
   isLoading?: boolean;
@@ -16,11 +17,13 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [user] = useAuthState(auth);
+  const { isEnabled: isDebugMode, mockUser } = useDebugAuth();
   const { settings, updateSettings } = useSettings();
 
   const toggleAdvantages = () => setShowAdvantages(prev => !prev);
 
-  const currentUser = user;
+  // Use debug user in development mode
+  const currentUser = isDebugMode ? mockUser : user;
 
   return (
     <div className="mb-2">

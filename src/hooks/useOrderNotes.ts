@@ -14,7 +14,7 @@ export const useOrderNotes = (orderId: string) => {
       setNotes(data);
     } catch (error) {
       console.error('[useOrderNotes] Failed to fetch notes:', error);
-      // showErrorToast(error);
+      showErrorToast(error);
     } finally {
       setIsLoading(false);
     }

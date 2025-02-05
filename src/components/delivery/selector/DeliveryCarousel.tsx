@@ -6,10 +6,11 @@ import { useDeliveryCompanies } from '../../../hooks/delivery/useDeliveryCompani
 import { useHorizontalScroll } from '../../../hooks/ui/useHorizontalScroll';
 import { sortCompaniesByConnection } from '../../../utils/delivery/companies';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import type { DeliveryProvider } from '../DeliverySelector';
 
 interface DeliveryCarouselProps {
-  selectedProvider: string | null;
-  onSelect: (provider: string) => void;
+  selectedProvider: DeliveryProvider | null;
+  onSelect: (provider: DeliveryProvider) => void;
   connectedProviders: Set<string>;
 }
 
@@ -24,7 +25,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   // Auto-select single company
   useEffect(() => {
     if (companies.length === 1 && !selectedProvider) {
-      onSelect(companies[0].id as string);
+      onSelect(companies[0].id as DeliveryProvider);
     }
   }, [companies, selectedProvider, onSelect]);
 
@@ -75,12 +76,12 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
         {sortedCompanies.map((integration) => (
           <CompactDeliveryCard
             key={integration.id}
-            id={integration.id as string}
+            id={integration.id as DeliveryProvider}
             name={integration.name}
             logoUrl={integration.logoUrl}
             isSelected={selectedProvider === integration.id}
             isConnected={connectedProviders.has(integration.id)}
-            onClick={() => onSelect(integration.id as string)}
+            onClick={() => onSelect(integration.id as DeliveryProvider)}
           />
         ))}
       </div>

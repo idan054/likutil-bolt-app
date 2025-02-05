@@ -13,7 +13,6 @@ export interface DeliveryIntegration {
   description: string;
   logoUrl: string;
   isConnected: boolean;
-  isBaldar: boolean;
   controlPanelLink?: string; // Added controlPanelLink field
   fields: DeliveryField[];
 }

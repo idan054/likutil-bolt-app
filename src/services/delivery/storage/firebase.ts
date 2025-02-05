@@ -3,6 +3,8 @@ import { db } from '../../../config/firebase';
 import { ApiError } from '../../api/types';
 import type { DeliverySettings, DeliveryConnection } from '../../../types/delivery';
 
+const COLLECTION = 'delivery_settings';
+
 const createEmptySettings = (): DeliverySettings => ({
   connections: []
 });
@@ -12,7 +14,7 @@ export const saveDeliverySettings = async (
   connection: DeliveryConnection
 ): Promise<void> => {
   try {
-    const docRef = doc(db, 'users', userId, 'delivery_settings', 'config');
+    const docRef = doc(db, COLLECTION, userId);
     
     // Get existing settings
     const docSnap = await getDoc(docRef);
@@ -50,7 +52,7 @@ export const removeDeliveryConnection = async (
   providerId: string
 ): Promise<void> => {
   try {
-    const docRef = doc(db, 'users', userId, 'delivery_settings', 'config');
+    const docRef = doc(db, COLLECTION, userId);
     
     // Get existing settings
     const docSnap = await getDoc(docRef);
@@ -82,7 +84,7 @@ export const getDeliverySettings = async (
   userId: string
 ): Promise<DeliverySettings> => {
   try {
-    const docRef = doc(db, 'users', userId, 'delivery_settings', 'config');
+    const docRef = doc(db, COLLECTION, userId);
     const docSnap = await getDoc(docRef);
     
     if (!docSnap.exists()) {

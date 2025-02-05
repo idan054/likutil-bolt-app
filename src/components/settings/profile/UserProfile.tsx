@@ -3,12 +3,13 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { LogOut } from 'lucide-react';
 import { auth } from '../../../config/firebase';
 import { useAuth } from '../../../hooks/useAuth';
+import { USE_DEBUG_AUTH, DEBUG_USER } from '../../../config/constants';
 
 export const UserProfile: React.FC = () => {
   const [user] = useAuthState(auth);
   const { logout } = useAuth();
   
-  const currentUser = user;
+  const currentUser = USE_DEBUG_AUTH ? DEBUG_USER : user;
   
   if (!currentUser) return null;
 

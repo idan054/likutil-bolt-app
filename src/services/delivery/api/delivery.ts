@@ -1,3 +1,4 @@
+import { DELIVERY } from '../../../config/api';
 import { ApiError } from '../../api/types';
 import type { 
   DeliveryTaskRequest, 
@@ -10,7 +11,7 @@ export const createDeliveryTask = async (
   params: DeliveryRequestParams
 ): Promise<DeliveryTaskResponse> => {
   // Use 'method' instead of 'Company' in the query params
-  const url = `https://api.likutil.co.il/api/create-delivery?method=${params.provider}&key=${params.key}`;
+  const url = `${DELIVERY.BASE_URL}/create-delivery?method=${params.provider}&key=${params.key}`;
 
   try {
     console.log('[delivery.api] Creating delivery task:', {
