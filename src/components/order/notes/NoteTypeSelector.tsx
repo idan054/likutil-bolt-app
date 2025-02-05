@@ -1,5 +1,6 @@
 import React from 'react';
-import { MessageSquare, Mail, MessageCircle } from 'lucide-react';
+import { MessageSquare, Mail } from 'lucide-react';
+import { WhatsAppIcon } from '../../icons/WhatsAppIcon';
 import { translations } from '../../../config/translations';
 
 export const noteTypeColors = {
@@ -60,6 +61,7 @@ export const NoteTypeSelector: React.FC<NoteTypeSelectorProps> = ({
         <Mail size={16} />
         <span>מייל ללקוח</span>
       </button>
+      
       <button
         type="button"
         onClick={() => onChange('whatsapp')}
@@ -69,9 +71,10 @@ export const NoteTypeSelector: React.FC<NoteTypeSelectorProps> = ({
             : `bg-gray-100 text-gray-600 hover:bg-gray-200`
         }`}
       >
-        <MessageCircle size={16} />
+        <WhatsAppIcon size={16} />
         <span>הודעת ווטסאפ</span>
       </button>
+
     </div>
   );
 };
