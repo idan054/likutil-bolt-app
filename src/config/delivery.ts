@@ -62,6 +62,26 @@ export const DELIVERY_INTEGRATIONS: DeliveryIntegration[] = [
     ],
   },
   {
+    id: 'negevTovala',
+    name: 'נגב תובלה',
+    description: 'שירותי משלוחים כבדים',
+    logoUrl:
+      'https://i.ibb.co/DPbzm8Cq/Negev-Tovala-B.png',
+    isConnected: false,
+    isBaldar: true,
+    controlPanelLink: 'http://crm.negevdelivery.co.il/baldarNegev',
+    fields: [
+      {
+        id: 'key',
+        label: 'מפתח התחברות (קוד לקוח)',
+        type: 'text',
+        placeholder: 'הכנס את מפתח ההתחברות שלך',
+        supportText: 'יש לבקש קוד לקוח מחברת המשלוחים',
+        supportPhone: '0584770076',
+      },
+    ],
+  },
+  {
     id: 'kExpress',
     name: 'ק.אקספרס',
     description: 'שירותי משלוחים מהירים',

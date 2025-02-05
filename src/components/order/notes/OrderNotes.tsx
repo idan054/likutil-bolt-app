@@ -65,7 +65,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
           setNewNote("");
           // Add WhatsApp message as a note
           await addNote({
-            note: `📱 ההודעה שנשלחה דרך WhatsApp: \n\n ״${whatsappMessage}״`,
+            note: `📱 ההודעה נשלחה דרך Mail & WhatsApp: \n\n ״${whatsappMessage}״`,
             customer_note: true,
           });
 
