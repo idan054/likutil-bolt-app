@@ -9,7 +9,7 @@ import {
   getDeliverySettings,
   removeDeliveryConnection,
 } from '../../services/delivery/storage/firebase';
-import { USE_DEBUG_AUTH, DEBUG_USER } from '../../config/constants';
+// import { USE_DEBUG_AUTH, DEBUG_USER } from '../../config/constants';
 import { showErrorToast } from '../../utils/error';
 import type {
   DeliveryIntegration,
@@ -32,7 +32,7 @@ export const useDeliveryIntegrations = () => {
   );
 
   const loadSettings = useCallback(async () => {
-    const userId = USE_DEBUG_AUTH ? DEBUG_USER.uid : user?.uid;
+    const userId = user?.uid;
     if (!userId) return;
 
     try {
@@ -77,7 +77,7 @@ export const useDeliveryIntegrations = () => {
 
   const saveIntegration = useCallback(
     async (id: string, data: Record<string, string>) => {
-      const userId = USE_DEBUG_AUTH ? DEBUG_USER.uid : user?.uid;
+      const userId =  user?.uid;
       if (!userId) {
         toast.error('משתמש לא מחובר');
         return;
@@ -113,7 +113,7 @@ export const useDeliveryIntegrations = () => {
 
   const removeIntegration = useCallback(
     async (id: string) => {
-      const userId = USE_DEBUG_AUTH ? DEBUG_USER.uid : user?.uid;
+      const userId =  user?.uid;
       if (!userId) {
         toast.error('משתמש לא מחובר');
         return;

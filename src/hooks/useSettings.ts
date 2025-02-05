@@ -2,19 +2,18 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { getUserSettings, saveUserSettings } from '../services/settings/settings.service';
-import { useDebugAuth } from './useDebugAuth';
+// import { useDebugAuth } from './useDebugAuth';
 import { toast } from 'react-hot-toast';
 import type { UserSettings } from '../types/settings';
 
 export const useSettings = () => {
   const [user] = useAuthState(auth);
-  const { isEnabled: isDebugMode, mockUser } = useDebugAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const userId = isDebugMode ? mockUser.uid : user?.uid;
+      const userId =user?.uid;
       if (!userId) return;
 
       try {
@@ -41,10 +40,10 @@ export const useSettings = () => {
     return () => {
       localStorage.removeItem('wc_settings');
     };
-  }, [user?.uid, isDebugMode, mockUser.uid]);
+  }, [user?.uid]);
 
   const updateSettings = async (newSettings: UserSettings): Promise<boolean> => {
-    const userId = isDebugMode ? mockUser.uid : user?.uid;
+    const userId = user?.uid;
     if (!userId) return false;
 
     try {

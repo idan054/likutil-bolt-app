@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { OrderDetails as OrderDetailsType } from '../types/order';
-import type { DeliveryProvider } from './delivery/DeliverySelector';
 import { OrderHeader } from './order/OrderHeader';
 import { ShippingMethod } from './order/ShippingMethod';
 import { CustomerNote } from './order/CustomerNote';
@@ -13,9 +11,12 @@ import { OrderNotes } from './order/notes/OrderNotes';
 import { LocalPickupAlert } from './ui/LocalPickupAlert';
 import { useOrderCompletion } from '../hooks/useOrderCompletion';
 import { useDeliveryCreation } from '../hooks/useDeliveryCreation';
+import { CheckCircle, Loader2, Printer, Truck } from 'lucide-react';
+import { LocalPickupSection } from './order/LocalPickupSection';
 
 interface OrderDetailsProps {
-  order: OrderDetailsType;
+  // order: OrderDetailsType;
+  order: any;
   onReset: () => void;
   onComplete: () => void;
 }
@@ -26,7 +27,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   onComplete 
 }) => {
   const [showLocalPickupAlert, setShowLocalPickupAlert] = useState(false);
-  const [selectedDeliveryProvider, setSelectedDeliveryProvider] = useState<DeliveryProvider | null>(null);
+  const [showLocalPickup, setShowLocalPickup] = useState<boolean>(true);
+  const [selectedDeliveryProvider, setSelectedDeliveryProvider] = useState<string | null>(null);
   
   const isLocalPickup = order.shipping_lines[0]?.method_id === 'local_pickup';
 
@@ -52,6 +54,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   useEffect(() => {
     if (isLocalPickup) {
       setShowLocalPickupAlert(true);
+      setShowLocalPickup(true);
     }
   }, [isLocalPickup]);
 
@@ -97,17 +100,25 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           </div>
 
           <div className="mt-4 border-t pt-6">
-            <DeliverySelector
-              onSelect={setSelectedDeliveryProvider}
-              selectedProvider={selectedDeliveryProvider}
-              customerId={order.customer_id}
-              isLocalPickup={isLocalPickup}
-              isCreating={isCreating}
-              onCreateDelivery={(packNum) => createDelivery(packNum)}
-              deliveryResponse={deliveryResponse}
-              onComplete={handleComplete}
-              isCompleting={isCompleting}
-            />
+            {isLocalPickup && showLocalPickup ? (
+              <LocalPickupSection
+                isCompleting={isCompleting}
+                onComplete={handleComplete}
+                onSendAnyway={() => setShowLocalPickup(false)}
+              />
+            ) : (
+              <DeliverySelector
+                onSelect={setSelectedDeliveryProvider}
+                selectedProvider={selectedDeliveryProvider}
+                customerId={order.customer_id}
+                isLocalPickup={isLocalPickup}
+                isCreating={isCreating}
+                onCreateDelivery={(packNum) => createDelivery(packNum)}
+                deliveryResponse={deliveryResponse}
+                onComplete={handleComplete}
+                isCompleting={isCompleting}
+              />
+            )}
           </div>
         </div>
         
