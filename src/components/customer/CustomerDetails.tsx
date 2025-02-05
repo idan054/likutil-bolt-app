@@ -4,9 +4,13 @@ import type { OrderDetails } from '../../types/order';
 
 interface CustomerDetailsProps {
   billing: OrderDetails['billing'];
+  onWhatsAppClick?: () => void;
 }
 
-export const CustomerDetails: React.FC<CustomerDetailsProps> = ({ billing }) => (
+export const CustomerDetails: React.FC<CustomerDetailsProps> = ({ 
+  billing,
+  onWhatsAppClick
+}) => (
   <div className="text-right">
     <h3 className="text-lg font-semibold mb-3">פרטי לקוח</h3>
     <div className="space-y-2">
@@ -15,7 +19,8 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({ billing }) => 
       </p>
       <ContactInfo 
         email={billing.email} 
-        phone={billing.phone} 
+        phone={billing.phone}
+        onWhatsAppClick={onWhatsAppClick}
       />
     </div>
   </div>

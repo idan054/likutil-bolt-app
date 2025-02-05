@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { OrderSearch } from '../OrderSearch';
 import { OrderDetails } from '../OrderDetails';
@@ -23,6 +23,25 @@ export const OrdersDashboard: React.FC = () => {
     isLoading: isGeneratingSuperOrder 
   } = useSuperOrder();
 
+  // Handle browser history
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state?.view === 'orders-list') {
+        handleReset();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleReset]);
+
+  // Update browser history when selecting an order
+  useEffect(() => {
+    if (selectedOrderId) {
+      window.history.pushState({ view: 'order-details' }, '', `?order=${selectedOrderId}`);
+    }
+  }, [selectedOrderId]);
+
   // Calculate completed orders count
   const completedOrdersCount = useMemo(() => {
     return orders.filter(order => isCompleted(order.id.toString())).length;
@@ -30,6 +49,15 @@ export const OrdersDashboard: React.FC = () => {
 
   const handleOrderComplete = (orderId: string) => {
     markAsCompleted(orderId);
+  };
+
+  const handleOrderSelection = (orderId: string) => {
+    handleOrderSelect(orderId);
+  };
+
+  const handleBackToList = () => {
+    window.history.pushState({ view: 'orders-list' }, '', '/');
+    handleReset();
   };
 
   const renderContent = () => {
@@ -44,7 +72,7 @@ export const OrdersDashboard: React.FC = () => {
           <div className="flex justify-center">
             <OrderDetails 
               order={selectedOrder} 
-              onReset={handleReset}
+              onReset={handleBackToList}
               onComplete={() => handleOrderComplete(selectedOrderId)}
             />
           </div>
@@ -65,7 +93,7 @@ export const OrdersDashboard: React.FC = () => {
         {orders.length > 0 ? (
           <OrdersList 
             orders={orders} 
-            onSelectOrder={handleOrderSelect}
+            onSelectOrder={handleOrderSelection}
             isCompleted={isCompleted}
           />
         ) : (

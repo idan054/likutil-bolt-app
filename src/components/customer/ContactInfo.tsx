@@ -1,13 +1,26 @@
 import React from 'react';
 import { Mail, MessageCircle } from 'lucide-react';
+import { formatPhoneForWhatsapp } from '../../utils/phone';
 
 interface ContactInfoProps {
   email?: string;
   phone?: string;
+  onWhatsAppClick?: () => void;
 }
 
-export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
+export const ContactInfo: React.FC<ContactInfoProps> = ({ 
+  email, 
+  phone,
+  onWhatsAppClick
+}) => {
   const hasEmail = email && email.trim().length > 0;
+
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onWhatsAppClick) {
+      onWhatsAppClick();
+    }
+  };
 
   return (
     <div className="space-y-2 text-right">
@@ -40,9 +53,8 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
             {phone}
           </a>
           <a
-            href={`https://wa.me/${formatPhoneForWhatsapp(phone)}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#"
+            onClick={handleWhatsAppClick}
             className="text-green-600 hover:text-green-700"
             title="צור קשר בוואטסאפ"
           >
@@ -52,9 +64,4 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
       )}
     </div>
   );
-};
-
-const formatPhoneForWhatsapp = (phone: string): string => {
-  const digits = phone.replace(/\D/g, '');
-  return digits.startsWith('0') ? '972' + digits.slice(1) : digits;
 };

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { MessageSquarePlus, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { MessageSquarePlus, ChevronDown } from 'lucide-react';
 import { NotesList } from './NotesList';
 import { NoteTypeSelector } from './NoteTypeSelector';
 import { NoteInput } from './NoteInput';
@@ -9,31 +9,52 @@ import { translations } from '../../../config/translations';
 
 interface OrderNotesProps {
   orderId: string;
+  customerPhone?: string;
 }
 
-export const OrderNotes: React.FC<OrderNotesProps> = ({ orderId }) => {
+export const OrderNotes: React.FC<OrderNotesProps> = ({ 
+  orderId,
+  customerPhone 
+}) => {
   const { notes, isLoading, addNote } = useOrderNotes(orderId);
   const [newNote, setNewNote] = useState('');
   const [isCustomerNote, setIsCustomerNote] = useState(false);
+  const [isWhatsAppNote, setIsWhatsAppNote] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const handleSubmit = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      await addNote({
-        note: newNote.trim(),
-        customer_note: isCustomerNote
-      });
-      setNewNote('');
-      toast.success(translations.orderNotes.addSuccess);
+      if (isWhatsAppNote && customerPhone) {
+        // Open WhatsApp with the message
+        const whatsappNumber = customerPhone.replace(/\D/g, '');
+        const encodedMessage = encodeURIComponent(newNote);
+        window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
+        setNewNote('');
+      } else {
+        await addNote({
+          note: newNote.trim(),
+          customer_note: isCustomerNote
+        });
+        setNewNote('');
+        toast.success(translations.orderNotes.addSuccess);
+      }
     } catch (error) {
       toast.error(translations.orderNotes.addError);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Function to expand section and show WhatsApp mode
+  const expandAndShowWhatsApp = () => {
+    setIsExpanded(true);
+    setIsWhatsAppNote(true);
+    setIsCustomerNote(false);
   };
 
   return (
@@ -61,14 +82,26 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({ orderId }) => {
           <div>
             <NoteTypeSelector 
               isCustomerNote={isCustomerNote}
-              onChange={setIsCustomerNote}
+              isWhatsAppNote={isWhatsAppNote}
+              onChange={(type) => {
+                if (type === 'whatsapp') {
+                  setIsWhatsAppNote(true);
+                  setIsCustomerNote(false);
+                } else {
+                  setIsWhatsAppNote(false);
+                  setIsCustomerNote(type === 'customer');
+                }
+              }}
             />
             
             <NoteInput
               value={newNote}
               onChange={setNewNote}
               onSubmit={handleSubmit}
+              noteType={isWhatsAppNote ? 'whatsapp' : (isCustomerNote ? 'customer' : 'private')}
               isSubmitting={isSubmitting}
+              showTemplates={showTemplates}
+              onToggleTemplates={() => setShowTemplates(!showTemplates)}
             />
           </div>
 

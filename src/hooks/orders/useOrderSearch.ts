@@ -10,6 +10,13 @@ export const useOrderSearch = () => {
 
   const searchOrder = async (orderId: string) => {
     if (!orderId.trim()) return;
+
+    // Check if settings exist
+    const settings = localStorage.getItem('wc_settings');
+    if (!settings) {
+      toast.error('אנא הגדר את פרטי החיבור לחנות תחילה');
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -18,8 +25,14 @@ export const useOrderSearch = () => {
     } catch (error) {
       console.error('[orders.search] Failed to find order:', error);
       
-      if (error instanceof ApiError && error.details.responseStatus === 404) {
-        toast.error('הזמנה לא נמצאה');
+      if (error instanceof ApiError) {
+        if (error.details.responseStatus === 404) {
+          toast.error('הזמנה לא נמצאה');
+        } else if (error.details.responseStatus === 401) {
+          toast.error('אין הרשאה לצפות בהזמנה זו');
+        } else {
+          toast.error('שגיאה בחיפוש ההזמנה');
+        }
       } else {
         toast.error('שגיאה בחיפוש ההזמנה');
       }

@@ -1,46 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { getUserSettings, saveUserSettings } from '../services/settings/settings.service';
-// import { useDebugAuth } from './useDebugAuth';
+import { settingsStorage } from '../services/settings/storage';
 import { toast } from 'react-hot-toast';
 import type { UserSettings } from '../types/settings';
 
 export const useSettings = () => {
   const [user] = useAuthState(auth);
-  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [settings, setSettings] = useState<UserSettings | null>(() => settingsStorage.get());
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const userId =user?.uid;
-      if (!userId) return;
+  const fetchSettings = useCallback(async () => {
+    const userId = user?.uid;
+    if (!userId) return;
 
-      try {
-        const userSettings = await getUserSettings(userId);
+    try {
+      const userSettings = await getUserSettings(userId);
+      if (userSettings) {
         setSettings(userSettings);
-        
-        // Store settings in localStorage for API client
-        if (userSettings) {
-          localStorage.setItem('wc_settings', JSON.stringify(userSettings));
-        } else {
-          localStorage.removeItem('wc_settings');
-        }
-      } catch (error) {
-        console.error('[useSettings] Failed to fetch settings:', error);
-        localStorage.removeItem('wc_settings');
-      } finally {
-        setIsLoading(false);
+        settingsStorage.set(userSettings);
+      } else {
+        settingsStorage.clear();
+        setSettings(null);
       }
-    };
+    } catch (error) {
+      console.error('[useSettings] Failed to fetch settings:', error);
+      toast.error('שגיאה בטעינת הגדרות');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.uid]);
 
+  useEffect(() => {
     fetchSettings();
 
-    // Cleanup on unmount
-    return () => {
-      localStorage.removeItem('wc_settings');
-    };
-  }, [user?.uid]);
+    // Listen for settings changes
+    const unsubscribe = settingsStorage.addListener(() => {
+      setSettings(settingsStorage.get());
+    });
+
+    return () => unsubscribe();
+  }, [fetchSettings]);
 
   const updateSettings = async (newSettings: UserSettings): Promise<boolean> => {
     const userId = user?.uid;
@@ -49,7 +50,7 @@ export const useSettings = () => {
     try {
       await saveUserSettings(userId, newSettings);
       setSettings(newSettings);
-      localStorage.setItem('wc_settings', JSON.stringify(newSettings));
+      settingsStorage.set(newSettings);
       toast.success('ההגדרות נשמרו בהצלחה');
       return true;
     } catch (error) {
@@ -63,5 +64,6 @@ export const useSettings = () => {
     settings,
     isLoading,
     updateSettings,
+    refetchSettings: fetchSettings
   };
 };

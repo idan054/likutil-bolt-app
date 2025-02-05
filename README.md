@@ -2,9 +2,9 @@
 
 
 ### Get from Github to Bolt.AI
-#### Just Open Bolt using this link!
+#### Just use this link:
 #### https://bolt.new/~/github.com/idan054/likutil-bolt-app
 
 ### Push to Github from Bolt.AI
-#### Download the Zip > Push > Delete Folder
+#### Just Download the Zip & Push on your machine
 (Todo: Make a script that listen to "Downloads" Folder & Auto push)
