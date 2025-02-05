@@ -35,7 +35,7 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
             <div className="flex items-center gap-2">
               {note.customer_note ? (
                 <>
-                  <Mail size={16} className="text-blue-600" />
+                  <MessageSquare size={16} className="text-blue-600" />
                   <span className="text-sm text-gray-500">ללקוח</span>
                 </>
               ) : (

@@ -7,9 +7,14 @@ import { toast } from 'react-hot-toast';
 import type { UserSettings } from '../types/settings';
 
 export const useSettings = () => {
+  
+  
   const [user] = useAuthState(auth);
+  
   const [settings, setSettings] = useState<UserSettings | null>(() => settingsStorage.get());
+  
   const [isLoading, setIsLoading] = useState(true);
+  
 
   const fetchSettings = useCallback(async () => {
     const userId = user?.uid;
