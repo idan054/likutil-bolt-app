@@ -20,7 +20,7 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       <ContactInfo 
         email={billing.email} 
         phone={billing.phone}
-        onWhatsAppClick={onWhatsAppClick}
+        onExpandNotes={onWhatsAppClick}
       />
     </div>
   </div>

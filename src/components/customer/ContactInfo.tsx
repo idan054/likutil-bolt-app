@@ -1,24 +1,24 @@
 import React from 'react';
-import { Mail, MessageCircle } from 'lucide-react';
-import { formatPhoneForWhatsapp } from '../../utils/phone';
+import { Mail } from 'lucide-react';
+import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 
 interface ContactInfoProps {
   email?: string;
   phone?: string;
-  onWhatsAppClick?: () => void;
+  onExpandNotes?: () => void;
 }
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ 
   email, 
   phone,
-  onWhatsAppClick
+  onExpandNotes
 }) => {
   const hasEmail = email && email.trim().length > 0;
 
-  const handleWhatsAppClick = (e: React.MouseEvent) => {
+  const handleNotesExpand = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onWhatsAppClick) {
-      onWhatsAppClick();
+    if (onExpandNotes) {
+      onExpandNotes();
     }
   };
 
@@ -54,11 +54,11 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({
           </a>
           <a
             href="#"
-            onClick={handleWhatsAppClick}
+            onClick={handleNotesExpand}
             className="text-green-600 hover:text-green-700"
-            title="צור קשר בוואטסאפ"
+            title="הערות להזמנה"
           >
-            <MessageCircle size={20} />
+            <WhatsAppIcon size={20} />
           </a>
         </div>
       )}
