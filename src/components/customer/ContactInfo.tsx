@@ -1,26 +1,16 @@
-import React from 'react';
-import { Mail } from 'lucide-react';
-import { WhatsAppIcon } from '../icons/WhatsAppIcon';
+import React from "react";
+import { Mail } from "lucide-react";
+import { WhatsAppIcon } from "../icons/WhatsAppIcon";
+import { useMessagingStore } from "../../store/useMessagingStore";
 
 interface ContactInfoProps {
   email?: string;
   phone?: string;
-  onExpandNotes?: () => void;
 }
 
-export const ContactInfo: React.FC<ContactInfoProps> = ({ 
-  email, 
-  phone,
-  onExpandNotes
-}) => {
+export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
+  const { toggleWhatsAppNote, toggleCustomerNote } = useMessagingStore();
   const hasEmail = email && email.trim().length > 0;
-
-  const handleNotesExpand = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (onExpandNotes) {
-      onExpandNotes();
-    }
-  };
 
   return (
     <div className="space-y-2 text-right">
@@ -33,7 +23,11 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({
             {email}
           </a>
           <a
-            href={`mailto:${email}`}
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              toggleCustomerNote();
+            }}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-700"
@@ -54,9 +48,12 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({
           </a>
           <a
             href="#"
-            onClick={handleNotesExpand}
+            onClick={(e) => {
+              e.preventDefault();
+              toggleWhatsAppNote();
+            }}
             className="text-green-600 hover:text-green-700"
-            title="הערות להזמנה"
+            title="צור קשר בוואטסאפ"
           >
             <WhatsAppIcon size={20} />
           </a>

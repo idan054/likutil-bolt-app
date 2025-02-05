@@ -9,7 +9,6 @@ interface CustomerDetailsProps {
 
 export const CustomerDetails: React.FC<CustomerDetailsProps> = ({ 
   billing,
-  onWhatsAppClick
 }) => (
   <div className="text-right">
     <h3 className="text-lg font-semibold mb-3">פרטי לקוח</h3>
@@ -20,7 +19,6 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       <ContactInfo 
         email={billing.email} 
         phone={billing.phone}
-        onExpandNotes={onWhatsAppClick}
       />
     </div>
   </div>

@@ -1,6 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from "react";
+import { useMessagingStore } from "../../store/useMessagingStore";
 
-interface AutoResizeTextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface AutoResizeTextAreaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
@@ -8,22 +10,32 @@ interface AutoResizeTextAreaProps extends React.TextareaHTMLAttributes<HTMLTextA
 export const AutoResizeTextArea: React.FC<AutoResizeTextAreaProps> = ({
   value,
   onChange,
-  className = '',
+  className = "",
   ...props
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { isCustomerNote, isWhatsAppNote } = useMessagingStore();
 
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto';
-    
+    textarea.style.height = "auto";
+
     // Set the height to match the content
     const newHeight = Math.min(textarea.scrollHeight, 200);
     textarea.style.height = `${newHeight}px`;
   }, [value]);
+
+  useEffect(() => {
+    if (isCustomerNote || isWhatsAppNote) {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }
+  }, [isCustomerNote, isWhatsAppNote]);
 
   return (
     <textarea

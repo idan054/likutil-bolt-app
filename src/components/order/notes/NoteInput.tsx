@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Send, Save, ChevronDown } from 'lucide-react';
-import { noteTypeColors } from './NoteTypeSelector';
-import { translations } from '../../../config/translations';
-import { AutoResizeTextArea } from '../../ui/AutoResizeTextArea';
-import { SavedTemplatesCarousel } from './SavedTemplatesCarousel';
-import { useQuickMessages } from '../../../hooks/useQuickMessages';
+import React from "react";
+import { Send, Save, ChevronDown } from "lucide-react";
+import { noteTypeColors } from "./NoteTypeSelector";
+import { translations } from "../../../config/translations";
+import { AutoResizeTextArea } from "../../ui/AutoResizeTextArea";
+import { SavedTemplatesCarousel } from "./SavedTemplatesCarousel";
+import { useQuickMessages } from "../../../hooks/useQuickMessages";
 
 interface NoteInputProps {
   value: string;
@@ -13,7 +13,7 @@ interface NoteInputProps {
   isSubmitting: boolean;
   showTemplates: boolean;
   onToggleTemplates: () => void;
-  noteType: 'private' | 'customer' | 'whatsapp';
+  noteType: "private" | "customer" | "whatsapp";
 }
 
 export const NoteInput: React.FC<NoteInputProps> = ({
@@ -35,7 +35,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (value.trim()) {
         onSubmit();
@@ -64,7 +64,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
         >
           <ChevronDown
             className={`transform transition-transform duration-200 ${
-              showTemplates ? 'rotate-180' : ''
+              showTemplates ? "rotate-180" : ""
             }`}
             size={16}
           />
@@ -91,7 +91,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
           className="flex-1 px-4 py-2 border rounded-lg text-right min-h-[40px] max-h-[200px]"
           disabled={isSubmitting}
         />
-        
+
         <div className="flex flex-col gap-2">
           <button
             type="button"
@@ -102,7 +102,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
           >
             <Save size={20} />
           </button>
-          
+
           <button
             type="submit"
             disabled={isSubmitting || !value.trim()}
