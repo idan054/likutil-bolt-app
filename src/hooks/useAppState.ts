@@ -1,57 +1,68 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../config/firebase';
-import { useSettings } from './settings';
-import { useProcessingOrders } from './useProcessingOrders';
-import { toast } from 'react-hot-toast';
+import { useState, useEffect, useCallback } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "../config/firebase";
+import { useSettings } from "./settings";
+import { useProcessingOrders } from "./useProcessingOrders";
+import { toast } from "react-hot-toast";
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);
-  const { settings, isLoading: isLoadingSettings, updateSettings } = useSettings();
-  const { 
-    orders, 
-    isLoading: isLoadingOrders, 
-    refetch: refetchOrders 
+  const {
+    settings,
+    isLoading: isLoadingSettings,
+    updateSettings,
+  } = useSettings();
+  const {
+    orders,
+    isLoading: isLoadingOrders,
+    isRefetching,
+    refetch: refetchOrders,
   } = useProcessingOrders();
-  
+
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Handle initialization and data fetching
   useEffect(() => {
-    const currentUser = user;
-    
     if (!loading) {
-      if (currentUser && settings) {
+      if (user && settings) {
         refetchOrders();
       }
       setIsInitialized(true);
     }
   }, [user, loading, settings, refetchOrders]);
 
-  const handleSettingsSave = useCallback(async (formData) => {
-    const toastId = 'settings-save';
-    toast.loading('שומר הגדרות...', { id: toastId });
+  // Determine if the app is in a loading state
+  const isLoading =
+    loading || isLoadingSettings || isLoadingOrders || !isInitialized;
 
-    try {
-      const success = await updateSettings(formData);
-      if (success) {
-        toast.success('ההגדרות נשמרו בהצלחה', { id: toastId });
-        await refetchOrders();
-        return true;
+  const handleSettingsSave = useCallback(
+    async (formData) => {
+      const toastId = "settings-save";
+      toast.loading("שומר הגדרות...", { id: toastId });
+
+      try {
+        const success = await updateSettings(formData);
+        if (success) {
+          toast.success("ההגדרות נשמרו בהצלחה", { id: toastId });
+          await refetchOrders();
+          return true;
+        }
+        toast.error("שגיאה בשמירת ההגדרות", { id: toastId });
+        return false;
+      } catch (error) {
+        console.error("[useAppState] Failed to save settings:", error);
+        toast.error("שגיאה בשמירת ההגדרות", { id: toastId });
+        return false;
       }
-      toast.error('שגיאה בשמירת ההגדרות', { id: toastId });
-      return false;
-    } catch (error) {
-      console.error('[useAppState] Failed to save settings:', error);
-      toast.error('שגיאה בשמירת ההגדרות', { id: toastId });
-      return false;
-    }
-  }, [updateSettings, refetchOrders]);
+    },
+    [updateSettings, refetchOrders]
+  );
 
   return {
     isInitialized,
     hasSettings: !!settings,
-    isLoading: loading || isLoadingSettings || isLoadingOrders,
+    isLoading,
+    isRefetching,
     orders,
     refetchOrders,
     handleSettingsSave,

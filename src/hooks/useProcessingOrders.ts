@@ -1,60 +1,76 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { toast } from 'react-hot-toast';
-import { getProcessingOrders } from '../services/orders/orders.service';
-import { showErrorToast } from '../utils/error';
-import type { OrderSummary } from '../types/order';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "react-hot-toast";
+import { getProcessingOrders } from "../services/orders/orders.service";
+import { showErrorToast } from "../utils/error";
+import type { OrderSummary } from "../types/order";
 
 const REFRESH_INTERVAL = 5000; // 5 seconds
 
 export const useProcessingOrders = () => {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const ordersRef = useRef<OrderSummary[]>([]);
 
-  const fetchOrders = useCallback(async (showNotification = false) => {
-    // Don't fetch if settings are not available
-    const settingsStr = localStorage.getItem('wc_settings');
-    if (!settingsStr) {
-      setOrders([]);
-      setIsLoading(false);
-      return;
-    }
+  const fetchOrders = useCallback(
+    async (showNotification = false) => {
+      const isInitialFetch = orders.length === 0;
+      isInitialFetch ? setIsLoading(true) : setIsRefetching(true);
+      setError(null);
 
-    try {
-      const data = await getProcessingOrders();
-      
-      // Compare with previous orders to detect changes
-      if (showNotification && ordersRef.current.length > 0) {
-        const newOrdersCount = data.length - ordersRef.current.length;
-        if (newOrdersCount > 0) {
-          toast.success(
-            `יש ${newOrdersCount} הזמנות חדשות! לחץ לרענון`, 
-            {
-              id: 'new-orders',
+      // Don't fetch if settings are not available
+      const settingsStr = localStorage.getItem("wc_settings");
+      if (!settingsStr) {
+        if (isInitialFetch) {
+          setOrders([]);
+        }
+        setIsLoading(false);
+        setIsRefetching(false);
+        return;
+      }
+
+      try {
+        const data = await getProcessingOrders();
+
+        // Compare with previous orders to detect changes
+        if (showNotification && ordersRef.current.length > 0) {
+          const newOrdersCount = data.length - ordersRef.current.length;
+          if (newOrdersCount > 0) {
+            toast.success(`יש ${newOrdersCount} הזמנות חדשות! לחץ לרענון`, {
+              id: "new-orders",
               duration: 5000,
-              icon: '🔄',
+              icon: "🔄",
               onClick: () => {
                 setOrders(data);
                 ordersRef.current = data;
-              }
-            }
-          );
-          return; // Don't update state automatically
+                setIsLoading(false);
+                setIsRefetching(false);
+              },
+            });
+            return;
+          }
         }
-      }
 
-      setOrders(data);
-      ordersRef.current = data;
-      setError(null);
-    } catch (error) {
-      console.error('[useProcessingOrders] Failed to fetch orders:', error);
-      showErrorToast(error);
-      setError(error instanceof Error ? error : new Error('Failed to fetch orders'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        setOrders(data);
+        ordersRef.current = data;
+        setError(null);
+      } catch (error) {
+        console.error("[useProcessingOrders] Failed to fetch orders:", error);
+        showErrorToast(error);
+        setError(
+          error instanceof Error ? error : new Error("Failed to fetch orders")
+        );
+        if (isInitialFetch) {
+          setOrders([]);
+        }
+      } finally {
+        setIsLoading(false);
+        setIsRefetching(false);
+      }
+    },
+    [orders.length]
+  );
 
   // Initial fetch
   useEffect(() => {
@@ -73,19 +89,20 @@ export const useProcessingOrders = () => {
   // Listen for settings changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'wc_settings') {
+      if (e.key === "wc_settings") {
         fetchOrders(false);
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [fetchOrders]);
 
   return {
     orders,
     isLoading,
+    isRefetching,
     error,
-    refetch: useCallback(() => fetchOrders(false), [fetchOrders])
+    refetch: useCallback(() => fetchOrders(false), [fetchOrders]),
   };
 };
