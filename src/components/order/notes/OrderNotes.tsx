@@ -7,6 +7,9 @@ import { NoteInput } from "./NoteInput";
 import { useOrderNotes } from "../../../hooks/useOrderNotes";
 import { translations } from "../../../config/translations";
 import { useMessagingStore } from "../../../store/useMessagingStore";
+import { useSettings } from '../../../hooks/useSettings';
+import { settingsStorage } from '../../../services/settings/storage';
+import { UserSettings } from "../../../types/settings";
 
 interface OrderNotesProps {
   orderId: string;
@@ -17,7 +20,9 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
   orderId,
   customerPhone,
 }) => {
-  const { notes, isLoading, addNote } = useOrderNotes(orderId);
+  const { notes, isLoading, addNote } = useOrderNotes(orderId);  
+  const { settings } = useSettings();
+
   const {
     isWhatsAppNote,
     isCustomerNote,
@@ -36,14 +41,38 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     setIsSubmitting(true);
     try {
       if (isWhatsAppNote && customerPhone) {
-        // Open WhatsApp with the message
+       
+
+        const whatsappMessage = `📝 שלום, נוספה הערה להזמנה שלך מ ${settings?.storeUrl} 🛍️\n\n${newNote.trim()}\n───────\n🤖 לא ניתן להשיב להודעה זו`;
+
         const whatsappNumber = customerPhone.replace(/\D/g, "");
-        const encodedMessage = encodeURIComponent(newNote);
-        window.open(
-          `https://wa.me/${whatsappNumber}?text=${encodedMessage}`,
-          "_blank"
-        );
-        setNewNote("");
+        const response = await fetch('https://api.likutil.co.il/api/send-whatsapp', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: 
+            whatsappMessage,
+            
+            phone: whatsappNumber.startsWith('972') ? whatsappNumber : `972${whatsappNumber.slice(1)}`
+          })
+        });
+
+        if (response.ok) {
+          toast.success(translations.orderNotes.whatsappSuccess);
+          setNewNote("");
+          // Add WhatsApp message as a note
+          await addNote({
+            note: `📱 ההודעה נשלחה דרך Mail & WhatsApp: \n\n ״${whatsappMessage}״`,
+            customer_note: true,
+          });
+
+
+        } else {
+          throw new Error('Failed to send WhatsApp message');
+        }
       } else {
         await addNote({
           note: newNote.trim(),

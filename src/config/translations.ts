@@ -55,6 +55,7 @@ export const translations = {
     placeholder: 'הוסף הערה חדשה...',
     noNotes: 'אין הערות להזמנה זו',
     addSuccess: 'הערה נוספה בהצלחה',
+    whatsappSuccess: 'ווטסאפ נשלח בהצלחה',
     addError: 'שגיאה בהוספת ההערה',
     types: {
       private: 'הערה פנימית',
