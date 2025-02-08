@@ -25,7 +25,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
   onToggleTemplates,
   noteType,
 }) => {
-  const { messages, saveMessage } = useQuickMessages();
+  const { messages, saveMessage, deleteMessage } = useQuickMessages();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +49,13 @@ export const NoteInput: React.FC<NoteInputProps> = ({
       onToggleTemplates(); // Show templates after saving
     }
   };
+
+
+  const handleDeleteTemplate = async (template: string) => {
+    await deleteMessage(template);
+    // onToggleTemplates(); // Show templates after saving
+  };
+
 
   const handleSelectTemplate = (template: string) => {
     onChange(template);
@@ -77,6 +84,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
         <SavedTemplatesCarousel
           templates={messages}
           onSelect={handleSelectTemplate}
+          onDelete={handleDeleteTemplate}
           isVisible={showTemplates}
           onVisibilityChange={onToggleTemplates}
         />

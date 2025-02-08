@@ -49,16 +49,38 @@ export const useQuickMessages = () => {
       await setDoc(docRef, { messages: updatedMessages });
       
       setMessages(updatedMessages);
-      toast.success('ההודעה נשמרה בהצלחה');
+      toast.success('התבנית נשמרה בהצלחה');
     } catch (error) {
       console.error('[useQuickMessages] Failed to save message:', error);
-      toast.error('שגיאה בשמירת ההודעה');
+      toast.error('שגיאה בשמירת התבנית');
+    }
+  };
+
+  const deleteMessage = async (messageToDelete: string) => {
+    if (!user) return;
+
+    try {
+      const updatedMessages = messages.filter(msg => msg !== messageToDelete);
+      console.log('messageToDelete')
+      console.log(messageToDelete)
+      console.log('updatedMessages')
+      console.log(updatedMessages)
+      
+      const docRef = doc(db, 'users', user.uid, 'settings', 'quick_messages');
+      await setDoc(docRef, { messages: updatedMessages });
+      
+      setMessages(updatedMessages);
+      toast.success('התבנית נמחקה בהצלחה');
+    } catch (error) {
+      console.error('[useQuickMessages] Failed to delete message:', error);
+      toast.error('שגיאה במחיקת התבנית');
     }
   };
 
   return {
     messages,
     isLoading,
-    saveMessage
+    saveMessage,
+    deleteMessage
   };
 };

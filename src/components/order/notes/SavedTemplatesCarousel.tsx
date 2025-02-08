@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface SavedTemplatesCarouselProps {
   templates: string[];
   onSelect: (template: string) => void;
+  onDelete: (template: string) => void;  // Add this prop
   isVisible: boolean;
   onVisibilityChange: (visible: boolean) => void;
 }
@@ -12,6 +13,7 @@ interface SavedTemplatesCarouselProps {
 export const SavedTemplatesCarousel: React.FC<SavedTemplatesCarouselProps> = ({
   templates,
   onSelect,
+  onDelete,
   isVisible,
   onVisibilityChange,
 }) => {
@@ -68,16 +70,26 @@ export const SavedTemplatesCarousel: React.FC<SavedTemplatesCarouselProps> = ({
             className="flex gap-3 overflow-x-auto scrollbar-none scroll-smooth"
           >
             {templates.map((template, index) => (
-              <button
-                key={index}
-                onClick={() => onSelect(template)}
-                className="shrink-0 max-w-[200px] p-2 bg-white border rounded text-right text-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"
-              >
-                <p className="line-clamp-2">{template}</p>
-              </button>
+              <div key={index} className="relative shrink-0 max-w-[200px]">
+
+                <button
+                  onClick={() => onDelete(template)}
+                  className="absolute top-1 left-1 z-10 p-1 rounded-full bg-white border shadow-sm hover:bg-red-50 hover:border-red-200 transition-colors"
+                >
+                  <X size={10} className="text-gray-500 hover:text-red-500" />
+                </button>
+
+                <button
+                  onClick={() => onSelect(template)}
+                  className="w-full p-2 bg-white border rounded text-right text-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                >
+                  <p className="line-clamp-3">{template}</p>
+                </button>
+              </div>
             ))}
           </div>
         </div>
+        
       </motion.div>
     </AnimatePresence>
   );
