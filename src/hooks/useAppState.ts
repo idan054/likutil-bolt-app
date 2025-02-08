@@ -1,68 +1,58 @@
-import { useState, useEffect, useCallback } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../config/firebase";
-import { useSettings } from "./settings";
-import { useProcessingOrders } from "./useProcessingOrders";
-import { toast } from "react-hot-toast";
+import { useState, useEffect, useCallback } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../config/firebase';
+import { useSettings } from './settings';
+import { useProcessingOrders } from './useProcessingOrders';
+import { toast } from 'react-hot-toast';
+import { UserSettings } from '../types/settings';
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);
-  const {
-    settings,
-    isLoading: isLoadingSettings,
-    updateSettings,
-  } = useSettings();
-  const {
-    orders,
-    isLoading: isLoadingOrders,
-    isRefetching,
-    refetch: refetchOrders,
+  const { settings, isLoading: isLoadingSettings, updateSettings } = useSettings();
+  const { 
+    orders, 
+    isLoading: isLoadingOrders, 
+    refetch: refetchOrders 
   } = useProcessingOrders();
-
+  
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Handle initialization and data fetching
   useEffect(() => {
+    const currentUser = user;
+    
     if (!loading) {
-      if (user && settings) {
+      if (currentUser && settings) {
         refetchOrders();
       }
       setIsInitialized(true);
     }
   }, [user, loading, settings, refetchOrders]);
 
-  // Determine if the app is in a loading state
-  const isLoading =
-    loading || isLoadingSettings || isLoadingOrders || !isInitialized;
+  const handleSettingsSave = useCallback(async (formData: UserSettings) => {
+    const toastId = 'settings-save';
+    toast.loading('שומר הגדרות...', { id: toastId });
 
-  const handleSettingsSave = useCallback(
-    async (formData) => {
-      const toastId = "settings-save";
-      toast.loading("שומר הגדרות...", { id: toastId });
-
-      try {
-        const success = await updateSettings(formData);
-        if (success) {
-          toast.success("ההגדרות נשמרו בהצלחה", { id: toastId });
-          await refetchOrders();
-          return true;
-        }
-        toast.error("שגיאה בשמירת ההגדרות", { id: toastId });
-        return false;
-      } catch (error) {
-        console.error("[useAppState] Failed to save settings:", error);
-        toast.error("שגיאה בשמירת ההגדרות", { id: toastId });
-        return false;
+    try {
+      const success = await updateSettings(formData);
+      if (success) {
+        toast.success('ההגדרות נשמרו בהצלחה', { id: toastId });
+        await refetchOrders();
+        return true;
       }
-    },
-    [updateSettings, refetchOrders]
-  );
+      toast.error('שגיאה בשמירת ההגדרות', { id: toastId });
+      return false;
+    } catch (error) {
+      console.error('[useAppState] Failed to save settings:', error);
+      toast.error('שגיאה בשמירת ההגדרות', { id: toastId });
+      return false;
+    }
+  }, [updateSettings, refetchOrders]);
 
   return {
     isInitialized,
     hasSettings: !!settings,
-    isLoading,
-    isRefetching,
+    isLoading: loading || isLoadingSettings || isLoadingOrders,
     orders,
     refetchOrders,
     handleSettingsSave,

@@ -10,49 +10,32 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
   });
 };
 
-export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
-  try {
-    let allOrders: OrderSummary[] = [];
-    let page = 1;
-    let hasMore = true;
 
-    while (hasMore) {
+export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
+  
+  console.log(new Date().toLocaleString('he-IL', { 
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }))
+
       const params = new URLSearchParams({
         status: 'processing',
         per_page: ITEMS_PER_PAGE.toString(),
         orderby: 'date',
         order: 'desc',
-        page: page.toString(),
+     
       });
 
-      const orders = await apiClient<OrderSummary[]>({
-        method: 'GET',
-        path: `/orders?${params.toString()}`,
-      });
-
-      if (orders.length === 0) {
-        hasMore = false;
-      } else {
-        allOrders = [...allOrders, ...orders];
-        page++;
-      }
-
-      // Break if we've fetched all orders or reached a reasonable limit
-      if (orders.length < ITEMS_PER_PAGE || page > 5) {
-        hasMore = false;
-      }
-    }
-
-    console.log(
-      '[orders.service] Total processing orders fetched:',
-      allOrders.length
-    );
-    return allOrders;
-  } catch (error) {
-    console.error('[orders.service] Failed to fetch processing orders:', error);
-    throw error;
-  }
+  return apiClient<OrderSummary[]>({
+    method: 'GET',
+    path: `/orders/?${params.toString()}`,
+  });
 };
+
 
 export const updateOrderStatus = async (
   orderId: string,
