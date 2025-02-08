@@ -1,5 +1,5 @@
 import { apiClient } from '../api/client';
-import type { OrderDetails, OrderSummary } from '../../types/order';
+import type { OrderDetails, OrderStatus, OrderSummary } from '../../types/order';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -12,7 +12,7 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
 
 
 export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
-  
+
   console.log(new Date().toLocaleString('he-IL', { 
     day: '2-digit',
     month: '2-digit',
@@ -35,6 +35,16 @@ export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
     path: `/orders/?${params.toString()}`,
   });
 };
+
+export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
+
+
+  return apiClient<OrderStatus[]>({
+    method: 'GET',
+    path: `/orders/statuses`,
+  });
+};
+
 
 
 export const updateOrderStatus = async (

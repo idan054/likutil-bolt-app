@@ -7,7 +7,8 @@ import { DeliveryCompanyInfo } from './selector/DeliveryCompanyInfo';
 import { useDeliveryIntegrations } from '../../hooks/settings/useDeliveryIntegrations';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { DeliveryTaskResponse } from '../../services/delivery/types';
-import { Ban, CheckCheck, CheckCircle, Loader2 } from 'lucide-react';
+import { Ban, CheckCheck, CheckCircle, Loader2, Tag, Tags } from 'lucide-react';
+import { updateOrderStatus } from '../../services/orders/orders.service';
 
 
 interface DeliverySelectorProps {
@@ -20,6 +21,7 @@ interface DeliverySelectorProps {
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
+  orderId?: string; // Add orderId prop
 }
 
 export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
@@ -32,9 +34,11 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   deliveryResponse,
   onComplete,
   isCompleting,
+  orderId
 }) => {
   const { customer, isLoading: isLoadingCustomer } = useCustomerDetails(customerId);
   const { integrations, savedData } = useDeliveryIntegrations();
+  const [selectedStatus, setSelectedStatus] = React.useState('');
   
   // Create a set of connected provider IDs
   const connectedProviders = new Set(
@@ -47,6 +51,19 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   const selectedIntegration = integrations.find(
     integration => integration.id === selectedProvider
   );
+
+  const handleComplete = async () => {
+    if (orderId && selectedStatus) {
+      try {
+        await updateOrderStatus(orderId, selectedStatus);
+        await onComplete();
+      } catch (error) {
+        console.error('Failed to update order status:', error);
+      }
+    } else {
+      await onComplete();
+    }
+  };
 
   return (
     <div className="mb-6">
@@ -83,26 +100,36 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
 
     {/* Add spacing */}
     <div className="h-8"></div>
+{/* 
 
-{!selectedProvider && (
-        <button
-          onClick={onComplete}
-          disabled={isCompleting}
-                    className="flex items-center justify-center gap-2 bg-[#eff6ff] text-[#2563eb] px-6 py-3 rounded-lg hover:bg-blue-100 transition-colors min-w-[120px] font-normal mr-auto disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isCompleting ? (
-            <Loader2 className="animate-spin" size={20} />
-          ) : (
-            <CheckCheck size={24} />
-            // <CheckCircle size={20} />
-            // <Ban size={20} />
-          )}
-          <span>סיום מהיר</span>
-        </button>
-      )}
- 
-
-
+      {!selectedProvider && (
+        <div className="flex items-center gap-4">
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 min-w-[200px]"
+          >
+            <option value="">בחר סטטוס</option>
+            {orderStatuses.map((status) => (
+              <option key={status.slug} value={status.slug}>
+                {status.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleComplete}
+            disabled={isCompleting}
+            className="flex items-center justify-center gap-2 bg-[#eff6ff] text-[#2563eb] px-6 py-3 rounded-lg hover:bg-blue-100 transition-colors min-w-[120px] font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCompleting ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <Tags size={24} />
+            )}
+            <span>עדכן</span>
+          </button>
+        </div>
+      )} */}
     </div>
   );
 };

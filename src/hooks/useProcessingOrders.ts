@@ -97,22 +97,22 @@ export const useProcessingOrders = () => {
   );
 
 
-  // Setup periodic refresh with initial delay
-  useEffect(() => {
-    // Initial delay of 30 seconds before starting the interval
-    const startupDelay = setTimeout(() => {
-      console.log('Starting periodic order refresh...');
+  // // Setup periodic refresh with initial delay
+  // useEffect(() => {
+  //   // Initial delay of 30 seconds before starting the interval
+  //   const startupDelay = setTimeout(() => {
+  //     console.log('Starting periodic order refresh...');
       
-      const intervalId = setInterval(() => {
-        fetchOrders(true); // Show notification on background updates
-      }, REFRESH_INTERVAL);
+  //     const intervalId = setInterval(() => {
+  //       fetchOrders(true); // Show notification on background updates
+  //     }, REFRESH_INTERVAL);
 
-      return () => clearInterval(intervalId);
-    }, 15000); // 15 seconds delay
+  //     return () => clearInterval(intervalId);
+  //   }, 15000); // 15 seconds delay
 
-    // Cleanup both the delay and interval
-    return () => clearTimeout(startupDelay);
-  }, [fetchOrders]);
+  //   // Cleanup both the delay and interval
+  //   return () => clearTimeout(startupDelay);
+  // }, [fetchOrders]);
 
   // Listen for settings changes
   useEffect(() => {

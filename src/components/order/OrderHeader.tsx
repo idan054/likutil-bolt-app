@@ -46,7 +46,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
             role={customer?.role} 
             isLoading={isLoading}
           />
-          <StatusBadge status={status} />
+          <StatusBadge status={status} orderId={order.id.toString()} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>
 

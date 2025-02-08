@@ -79,3 +79,8 @@ export interface OrderDetails extends OrderSummary {
   payment_method: string;
   payment_method_title: string;
 }
+
+export interface OrderStatus {
+  slug: string;
+  name: string;
+}

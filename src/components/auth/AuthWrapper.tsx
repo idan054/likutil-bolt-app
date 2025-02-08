@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { SettingsModal } from '../settings/SettingsModal';
 import { useSettings } from '../../hooks/useSettings';
 
+
 interface AuthWrapperProps {
   children: React.ReactNode;
 }
@@ -14,6 +15,8 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [user] = useAuthState(auth);
   const { settings, isLoading: isLoadingSettings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
+
+  
 
   // Only show settings modal for authenticated users without settings
   useEffect(() => {
