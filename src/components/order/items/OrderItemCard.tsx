@@ -4,6 +4,7 @@ import { ProductDetails } from './ProductDetails';
 import { useSettings } from '../../../hooks/useSettings';
 import { getProductUrl } from '../../../utils/product';
 import type { LineItem } from '../../../types/order';
+import { QuantityBadge } from '../../ui/QuantityBadge';
 
 interface OrderItemCardProps {
   item: LineItem;
@@ -14,6 +15,9 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({ item }) => {
   const productUrl = getProductUrl(settings?.storeUrl, item.product_data?.permalink);
 
   return (
+
+
+    
     <a 
       href={productUrl}
       target="_blank"
@@ -21,6 +25,8 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({ item }) => {
       className="flex justify-between items-center border-b pb-3 p-2 rounded-lg transition-colors hover:bg-blue-50 group"
     >
       <div className="flex items-center gap-4 flex-1">
+
+
         <ProductImage src={item.image?.src} alt={item.name} />
         <ProductDetails 
           name={item.name}
@@ -29,9 +35,20 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({ item }) => {
           stockQuantity={item.product_data?.stock_quantity}
         />
       </div>
-      <span className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">
-        ₪{item.total}
-      </span>
+
+      
+      <div className="flex flex-col items-end gap-1">
+        
+        <QuantityBadge quantity={item.quantity} />
+
+
+        <span className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">
+           ₪{item.total}
+        </span>
+
+
+      </div>
+      
     </a>
   );
 };

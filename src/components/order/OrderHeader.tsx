@@ -6,8 +6,12 @@ import { translations } from '../../config/translations';
 import { formatDate } from '../../utils/date';
 import { RoleBadge } from '../ui/RoleBadge';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
+import { OrderSummary } from './OrderSummary';
+import type { OrderDetails as OrderDetailType } from '../../types/order';
+
 
 interface OrderHeaderProps {
+  order: OrderDetailType;
   id: number;
   status: string;
   dateCreated: string;
@@ -17,6 +21,7 @@ interface OrderHeaderProps {
 }
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ 
+  order,
   id, 
   status, 
   dateCreated,
@@ -44,11 +49,21 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
           <StatusBadge status={status} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>
+
+
+
+
       </div>
       <h2 className="text-2xl font-bold">{translations.orderNumber} #{id}</h2>
+
       <p className="text-gray-600 mt-1">
         {translations.orderedOn} {formatDate(dateCreated)}
       </p>
+    
+
+
+
+      
     </div>
   );
 };

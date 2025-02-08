@@ -14,10 +14,11 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { CheckCircle, Loader2, Printer, Truck } from "lucide-react";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
+import type { OrderDetails as OrderDetailType } from '../types/order';
+
 
 interface OrderDetailsProps {
-  // order: OrderDetailsType;
-  order: any;
+  order: OrderDetailType;
   onReset: () => void;
   onComplete: () => void;
 }
@@ -83,6 +84,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
       >
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6" dir="rtl">
           <OrderHeader
+            order={order}
             id={order.id}
             status={order.status}
             dateCreated={order.date_created}
@@ -91,23 +93,40 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             onReset={onReset}
           />
           <CustomerNote note={order.customer_note} />
-          <ShippingMethod shippingLines={order.shipping_lines} />
+
+      
+          
           <OrderItems items={order.line_items} />
-          <CustomerSection billing={order.billing} />
+
           <OrderSummary
             shippingTotal={order.shipping_total}
             paymentMethod={order.payment_method_title}
             total={order.total}
           />
 
+    
+
+          <CustomerSection 
+          billing={order.billing}
+          shipping={order.shipping}
+          
+          />
+     
+
           <div className="mt-8">
             <OrderNotes
               orderId={order.id.toString()}
-              customerPhone={order.billing?.phone}
+              customerPhone={order.shipping?.phone ?? order.billing?.phone}
             />
           </div>
 
+          
+
+
           <div className="mt-4 border-t pt-6">
+
+          <ShippingMethod shippingLines={order.shipping_lines} />
+
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
                 isCompleting={isCompleting}

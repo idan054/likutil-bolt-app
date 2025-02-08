@@ -9,7 +9,7 @@ interface OrderItemsProps {
 
 export const OrderItems: React.FC<OrderItemsProps> = ({ items }) => (
   <div className="mt-6">
-    <h3 className="text-lg font-semibold mb-3">{translations.orderItems}</h3>
+    <h3 className="text-lg font-semibold mb-3">{items.length} {translations.orderItems}</h3>
     <div className="space-y-4">
       {items.map((item, index) => (
         <OrderItemCard key={index} item={item} />

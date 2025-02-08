@@ -3,7 +3,7 @@ export const translations = {
   subtitle: 'חפש הזמנה לפי מספר',
   searchPlaceholder: 'הזן מספר הזמנה...',
   orderNumber: 'הזמנה מספר',
-  orderedOn: 'הוזמן בתאריך',
+  orderedOn: 'הוזמן ב',
   customerDetails: 'פרטי לקוח',
   shippingAddress: 'כתובת למשלוח',
   shippingMethod: 'שיטת משלוח',

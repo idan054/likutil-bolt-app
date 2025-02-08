@@ -21,6 +21,8 @@ export const useOrderSearch = () => {
     setIsLoading(true);
     try {
       const result = await searchOrderById(orderId);
+
+
       setOrder(result);
     } catch (error) {
       console.error('[orders.search] Failed to find order:', error);
