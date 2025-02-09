@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Store, Truck, Save } from 'lucide-react';
 import { TabButton } from './TabButton';
 import { WooCommerceSettings } from './sections/WooCommerceSettings';
@@ -20,6 +20,7 @@ export const SettingsTabs: React.FC<SettingsTabsProps> = ({
   onSave,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('store');
+  const [showDeliveryTab, setShowDeliveryTab] = useState(false);
   const [formData, setFormData] = useState<SettingsFormData>(
     initialData || {
       storeUrl: '',
@@ -56,10 +57,11 @@ export const SettingsTabs: React.FC<SettingsTabsProps> = ({
             label="חיבור לחנות שלך"
             isActive={activeTab === 'store'}
             onClick={() => setActiveTab('store')}
+            onLongPress={() => setShowDeliveryTab(true)}
           />
 
           
-          {process.env.NODE_ENV === 'development' && (
+          {showDeliveryTab && (
             <TabButton
               icon={Truck}
               label="חיבור לחברות המשלוחים"
