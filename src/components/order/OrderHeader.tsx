@@ -3,7 +3,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { LocalPickupMarker } from './LocalPickupMarker';
 import { ArrowRight } from 'lucide-react';
 import { translations } from '../../config/translations';
-import { formatDate } from '../../utils/date';
+import { formatDate, formatDateWithTimeAgo } from '../../utils/date';
 import { RoleBadge } from '../ui/RoleBadge';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import { OrderSummary } from './OrderSummary';
@@ -57,7 +57,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
       <h2 className="text-2xl font-bold">{translations.orderNumber} #{id}</h2>
 
       <p className="text-gray-600 mt-1">
-        {translations.orderedOn} {formatDate(dateCreated)}
+        {translations.orderedOn} {formatDateWithTimeAgo(dateCreated)}
       </p>
     
 

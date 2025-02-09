@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Calendar, Package, Truck, CheckCircle, Clock } from 'lucide-react';
-import { formatShortDate } from '../../utils/date';
+import { formatShortDate, formatTimeAgo, formatDateWithTimeAgo } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
 import { TruncatedText } from '../ui/TruncatedText';
 import { RoleBadge } from '../ui/RoleBadge';
@@ -54,22 +54,30 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
           </div>
         </div>
         
-        {/* Right column with date, price, and customer type */}
-        <div className="text-left space-y-2">
-          <div className="flex items-center gap-1 text-gray-500 text-sm">
+    
+        <div className="text-left flex flex-col gap-2">
+
+          
+        <div className="inline-flex flex-row-reverse items-center gap-1 text-sm text-gray-500 ml-2">
+            <span>{formatTimeAgo(order.date_created)}</span>
             <Clock size={14} />
-            <span>{formatShortDate(order.date_created)}</span>
           </div>
-          <div className="text-sm text-gray-500">
+          
+{/* THRES TOO MANY SPACE HERE */}
+
+          <div className="text-left text-sm text-gray-500 ml-2 ">
             {formatCurrency(order.total)}
           </div>
+
           <div className="mt-1">
             <RoleBadge 
               role={customer?.role} 
               isLoading={isLoading}
             />
           </div>
+
         </div>
+
       </div>
     </div>
   );

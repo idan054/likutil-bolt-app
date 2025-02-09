@@ -114,16 +114,16 @@ export const useProcessingOrders = () => {
   // }, [fetchOrders]);
 
   // Listen for settings changes
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "wc_settings") {
-        fetchOrders(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleStorageChange = (e: StorageEvent) => {
+  //     if (e.key === "wc_settings") {
+  //       fetchOrders(false);
+  //     }
+  //   };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [fetchOrders]);
+  //   window.addEventListener("storage", handleStorageChange);
+  //   return () => window.removeEventListener("storage", handleStorageChange);
+  // }, [fetchOrders]);
 
   return {
     orders,
