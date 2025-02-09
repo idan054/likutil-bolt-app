@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
-import { useSettings } from './settings';
 import { useProcessingOrders } from './useProcessingOrders';
 import { toast } from 'react-hot-toast';
 import { UserSettings } from '../types/settings';
+import { useSettings } from './useSettings';
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);

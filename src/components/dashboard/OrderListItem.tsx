@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Calendar, Package, Truck, CheckCircle } from 'lucide-react';
+import { Calendar, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { formatShortDate } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
 import { TruncatedText } from '../ui/TruncatedText';
@@ -56,8 +56,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
         
         {/* Right column with date, price, and customer type */}
         <div className="text-left space-y-2">
-          <div className="flex items-center gap-1 text-gray-400 text-xs">
-            <Calendar size={14} />
+          <div className="flex items-center gap-1 text-gray-500 text-sm">
+            <Clock size={14} />
             <span>{formatShortDate(order.date_created)}</span>
           </div>
           <div className="text-sm text-gray-500">

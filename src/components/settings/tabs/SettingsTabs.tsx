@@ -57,12 +57,16 @@ export const SettingsTabs: React.FC<SettingsTabsProps> = ({
             isActive={activeTab === 'store'}
             onClick={() => setActiveTab('store')}
           />
-          <TabButton
-            icon={Truck}
-            label="חיבור לחברות המשלוחים"
-            isActive={activeTab === 'delivery'}
-            onClick={() => setActiveTab('delivery')}
-          />
+
+          
+          {process.env.NODE_ENV === 'development' && (
+            <TabButton
+              icon={Truck}
+              label="חיבור לחברות המשלוחים"
+              isActive={activeTab === 'delivery'}
+              onClick={() => setActiveTab('delivery')}
+            />
+          )}
         </div>
       </div>
 

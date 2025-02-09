@@ -3,10 +3,14 @@ import { toast } from "react-hot-toast";
 import { getProcessingOrders } from "../services/orders/orders.service";
 import { showErrorToast } from "../utils/error";
 import type { OrderSummary } from "../types/order";
+import { useSettings } from "./useSettings";
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 export const useProcessingOrders = () => {
+  const { settings } = useSettings();
+
+
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -19,12 +23,7 @@ export const useProcessingOrders = () => {
       isInitialFetch ? setIsLoading(true) : setIsRefetching(true);
       setError(null);
 
-      // Don't fetch if settings are not available
-      const settingsStr = localStorage.getItem("wc_settings");
-      if (!settingsStr) {
-        if (isInitialFetch) {
-          setOrders([]);
-        }
+      if(!settings){
         setIsLoading(false);
         setIsRefetching(false);
         return;
