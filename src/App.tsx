@@ -8,7 +8,8 @@ import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
-const APP_VERSION = '(09-02-25) Version 1';
+const APP_VERSION = '(09-02-25) Version 1 #83cebfc';
+const SUPPORT_SERVER_VERSION = '(09-02-25) Version 1 #c29a043';
 
 // FROM MAC
 export const App: React.FC = () => {
