@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Printer, Loader2, CheckCircle } from 'lucide-react';
+import { Package, Printer, Loader2, CheckCircle, Rocket } from 'lucide-react';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
 
 interface ActionButtonsProps {
@@ -27,9 +27,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         {isCreating ? (
           <Loader2 className="animate-spin" size={20} />
         ) : (
-          <Package size={20} />
+          // <Package size={20} />
+          <Rocket size={20} />
         )}
-        <span>פתח הזמנה</span>
+        {/* <span>פתח הזמנה</span> */}
+        <span>שגר משלוח בטיל!</span>
       </button>
     ) : (
       <>

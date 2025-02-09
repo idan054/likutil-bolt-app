@@ -45,7 +45,7 @@ export const useCustomerDetails = (customerId: number | null) => {
   useEffect(() => {
     if (customerId && !customerCache.has(customerId)) {
       // Only fetch if not in cache
-      const timer = setTimeout(fetchCustomer, 100);
+      const timer = setTimeout(fetchCustomer, 500);
       return () => clearTimeout(timer);
     }
   }, [customerId, fetchCustomer]);

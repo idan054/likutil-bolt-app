@@ -149,12 +149,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           </div>
         </div>
 
-        <LocalPickupAlert
+        {/* <LocalPickupAlert
           isOpen={showLocalPickupAlert}
           onConfirm={() => setShowLocalPickupAlert(false)}
           onCancel={() => setShowLocalPickupAlert(false)}
           orderId={order.id.toString()}
-        />
+        /> */}
+
+
       </motion.div>
     </AnimatePresence>
   );

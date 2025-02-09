@@ -12,7 +12,11 @@ import { useSuperOrder } from "../../hooks/useSuperOrder";
 import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 
-export const OrdersDashboard: React.FC = () => {
+interface OrdersDashboardProps {
+  version: string;
+}
+
+export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ version }) => {
   const { orders, isLoading, isRefetching } = useAppState();
   const { selectedOrderId, handleOrderSelect, handleReset } =
     useOrderSelection(orders);
@@ -112,6 +116,10 @@ export const OrdersDashboard: React.FC = () => {
         ) : (
           !isLoading && <EmptyState />
         )}
+
+<div className="text-gray-400 text-xs text-center mt-4">
+  {version}
+</div>
       </div>
     );
   };
