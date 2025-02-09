@@ -63,7 +63,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
             <Clock size={14} />
           </div>
           
-{/* THRES TOO MANY SPACE HERE */}
+
 
           <div className="text-left text-sm text-gray-500 ml-2 ">
             {formatCurrency(order.total)}
