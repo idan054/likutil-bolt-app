@@ -17,108 +17,120 @@ import { generateStorePassword } from '../../utils/auth/password';
 import { ApiError } from '../api/types';
 import { settingsStorage } from '../settings/storage';
 import type { WooAuthResponse } from '../../types/auth';
+import { deleteField } from 'firebase/firestore';
 
-interface WooAuthCallbackResponse {
-  consumer_key: string;
-  consumer_secret: string;
-  store_url: string;
-  user_id: string;
-  firebase_token?: string;
-  email?: string;
-}
 
-export const handleWooAuthCallback = async (code: string): Promise<void> => {
-  try {
-    const response = await fetch(
-      'https://api.likutil.co.il/woo-auth/callback',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
-      }
-    );
 
-    if (!response.ok) {
-      throw new ApiError({
-        requestUrl: '/api/woo-auth/callback',
-        requestMethod: 'POST',
-        requestHeaders: { 'Content-Type': 'application/json' },
-        responseStatus: response.status,
-        responseStatusText: response.statusText,
-        responseBody: await response.text(),
-      });
-    }
+// export const BASE_URL = (process.env.NODE_ENV === 'development') ? 'https://0.0.0.0:8000' : 'https://api.likutil.co.il';
+export const BASE_URL = 'https://api.likutil.co.il';
 
-    const data: WooAuthCallbackResponse = await response.json();
+// interface WooAuthCallbackResponse {
+//   consumer_key: string;
+//   consumer_secret: string;
+//   store_url: string;
+//   user_id: string;
+//   firebase_token?: string;
+//   email?: string;
+// }
 
-    // Save WooCommerce settings
-    settingsStorage.set({
-      storeUrl: data.store_url,
-      consumerKey: data.consumer_key,
-      consumerSecret: data.consumer_secret,
-    });
+// export const handleWooAuthCallback = async (code: string): Promise<void> => {
+//   try {
+//     const response = await fetch(
+//       `${BASE_URL}/woo-auth/callback`,
+//       {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ code }),
+//       }
+//     );
 
-    // Check if user exists and sign in
-    if (data.email) {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', data.email));
-      const snapshot = await getDocs(q);
+//     if (!response.ok) {
+//       throw new ApiError({
+//         requestUrl: '/api/woo-auth/callback',
+//         requestMethod: 'POST',
+//         requestHeaders: { 'Content-Type': 'application/json' },
+//         responseStatus: response.status,
+//         responseStatusText: response.statusText,
+//         responseBody: await response.text(),
+//       });
+//     }
 
-      // Get password from URL query params
-      const urlParams = new URLSearchParams(window.location.search);
-      const password = urlParams.get('pass');
+//     const data: WooAuthCallbackResponse = await response.json();
 
-      if (!password) {
-        throw new Error('Missing authentication password');
-      }
+//     // Save WooCommerce settings
+//     settingsStorage.set({
+//       storeUrl: data.store_url,
+//       consumerKey: data.consumer_key,
+//       consumerSecret: data.consumer_secret,
+//     });
 
-      if (!snapshot.empty) {
-        // Existing user - sign in with provided password
-        await signInWithEmailAndPassword(auth, data.email, password);
-      } else {
-        // New user - create account with provided password
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          data.email,
-          password
-        );
+//     // Check if user exists and sign in
+//     if (data.email) {
+//       const usersRef = collection(db, 'users');
+//       const q = query(usersRef, where('email', '==', data.email));
+//       const snapshot = await getDocs(q);
 
-        // Save user data
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-          email: data.email,
-          storeUrl: data.store_url,
-          createdAt: new Date().toISOString(),
-          wooUserId: data.user_id,
-          consumerKey: data.consumer_key,
-          consumerSecret: data.consumer_secret,
-          key_id: data.user_id,
-          key_permissions: 'read_write',
-        });
-      }
-    }
-  } catch (error) {
-    console.error('[woo-auth] Callback handling failed:', error);
-    throw error;
-  }
-};
+//       // Get password from URL query params
+//       const urlParams = new URLSearchParams(window.location.search);
+//       const password = urlParams.get('pass');
 
-export const checkExistingUser = async (storeUrl: string) => {
+//       if (!password) {
+//         throw new Error('Missing authentication password');
+//       }
+
+//       if (!snapshot.empty) {
+//         // Existing user - sign in with provided password
+//         await signInWithEmailAndPassword(auth, data.email, password);
+//       } else {
+//         // New user - create account with provided password
+//         const userCredential = await createUserWithEmailAndPassword(
+//           auth,
+//           data.email,
+//           password
+//         );
+
+//         // Save user data
+//         await setDoc(doc(db, 'users', userCredential.user.uid), {
+//           email: data.email,
+//           storeUrl: data.store_url,
+//           createdAt: new Date().toISOString(),
+//           wooUserId: data.user_id,
+//           consumerKey: data.consumer_key,
+//           consumerSecret: data.consumer_secret,
+//           key_id: data.user_id,
+//           key_permissions: 'read_write',
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     console.error('[woo-auth] Callback handling failed:', error);
+//     throw error;
+//   }
+// };
+
+export const checkExistingUser = async (storeUrl: string, oneTimeToken: string | undefined) => {
   const cleanUrl = sanitizeUrl(storeUrl);
+  
+  // If oneTimeToken is not defined: It will still finc the Relevant doc but only return .isExists
 
   try {
-    // Check if user exists in Firestore
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('storeUrl', '==', cleanUrl));
+    const q = query(usersRef,
+      where('storeUrl', '==', cleanUrl),
+      ...(oneTimeToken ? [where('oneTimeToken', '==', oneTimeToken)] : [])
+  );
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
       const userData = snapshot.docs[0].data();
       return {
         exists: true,
-        userId: snapshot.docs[0].id,
-        email: userData.email,
+        ...(oneTimeToken ? {
+          userId: snapshot.docs[0].id,
+          email: userData.email,
+        } : {})
       };
     }
 
@@ -177,6 +189,24 @@ export const signInWooUser = async (email: string, storeUrl: string) => {
     return true;
   } catch (error) {
     console.error('[woo-auth] Failed to sign in user:', error);
+    throw error;
+  }
+};
+
+
+export const resetUserOneTimeToken = async (userId: string): Promise<void> => {
+console.log('resetUserOneTimeToken')
+console.log('userId', userId)
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    await setDoc(userRef, {
+      oneTimeToken: deleteField()
+    }, { merge: true });
+    
+  } catch (error) {
+    console.error('[woo-auth] Failed to reset one-time token:', error);
     throw error;
   }
 };

@@ -10,6 +10,9 @@ import { useMessagingStore } from "../../../store/useMessagingStore";
 import { useSettings } from '../../../hooks/useSettings';
 import { settingsStorage } from '../../../services/settings/storage';
 import { UserSettings } from "../../../types/settings";
+import { BASE_URL } from "../../../services/auth/woo-auth";
+
+
 
 interface OrderNotesProps {
   orderId: string;
@@ -46,7 +49,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
         const whatsappMessage = `📝 שלום, נוספה הערה להזמנה שלך מ ${settings?.storeUrl} 🛍️\n\n${newNote.trim()}\n───────\n🤖 לא ניתן להשיב להודעה זו`;
 
         const whatsappNumber = customerPhone.replace(/\D/g, "");
-        const response = await fetch('https://api.likutil.co.il/api/send-whatsapp', {
+        const response = await fetch(`${BASE_URL}/api/send-whatsapp`, {
           method: 'POST',
           headers: {
             'accept': 'application/json',

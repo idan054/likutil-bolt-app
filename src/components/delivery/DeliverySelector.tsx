@@ -9,6 +9,7 @@ import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { DeliveryTaskResponse } from '../../services/delivery/types';
 import { Ban, CheckCheck, CheckCircle, Loader2, Tag, Tags } from 'lucide-react';
 import { updateOrderStatus } from '../../services/orders/orders.service';
+import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
 
 
 interface DeliverySelectorProps {
@@ -38,6 +39,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
 }) => {
   const { customer, isLoading: isLoadingCustomer } = useCustomerDetails(customerId);
   const { integrations, savedData } = useDeliveryIntegrations();
+  const { companies } = useDeliveryCompanies();
   const [selectedStatus, setSelectedStatus] = React.useState('');
   
   // Create a set of connected provider IDs
@@ -52,24 +54,12 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
     integration => integration.id === selectedProvider
   );
 
-  const handleComplete = async () => {
-    if (orderId && selectedStatus) {
-      try {
-        await updateOrderStatus(orderId, selectedStatus);
-        await onComplete();
-      } catch (error) {
-        console.error('Failed to update order status:', error);
-      }
-    } else {
-      await onComplete();
-    }
-  };
 
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-right">
-          {translations.deliveryOptions.title}
+          {companies.length == 1 ? translations.deliveryOptions.open : translations.deliveryOptions.title}
         </h3>
         <div className="flex items-center gap-2">
           <RoleBadge 

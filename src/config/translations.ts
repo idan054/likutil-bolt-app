@@ -37,6 +37,7 @@ export const translations = {
   },
   
   deliveryOptions: {
+    open: 'פתיחת משלוח',
     title: 'בחר חברת משלוחים',
     mahirLi: 'מהיר לי',
     cargo: 'Cargo',

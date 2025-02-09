@@ -3,6 +3,7 @@ import { SignInButton } from './SignInButton';
 import { WooAuthButton } from './WooAuthButton';
 import { SystemAdvantages } from '../layout/advantages/SystemAdvantages';
 import { Package, ShieldCheck, Zap } from 'lucide-react';
+import { APP_VERSION } from '../../App';
 
 export const LoginPage: React.FC = () => {
   return (
@@ -31,7 +32,9 @@ export const LoginPage: React.FC = () => {
               <SignInButton />
               <WooAuthButton />
               <p className="mt-4 text-sm text-gray-500">
-                כניסה מאובטחת ומוגנת v1
+                כניסה מאובטחת ומוגנת 
+                <br />
+                {APP_VERSION}
               </p>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { ApiError } from '../../api/types';
+import { BASE_URL } from '../../auth/woo-auth.ts';
 import { DeliveryTestRequest } from '../../../types/delivery';
 import {
   isSuccessfulDeliveryResponse,
@@ -6,7 +7,7 @@ import {
   getDeliveryErrorMessage,
 } from '../validation/response';
 
-const BASE_URL = 'https://api.likutil.co.il/api';
+
 
 const createTestRequest = (): DeliveryTestRequest => ({
   pack_num: '1',
@@ -45,7 +46,7 @@ export const testDeliveryConnection = async (
   try {
     // Use 'method' instead of 'Company' in the query params
     const response = await fetch(
-      `${BASE_URL}/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
+      `${BASE_URL}/api/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
       {
         method: 'POST',
         headers: {
@@ -72,7 +73,7 @@ export const testDeliveryConnection = async (
     }
 
     throw new ApiError({
-      requestUrl: `${BASE_URL}/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
+      requestUrl: `${BASE_URL}/api/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
       requestMethod: 'POST',
       requestBody: JSON.stringify(createTestRequest()),
       requestHeaders: {

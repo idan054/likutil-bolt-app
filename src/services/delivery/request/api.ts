@@ -1,4 +1,5 @@
 import { ApiError } from '../../api/types';
+import { BASE_URL } from '../../auth/woo-auth.ts';
 import { formatDateWithTimeAgo } from '../../../utils/date';
 import type { DeliveryIntegration } from '../../../types/delivery';
 
@@ -44,7 +45,8 @@ export const sendDeliveryRequest = async (
     to_email: 'idanbit80@gmail.com',
   };
 
-  const response = await fetch('https://api.likutil.co.il/api/send-email', {
+  
+  const response = await fetch(`${BASE_URL}/api/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(emailData),

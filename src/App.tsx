@@ -1,21 +1,20 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthWrapper } from './components/auth/AuthWrapper';
 import { OrdersDashboard } from './components/dashboard/OrdersDashboard';
 import { Header } from './components/layout/Header';
-import { NoSettings } from './components/settings/NoSettings';
 import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { DevPage } from './components/dev/DevPage';
 
-const APP_VERSION = '(09-02-25) Version 1 #83cebfc';
-const SUPPORT_SERVER_VERSION = '(09-02-25) Version 1 #c29a043';
+export const APP_VERSION = '(09-02-25) Version 3';
 
 // FROM MAC
 export const App: React.FC = () => {
   const { isInitialized, hasSettings, isLoading } = useAppState();
 
-  // Show simple loading spinner only during initial auth check
   if (isLoading && !isInitialized) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -24,26 +23,30 @@ export const App: React.FC = () => {
     );
   }
 
-  // After initialization, handle settings check
-  if (!hasSettings) {
-    return (
-      <AuthWrapper>
-        <NoSettings />
-      </AuthWrapper>
-    );
-  }
-
   return (
-    <AuthWrapper>
-      <div className="min-h-screen bg-gray-100" dir="rtl">
-        <Toaster position="top-left" />
-        <OfflineIndicator />
-        <div className="container mx-auto px-4 py-8">
-          <Header />
-          <OrdersDashboard version={APP_VERSION} />
-        </div>
-      </div>
-    </AuthWrapper>
+    <BrowserRouter>
+      <Routes>
+        <Route 
+          path="/dev" 
+          element={<DevPage />} 
+        />
+        <Route
+          path="/*"
+          element={
+            <AuthWrapper>
+              <div className="min-h-screen bg-gray-100" dir="rtl">
+                <Toaster position="top-left" />
+                <OfflineIndicator />
+                <div className="container mx-auto px-4 py-8">
+                  <Header />
+                  <OrdersDashboard version={APP_VERSION} />
+                </div>
+              </div>
+            </AuthWrapper>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 };
 

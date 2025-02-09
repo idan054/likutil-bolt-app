@@ -4,6 +4,8 @@ import {
   createWooUser,
   checkExistingUser,
   signInWooUser,
+  BASE_URL,
+  resetUserOneTimeToken,
 } from '../../services/auth/woo-auth';
 import { sanitizeUrl } from '../../utils/url';
 import { generateStorePassword } from '../../utils/auth/password';
@@ -21,16 +23,23 @@ export const WooAuthButton: React.FC = () => {
       const success = urlParams.get('success');
       const source = urlParams.get('source');
       const pass = urlParams.get('pass');
+      const oneTimeToken = urlParams.get('oneTimeToken');
 
-      if (success && source && pass) {
+
+      if (success && source && pass && oneTimeToken) {
         // Auto Firebase Login Logic Here
 
-        console.log('Auto Login with Source:', source, 'and Pass:', pass);
+        console.log('Auto Login with Source:', source, 'and Pass:', pass, 'Using oneTimeToken', oneTimeToken);
 
         try {
           const cleanUrl = sanitizeUrl(source);
-          const existingUser = await checkExistingUser(source);
+
+          const existingUser = await checkExistingUser(source, oneTimeToken);
+          
+          // Will login ONLY if the query PARAM is same as the Server oneTimeToken!
           await signInWooUser(existingUser.email, cleanUrl);
+          await resetUserOneTimeToken(existingUser.userId ??'')
+
         } catch (error) {
           console.error('Error during auto login:', error);
         }
@@ -46,17 +55,21 @@ export const WooAuthButton: React.FC = () => {
     }
   }, [showUrlInput]);
 
-  const openWooAuthPopup = (cleanUrl: string, firebaseId: string) => {
+  const openWooAuthPopup = (cleanUrl: string) => {
+    const host = (process.env.NODE_ENV === 'development') ? 'https://likutil.co.il/dev' : 'https://likutil.co.il';
+
+    const oneTimeToken = Math.random().toString(36).substring(2, 8).toUpperCase();
     const password = generateStorePassword(cleanUrl);
-    const returnUrl = `https://likutil.co.il/?success&pass=${encodeURIComponent(
+    const returnUrl = `${host}/?success&pass=${encodeURIComponent(
       password
-    )}&source=${encodeURIComponent(cleanUrl)}`;
+    )}&source=${encodeURIComponent(cleanUrl)}&oneTimeToken=${oneTimeToken}`;
 
     const wooAuthUrl = `https://${cleanUrl}/wc-auth/v1/authorize?app_name=Likutil&scope=read_write&user_id=1&return_url=${encodeURIComponent(
       returnUrl
-    )}&callback_url=https://api.likutil.co.il/woo-auth-callback?source=${cleanUrl}&firebaseId=${firebaseId}`;
+    )}&callback_url=${BASE_URL}/woo-auth-callback?source=${cleanUrl}/${oneTimeToken}`;
 
-    window.location.href = wooAuthUrl; // Directly navigate to the authorization URL
+    // window.location.href = wooAuthUrl; // Current Tab
+    window.open(wooAuthUrl, '_blank'); // Opens in new tab
   };
 
   const handleWooAuth = async () => {
@@ -69,7 +82,7 @@ export const WooAuthButton: React.FC = () => {
       const cleanUrl = sanitizeUrl(storeUrl);
 
       // Check if user exists
-      const existingUser = await checkExistingUser(cleanUrl);
+      const existingUser = await checkExistingUser(cleanUrl, undefined);
       console.log('existingUser');
       console.log(existingUser.exists);
 
@@ -79,7 +92,7 @@ export const WooAuthButton: React.FC = () => {
         // await signInWooUser(existingUser.email, cleanUrl);
         // openWooAuthPopup(cleanUrl, existingUser.userId);
 
-        openWooAuthPopup(cleanUrl, '1');
+        openWooAuthPopup(cleanUrl);
       } else {
         toast.loading('יוצר משתמש חדש...', { id: toastId });
 
@@ -88,7 +101,7 @@ export const WooAuthButton: React.FC = () => {
           storeUrl
         );
 
-        openWooAuthPopup(newCleanUrl, firebaseId);
+        openWooAuthPopup(newCleanUrl);
       }
     } catch (error) {
       console.error('[WooAuthButton] Auth failed:', error);
