@@ -135,6 +135,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
               />
             ) : (
               <DeliverySelector
+                order={order}
                 onSelect={setSelectedDeliveryProvider}
                 selectedProvider={selectedDeliveryProvider}
                 customerId={order.customer_id}

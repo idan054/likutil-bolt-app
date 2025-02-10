@@ -6,10 +6,11 @@ import { showErrorToast } from '../utils/error';
 import { successMessages } from '../config/messages/success';
 // import type { OrderDetails } from '../types/order';
 import type { DeliveryTaskResponse } from '../services/delivery/types';
+import { OrderDetails } from '../types/order';
 
 interface UseDeliveryCreationProps {
-  // order: OrderDetails;
-  order: any;
+  order: OrderDetails;
+  // order: any;
   provider: string;
   onSuccess: () => void;
 }

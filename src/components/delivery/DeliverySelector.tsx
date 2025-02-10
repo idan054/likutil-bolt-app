@@ -10,9 +10,11 @@ import type { DeliveryTaskResponse } from '../../services/delivery/types';
 import { Ban, CheckCheck, CheckCircle, Loader2, Tag, Tags } from 'lucide-react';
 import { updateOrderStatus } from '../../services/orders/orders.service';
 import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
+import { OrderDetails } from '../../types/order';
 
 
 interface DeliverySelectorProps {
+  order: OrderDetails;
   onSelect: (provider: string) => void;
   selectedProvider: string | null;
   customerId: number | null;
@@ -26,6 +28,7 @@ interface DeliverySelectorProps {
 }
 
 export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
+  order,
   onSelect,
   selectedProvider,
   customerId,
@@ -37,6 +40,8 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   isCompleting,
   orderId
 }) => {
+  
+
   const { customer, isLoading: isLoadingCustomer } = useCustomerDetails(customerId);
   const { integrations, savedData } = useDeliveryIntegrations();
   const { companies } = useDeliveryCompanies();
@@ -77,7 +82,8 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
       />
 
       {selectedIntegration && (
-        <DeliveryCompanyInfo 
+        <DeliveryCompanyInfo
+        order={order} 
           integration={selectedIntegration}
           apiKey={savedData[selectedIntegration.id]?.key}
           isCreating={isCreating}
@@ -88,38 +94,9 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         />
       )}
 
-    {/* Add spacing */}
-    <div className="h-8"></div>
-{/* 
+    
+    
 
-      {!selectedProvider && (
-        <div className="flex items-center gap-4">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 min-w-[200px]"
-          >
-            <option value="">בחר סטטוס</option>
-            {orderStatuses.map((status) => (
-              <option key={status.slug} value={status.slug}>
-                {status.name}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleComplete}
-            disabled={isCompleting}
-            className="flex items-center justify-center gap-2 bg-[#eff6ff] text-[#2563eb] px-6 py-3 rounded-lg hover:bg-blue-100 transition-colors min-w-[120px] font-normal disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCompleting ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              <Tags size={24} />
-            )}
-            <span>עדכן</span>
-          </button>
-        </div>
-      )} */}
     </div>
   );
 };

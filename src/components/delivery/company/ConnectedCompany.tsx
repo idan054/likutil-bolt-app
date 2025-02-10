@@ -9,8 +9,10 @@ import { CompanyLinks } from './CompanyLinks';
 import { DeliveryAddress } from './address/DeliveryAddress';
 import type { DeliveryIntegration } from '../../../types/delivery';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
+import { OrderDetails } from '../../../types/order';
 
 interface ConnectedCompanyProps {
+  order: OrderDetails;
   integration: DeliveryIntegration;
   apiKey?: string;
   isCreating: boolean;
@@ -21,6 +23,7 @@ interface ConnectedCompanyProps {
 }
 
 export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
+  order,
   integration,
   apiKey,
   isCreating,
@@ -29,10 +32,12 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   onComplete,
   isCompleting,
 }) => {
+  const [packageCount, setPackageCount] = React.useState<number>(1);
+
   // This would come from your settings or context in a real app
   const businessAddress = {
-    address: "ויצמן 90",
-    city: "תל אביב"
+    address: order.shipping.address_1,
+    city: order.shipping.city,
   };
 
   return (
@@ -52,7 +57,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           
           <PackageCounter 
             isCreating={isCreating}
-            onCountChange={count => onCreateDelivery(count.toString())}
+            onCountChange={setPackageCount}
           />
 
           <DeliveryAddress 
@@ -70,7 +75,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             deliveryResponse={deliveryResponse}
             isCreating={isCreating}
             isCompleting={isCompleting}
-            onCreateDelivery={onCreateDelivery}
+            onCreateDelivery={() => onCreateDelivery(packageCount.toString())}
             onComplete={onComplete}
           />
           

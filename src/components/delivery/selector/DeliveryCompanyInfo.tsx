@@ -3,8 +3,11 @@ import { ConnectedCompany } from '../company/ConnectedCompany';
 import { NonConnectedCompany } from '../company/NonConnectedCompany';
 import type { DeliveryIntegration } from '../../../types/delivery';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
+import { OrderDetails } from '../../../types/order';
+
 
 interface DeliveryCompanyInfoProps {
+  order: OrderDetails;
   integration: DeliveryIntegration;
   apiKey?: string;
   isCreating: boolean;
@@ -15,6 +18,7 @@ interface DeliveryCompanyInfoProps {
 }
 
 export const DeliveryCompanyInfo: React.FC<DeliveryCompanyInfoProps> = ({
+  order,
   integration,
   ...props
 }) => {
@@ -22,5 +26,5 @@ export const DeliveryCompanyInfo: React.FC<DeliveryCompanyInfoProps> = ({
     return <NonConnectedCompany integration={integration} />;
   }
 
-  return <ConnectedCompany integration={integration} {...props} />;
+  return <ConnectedCompany order={order} integration={integration} {...props} />;
 };
