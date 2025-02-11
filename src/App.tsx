@@ -9,7 +9,7 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
-export const APP_VERSION = '(09-02-25) Version 3';
+export const APP_VERSION = '(10-02-25) Version 1';
 
 // FROM MAC
 export const App: React.FC = () => {
@@ -39,7 +39,7 @@ export const App: React.FC = () => {
                 <OfflineIndicator />
                 <div className="container mx-auto px-4 py-8">
                   <Header />
-                  <OrdersDashboard version={APP_VERSION} />
+                  <OrdersDashboard />
                 </div>
               </div>
             </AuthWrapper>

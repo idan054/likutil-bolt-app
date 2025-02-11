@@ -4,6 +4,7 @@ import { WooAuthButton } from './WooAuthButton';
 import { SystemAdvantages } from '../layout/advantages/SystemAdvantages';
 import { Package, ShieldCheck, Zap } from 'lucide-react';
 import { APP_VERSION } from '../../App';
+import { AppInfoStatus } from '../ui/AppInfoStatus';
 
 export const LoginPage: React.FC = () => {
   return (
@@ -34,11 +35,13 @@ export const LoginPage: React.FC = () => {
               <p className="mt-4 text-sm text-gray-500">
                 כניסה מאובטחת ומוגנת 
                 <br />
-                {APP_VERSION}
+                {/* {APP_VERSION} */}
               </p>
+
             </div>
           </div>
 
+              <AppInfoStatus/>
           {/* Rest of the component remains the same */}
         </div>
       </div>

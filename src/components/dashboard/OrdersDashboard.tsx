@@ -11,12 +11,13 @@ import { useAppState } from "../../hooks/useAppState";
 import { useSuperOrder } from "../../hooks/useSuperOrder";
 import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
+import { AppInfoStatus } from "../ui/AppInfoStatus";
 
 interface OrdersDashboardProps {
-  version: string;
+  
 }
 
-export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ version }) => {
+export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   const { orders, isLoading, isRefetching } = useAppState();
   const { selectedOrderId, handleOrderSelect, handleReset } =
     useOrderSelection(orders);
@@ -117,9 +118,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ version }) => 
           !isLoading && <EmptyState />
         )}
 
-<div className="text-gray-400 text-xs text-center mt-4">
-  {version}
-</div>
+      <AppInfoStatus/>
       </div>
     );
   };
