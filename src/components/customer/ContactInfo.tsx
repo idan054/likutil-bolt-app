@@ -9,7 +9,7 @@ interface ContactInfoProps {
 }
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
-  const { toggleWhatsAppNote, toggleCustomerNote } = useMessagingStore();
+  const { toggleWhatsAppNote, toggleCustomerNote, setWhatsAppNote } = useMessagingStore();
   const hasEmail = email && email.trim().length > 0;
 
   return (
@@ -41,8 +41,13 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
       {phone && (
         <div className="flex items-center gap-2">
           <a
-            href={`tel:${phone}`}
-            className="text-gray-700 hover:text-blue-600 flex-1"
+            // href={`tel:${phone}`}
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setWhatsAppNote(true);
+            }}
+            className="text-gray-700 hover:text-green-600 flex-1"
           >
             {phone}
           </a>
@@ -50,7 +55,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              toggleWhatsAppNote();
+              setWhatsAppNote(true);
             }}
             className="text-green-600 hover:text-green-700"
             title="צור קשר בוואטסאפ"
