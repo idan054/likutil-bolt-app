@@ -7,3 +7,10 @@ export const getCustomerById = async (customerId: number): Promise<CustomerDetai
     path: `/customers/${customerId}`,
   });
 };
+
+export const getCustomersByIds = async (customerIds: number[]): Promise<CustomerDetails[]> => {
+  return apiClient<CustomerDetails[]>({
+    method: 'GET',
+    path: `/customers?include=${customerIds.join(',')}`,
+  });
+};
