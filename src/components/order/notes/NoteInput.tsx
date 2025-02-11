@@ -63,8 +63,8 @@ export const NoteInput: React.FC<NoteInputProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Templates Toggle Button - Only show if there are templates */}
-      {messages.length > 0 && (
+    
+      {/* {messages.length > 0 && ( */}
         <button
           onClick={onToggleTemplates}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
@@ -77,7 +77,9 @@ export const NoteInput: React.FC<NoteInputProps> = ({
           />
           <span>תבניות שמורות ({messages.length})</span>
         </button>
-      )}
+       {/* )} */}
+
+
 
       {/* Saved Templates Carousel */}
       {messages.length > 0 && (
