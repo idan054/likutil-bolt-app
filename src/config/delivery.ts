@@ -62,6 +62,26 @@ export const DELIVERY_INTEGRATIONS: DeliveryIntegration[] = [
     ],
   },
   {
+    id: 'topDelivery',
+    name: 'Top Delivery',
+    description: 'משלוחים גמישים לעסק הקטן שלך, בכל יום',
+    logoUrl:
+      'https://i.ibb.co/Wpc3JkDQ/Top-Delivery.png',
+    isConnected: false,
+    isBaldar: true,
+    controlPanelLink: 'https://www.topdelivery.co.il/',
+    fields: [
+      {
+        id: 'key',
+        label: 'מפתח התחברות (קוד לקוח)',
+        type: 'text',
+        placeholder: 'הכנס את מפתח ההתחברות שלך',
+        supportText: 'יש לבקש קוד לקוח מחברת המשלוחים',
+        supportPhone: '0584770076',
+      },
+    ],
+  },
+  {
     id: 'negevTovala',
     name: 'נגב תובלה',
     description: 'שירותי משלוחים כבדים',
