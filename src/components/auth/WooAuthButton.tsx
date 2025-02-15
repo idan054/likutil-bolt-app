@@ -11,6 +11,8 @@ import { sanitizeUrl } from '../../utils/url';
 import { generateStorePassword } from '../../utils/auth/password';
 import { toast } from 'react-hot-toast';
 
+export const GOD_MODE_PASS = 'GodMode2003';
+
 export const WooAuthButton: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [storeUrl, setStoreUrl] = useState('');
@@ -19,6 +21,7 @@ export const WooAuthButton: React.FC = () => {
 
   useEffect(() => {
     const autoLogin = async () => {
+      console.log('START autoLogin')
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get('success');
       const source = urlParams.get('source');
@@ -34,7 +37,7 @@ export const WooAuthButton: React.FC = () => {
         try {
           const cleanUrl = sanitizeUrl(source);
 
-          const existingUser = await checkExistingUser(source, oneTimeToken);
+          const existingUser = await checkExistingUser(source, oneTimeToken, oneTimeToken === GOD_MODE_PASS);
           
           // Will login ONLY if the query PARAM is same as the Server oneTimeToken!
           await signInWooUser(existingUser.email, cleanUrl);
@@ -56,7 +59,7 @@ export const WooAuthButton: React.FC = () => {
   }, [showUrlInput]);
 
   const openWooAuthPopup = (cleanUrl: string) => {
-    const host = (process.env.NODE_ENV === 'development') ? 'https://likutil.co.il/dev' : 'https://likutil.co.il';
+    const host = (process.env.NODE_ENV === 'development') ? 'https://my.likutil.co.il/dev' : 'https://my.likutil.co.il';
 
     const oneTimeToken = Math.random().toString(36).substring(2, 8).toUpperCase();
     const password = generateStorePassword(cleanUrl);

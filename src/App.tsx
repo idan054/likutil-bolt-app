@@ -9,7 +9,7 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
-export const APP_VERSION = '(11-02-25) Version 1';
+export const APP_VERSION = '(14-02-25) Version 2';
 
 // FROM MAC
 export const App: React.FC = () => {

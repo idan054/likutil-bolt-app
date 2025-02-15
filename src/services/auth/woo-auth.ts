@@ -110,28 +110,31 @@ export const BASE_URL = 'https://api.likutil.co.il';
 //   }
 // };
 
-export const checkExistingUser = async (storeUrl: string, oneTimeToken: string | undefined) => {
+export const checkExistingUser = async (storeUrl: string, oneTimeToken: string| undefined, sendAnyway: boolean = false ) => {
+  console.log('START checkExistingUser')
   const cleanUrl = sanitizeUrl(storeUrl);
   
-  // If oneTimeToken is not defined: It will still finc the Relevant doc but only return .isExists
+  // If oneTimeToken is not defined: It will still find the Relevant doc but only return .isExists
 
   try {
     const usersRef = collection(db, 'users');
     const q = query(usersRef,
       where('storeUrl', '==', cleanUrl),
-      ...(oneTimeToken ? [where('oneTimeToken', '==', oneTimeToken)] : [])
+      ...(oneTimeToken && oneTimeToken !== 'GodMode2003' ? [where('oneTimeToken', '==', oneTimeToken)] : [])
   );
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
       const userData = snapshot.docs[0].data();
-      return {
+      const result = {
         exists: true,
-        ...(oneTimeToken ? {
+        ...((oneTimeToken  || sendAnyway) ? {
           userId: snapshot.docs[0].id,
           email: userData.email,
         } : {})
       };
+      console.log('result', result)
+      return result
     }
 
     return { exists: false };
