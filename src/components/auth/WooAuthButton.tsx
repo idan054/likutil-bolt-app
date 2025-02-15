@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Store, ArrowRightCircle, Loader2 } from 'lucide-react';
+import { ArrowRightCircle, Loader2 } from 'lucide-react';
 import {
   createWooUser,
   checkExistingUser,
@@ -118,21 +118,35 @@ export const WooAuthButton: React.FC = () => {
     return (
       <button
         onClick={() => setShowUrlInput(true)}
-        className="group relative w-full flex items-center justify-center gap-3 px-8 py-4 bg-purple-50 text-purple-700 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-100 transition-all duration-200 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 mt-4"
+        className="group relative w-full flex items-center justify-center gap-3 px-8 py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 mb-0 mt-4"
       >
-        <Store className="w-6 h-6 transition-transform group-hover:scale-110" />
-        <span className="font-medium">התחבר עם WooCommerce</span>
+        <span className="font-bold mb-1">התחבר עם</span>
+        <img
+          src="/src/assets/svg/full-woo-white.svg"
+          alt="WooCommerce Logo"
+          className="h-8 transition-transform group-hover:scale-110"
+        />
       </button>
+
+      
     );
   }
 
   return (
-    <div className="mt-4 space-y-3">
-      <div className="group relative w-full flex gap-4 bg-purple-50 p-2 rounded-xl border-2 border-purple-200 transition-all duration-200 shadow-lg hover:shadow-xl hover:border-purple-400">
+    <div className="mt-4 space-y-3 relative">
+      <button
+        onClick={() => setShowUrlInput(false)}
+        className="absolute left-0 -top-5 text-gray-300 hover:text-gray-600 text-sm font-medium transition-colors duration-200 hover:underline"
+        disabled={isLoading}
+      >
+        ←
+      </button>
+
+      <div className="group relative w-full flex gap-4 bg-gray-50 p-2 rounded-xl border-2 border-gray-200 transition-all duration-200 shadow-lg hover:shadow-xl hover:border-gray-300">
         <button
           onClick={handleWooAuth}
           disabled={!storeUrl.trim() || isLoading}
-          className="text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110"
+          className="text-gray-600 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110"
         >
           {isLoading ? (
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -147,19 +161,11 @@ export const WooAuthButton: React.FC = () => {
           placeholder="example.co.il"
           value={storeUrl}
           onChange={(e) => setStoreUrl(sanitizeUrl(e.target.value))}
-          className="flex-1 px-2 py-2 text-[20px] font-medium text-purple-700 placeholder-opacity-50 placeholder-purple-600 bg-purple-50 rounded-lg text-left outline-none focus:ring-0 transition-all duration-200"
+          className="flex-1 px-2 py-2 text-[20px] font-medium text-gray-700 placeholder-opacity-50 placeholder-gray-600 bg-gray-50 rounded-lg text-left outline-none focus:ring-0 transition-all duration-200"
           dir="ltr"
           disabled={isLoading}
         />
       </div>
-
-      <button
-        onClick={() => setShowUrlInput(false)}
-        className="text-gray-600 hover:text-gray-700 text-sm font-medium transition-colors duration-200 hover:underline text-left"
-        disabled={isLoading}
-      >
-        חזור
-      </button>
     </div>
   );
 };

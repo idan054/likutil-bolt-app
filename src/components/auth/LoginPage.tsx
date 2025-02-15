@@ -1,48 +1,55 @@
 import React from 'react';
-import { SignInButton } from './SignInButton';
 import { WooAuthButton } from './WooAuthButton';
-import { SystemAdvantages } from '../layout/advantages/SystemAdvantages';
-import { Package, ShieldCheck, Zap } from 'lucide-react';
-import { APP_VERSION } from '../../App';
+import { ShieldCheck } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
+
+const CLOUD_BG = '/src/assets/images/clouds-bg-1.jpg';
 
 export const LoginPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="container mx-auto px-4 py-8 md:py-16">
-        <div className="max-w-6xl mx-auto">
-          {/* Logo and Title */}
-          <div className="text-center mb-8">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: `url(${CLOUD_BG})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      {/* Top-left logo */}
+      <div className="absolute top-6 right-8">
+        <img
+          src="/src/assets/images/white-text-logo.png"
+          alt="Likutil Logo"
+          className="h-10 w-auto opacity-75"
+        />
+      </div>
+      <div className="w-full max-w-lg bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl">
+        <div className="text-center">
+          <div className="bg-white/80 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
             <img
-              src="https://www.spider3d.co.il/wp-content/uploads/2024/12/Likutil-Logo-V2.png"
+              src="/src/assets/images/likutil-logo-rocket-only.png"
               alt="Likutil Logo"
-              className="h-40 mx-auto mb-6"
+              className="h-14 w-auto transform -rotate-[30deg] transition-transform duration-300 hover:scale-105"
             />
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              מערכת ניהול הזמנות חכמה לעסקים
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              ניהול משלוחים, מעקב הזמנות ותקשורת עם לקוחות בקליק אחד
-            </p>
           </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            הממשק המשופר
+          </h1>
+          <p className="text-gray-400 text-lg font-medium mb-8">
+          הממשק המשופר מייעל כל שלב בתהליך – מקבלת ההזמנה, דרך הליקוט ועד המשלוח וחוויית הלקוח
+          </p>
+        </div>
 
-          {/* Sign In Section */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-12 max-w-md mx-auto transform hover:scale-105 transition-transform duration-300">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-6">התחבר למערכת</h2>
-              <SignInButton />
-              <WooAuthButton />
-              <p className="mt-4 text-sm text-gray-500">
-                כניסה מאובטחת ומוגנת 
-                <br />
-                {/* {APP_VERSION} */}
-              </p>
-
-            </div>
+        <div className="space-y-6">
+          <WooAuthButton />
+          <div className="flex items-center gap-2 justify-center text-gray-500 text-sm bg-gray-50 py-2 px-4 rounded-lg">
+            <ShieldCheck size={16} className="text-green-500" />
+            <span>כניסה מאובטחת ומוגנת</span>
           </div>
+        </div>
 
-              <AppInfoStatus/>
-          {/* Rest of the component remains the same */}
+        <div className="mt-8 border-t pt-6">
+          <AppInfoStatus />
         </div>
       </div>
     </div>
