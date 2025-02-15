@@ -122,7 +122,7 @@ export const WooAuthButton: React.FC = () => {
       >
         <span className="font-bold mb-1">התחבר עם</span>
         <img
-          src="/src/assets/svg/full-woo-white.svg"
+          src="/assets/svg/full-woo-white.svg"
           alt="WooCommerce Logo"
           className="h-8 transition-transform group-hover:scale-110"
         />

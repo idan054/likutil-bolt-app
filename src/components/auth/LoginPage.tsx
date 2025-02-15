@@ -3,7 +3,7 @@ import { WooAuthButton } from './WooAuthButton';
 import { ShieldCheck } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
 
-const CLOUD_BG = '/src/assets/images/clouds-bg-1.jpg';
+const CLOUD_BG = '/assets/images/clouds-bg-1.jpg';
 
 export const LoginPage: React.FC = () => {
   return (
@@ -17,21 +17,25 @@ export const LoginPage: React.FC = () => {
     >
       {/* Top-left logo */}
       <div className="absolute top-6 right-8">
-        <img
-          src="/src/assets/images/white-text-logo.png"
-          alt="Likutil Logo"
-          className="h-10 w-auto opacity-75"
-        />
+        <a href="https://likutil.co.il" target="_self">
+          <img
+            src="/assets/images/white-text-logo.png"
+            alt="Likutil Logo"
+            className="h-10 w-auto opacity-75 cursor-pointer"
+          />
+        </a>
       </div>
       <div className="w-full max-w-lg bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl">
         <div className="text-center">
-          <div className="bg-white/80 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
-            <img
-              src="/src/assets/images/likutil-logo-rocket-only.png"
-              alt="Likutil Logo"
-              className="h-14 w-auto transform -rotate-[30deg] transition-transform duration-300 hover:scale-105"
-            />
-          </div>
+          <a href="https://likutil.co.il" target="_self" className="inline-block">
+            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
+              <img
+                src="/assets/images/likutil-logo-rocket-only.png"
+                alt="Likutil Logo"
+                className="h-14 w-auto transform -rotate-[30deg] transition-transform duration-300 hover:scale-105 cursor-pointer"
+              />
+            </div>
+          </a>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             הממשק המשופר
           </h1>
