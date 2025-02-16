@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowRightCircle, Loader2 } from 'lucide-react';
+import { ArrowRightCircle, Loader2, LogInIcon } from 'lucide-react';
 import {
   createWooUser,
   checkExistingUser,
@@ -15,7 +15,10 @@ export const GOD_MODE_PASS = 'GodMode2003';
 
 export const WooAuthButton: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
-  const [storeUrl, setStoreUrl] = useState('');
+  const [storeUrl, setStoreUrl] = useState(() => {
+    const cachedUrl = localStorage.getItem('woo_store_url');
+    return cachedUrl || '';
+  });
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -71,8 +74,8 @@ export const WooAuthButton: React.FC = () => {
       returnUrl
     )}&callback_url=${BASE_URL}/woo-auth-callback?source=${cleanUrl}/${oneTimeToken}`;
 
-    // window.location.href = wooAuthUrl; // Current Tab
-    window.open(wooAuthUrl, '_blank'); // Opens in new tab
+    window.location.href = wooAuthUrl; // Current Tab
+    // window.open(wooAuthUrl, '_blank'); // Opens in new tab
   };
 
   const handleWooAuth = async () => {
@@ -83,6 +86,7 @@ export const WooAuthButton: React.FC = () => {
 
     try {
       const cleanUrl = sanitizeUrl(storeUrl);
+      localStorage.setItem('woo_store_url', cleanUrl);
 
       // Check if user exists
       const existingUser = await checkExistingUser(cleanUrl, undefined);
@@ -148,20 +152,24 @@ export const WooAuthButton: React.FC = () => {
           disabled={!storeUrl.trim() || isLoading}
           className="text-gray-600 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110"
         >
-          {isLoading ? (
-            <Loader2 className="w-8 h-8 animate-spin" />
-          ) : (
-            <ArrowRightCircle className="w-8 h-8" />
-          )}
+          <div className={`p-2 rounded-full bg-gray-100 ${(!isLoading && storeUrl.trim()) ? 'text-blue-500' : ''}`}>
+            {isLoading ? (
+              <Loader2 className="w-8 h-8 animate-spin" />
+            ) : (
+              <LogInIcon className="w-8 h-8" />
+            )}
+          </div>
         </button>
 
         <input
           ref={inputRef}
           type="text"
-          placeholder="example.co.il"
+          placeholder="כתובת האתר שלך"
           value={storeUrl}
-          onChange={(e) => setStoreUrl(sanitizeUrl(e.target.value))}
-          className="flex-1 px-2 py-2 text-[20px] font-medium text-gray-700 placeholder-opacity-50 placeholder-gray-600 bg-gray-50 rounded-lg text-left outline-none focus:ring-0 transition-all duration-200"
+          onChange={(e) => setStoreUrl(e.target.value)}
+          className={`flex-1 px-2 py-2 text-[20px] font-medium text-gray-700 placeholder-opacity-50 placeholder-gray-600 bg-gray-50 rounded-lg outline-none focus:ring-0 transition-all duration-200 ${
+            storeUrl ? 'text-left' : 'text-right'
+          }`}
           dir="ltr"
           disabled={isLoading}
         />

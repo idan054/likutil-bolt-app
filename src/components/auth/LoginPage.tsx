@@ -28,7 +28,7 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-lg bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl">
         <div className="text-center">
           <a href="https://likutil.co.il" target="_self" className="inline-block">
-            <div className="bg-white/80 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
+            <div className="bg-white/99 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
               <img
                 src="/assets/images/likutil-logo-rocket-only.png"
                 alt="Likutil Logo"
