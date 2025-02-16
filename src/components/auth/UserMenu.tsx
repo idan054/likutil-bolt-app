@@ -5,20 +5,25 @@ import type { User } from '../../types/auth';
 interface UserMenuProps {
   user: User;
   onOpenSettings: () => void;
+  storeUrl?: string;  // Add this prop
 }
 
-export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings }) => (
+export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeUrl }) => (
   <div className="flex items-center gap-3">
-    {user.photoURL && (
-      <img
-        src={user.photoURL}
+    
+
+    
+    <span className="text-sm text-gray-700">
+      {storeUrl || user.email}
+    </span>
+
+    <img
+        // src={user.photoURL}
+        src={`https://www.google.com/s2/favicons?domain=${storeUrl}&sz=64`}
         alt={user.displayName || 'User avatar'}
         className="w-8 h-8 rounded-full"
       />
-    )}
-    <span className="text-sm text-gray-700">
-      {user.displayName || user.email}
-    </span>
+
     <button
       onClick={onOpenSettings}
       className="p-2 text-gray-500 hover:text-blue-600 transition-colors"

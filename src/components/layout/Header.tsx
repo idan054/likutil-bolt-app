@@ -30,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
           <UserMenu 
             user={currentUser} 
             onOpenSettings={() => setShowSettings(true)} 
+            storeUrl={settings?.storeUrl}
           />
         </div>
       )}

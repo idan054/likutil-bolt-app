@@ -10,6 +10,8 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
     
     if (docSnap.exists()) {
       const userData = docSnap.data();
+
+      // Get favicon to use it in const settings: UserSettings = {
       
       // Create settings object from user data
       const settings: UserSettings = {
@@ -17,6 +19,7 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
         consumerKey: userData.consumerKey,
         consumerSecret: userData.consumerSecret,
         lastUpdated: userData.lastLogin || userData.createdAt,
+        favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`
       };
 
       // Save to local storage for API client
