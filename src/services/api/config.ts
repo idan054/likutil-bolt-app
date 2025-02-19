@@ -13,8 +13,7 @@ export const getApiConfig = (): ApiConfig | null => {
     return null;
   }
 
-  const domain = storeUrl.startsWith('www.') ? storeUrl : `www.${storeUrl}`;
-  const baseUrl = `https://${domain}/wp-json/wc/v3`;
+  const baseUrl = `https://${storeUrl}/wp-json/wc/v3`;
   const auth = btoa(`${consumerKey}:${consumerSecret}`);
 
   return {

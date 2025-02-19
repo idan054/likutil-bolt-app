@@ -18,6 +18,7 @@ import { ApiError } from '../api/types';
 import { settingsStorage } from '../settings/storage';
 import type { WooAuthResponse } from '../../types/auth';
 import { deleteField } from 'firebase/firestore';
+import { QR_MODE_PASS } from '../../components/auth/WooAuthButton';
 
 
 
@@ -120,7 +121,7 @@ export const checkExistingUser = async (storeUrl: string, oneTimeToken: string| 
     const usersRef = collection(db, 'users');
     const q = query(usersRef,
       where('storeUrl', '==', cleanUrl),
-      ...(oneTimeToken && oneTimeToken !== 'GodMode2003' ? [where('oneTimeToken', '==', oneTimeToken)] : [])
+      ...(oneTimeToken && oneTimeToken !== QR_MODE_PASS ? [where('oneTimeToken', '==', oneTimeToken)] : [])
   );
     const snapshot = await getDocs(q);
 

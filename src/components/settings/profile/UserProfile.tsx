@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { LogOut } from 'lucide-react';
 import { auth } from '../../../config/firebase';
+import QRCode from 'react-qr-code';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { useAuth } from '../../../hooks/useAuth';
 
 export const UserProfile: React.FC = () => {
@@ -35,6 +38,21 @@ export const UserProfile: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* QR Code Section */}
+      {currentUser && (
+        <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+          <div className="flex justify-center">
+            <QRCode
+              value={`https://my.likutil.co.il/?source=${currentUser.email.split('@')[0]}&oneTimeToken=${Math.random().toString(36).substring(2, 8).toUpperCase()}`}
+              size={150}
+              level="H"
+              className="mx-auto"
+            />
+          </div>
+          <p className="mt-2 text-sm text-gray-600 text-center">סרוק להתחברות מהירה</p>
+        </div>
+      )}
 
       {/* Logout Button - Smaller on mobile */}
       <button

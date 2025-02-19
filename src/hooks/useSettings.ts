@@ -34,11 +34,14 @@ export const useSettings = () => {
   const [orderStatuses, setOrderStatuses] = useState<OrderStatus[]>(getStoredOrderStatuses());
 
   const fetchSettings = useCallback(async () => {
+    // console.log('[useSettings.ts] fetchSettings()')
     const userId = user?.uid;
     if (!userId) return;
 
     try {
       const userSettings = await getUserSettings(userId);
+      
+
 
       if (userSettings) {
         setSettings(userSettings);
@@ -50,6 +53,8 @@ export const useSettings = () => {
           setOrderStatuses(statuses);
           storeOrderStatuses(statuses);
         }
+
+        // console.log('[useSettings.ts] userSettings.storeUrl:', userSettings?.storeUrl)
       } else {
         settingsStorage.clear();
         setSettings(null);

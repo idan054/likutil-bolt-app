@@ -30,6 +30,8 @@ export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
      
       });
 
+    console.log('X getProcessingOrders()')
+
   return apiClient<OrderSummary[]>({
     method: 'GET',
     path: `/orders/?${params.toString()}`,
