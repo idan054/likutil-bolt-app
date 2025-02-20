@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-export const AddCompanyCard: React.FC = () => {
+export const RequestCompanyCard: React.FC = () => {
   const handleAddCompany = () => {
     const message = encodeURIComponent('שלום, אשמח שתוסיפו חברת משלוחים נוספת למערכת ליקוטיל');
     const whatsappUrl = `https://wa.me/972584770076?text=${message}`;

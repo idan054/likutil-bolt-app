@@ -2,7 +2,7 @@ export interface DeliveryField {
   id: string;
   label: string;
   type: 'text' | 'password';
-  placeholder: string;
+  placeholder?: string;
   supportText?: string;
   supportPhone?: string;
 }

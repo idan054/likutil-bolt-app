@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IntegrationCard } from './IntegrationCard';
-import { AddCompanyCard } from './AddCompanyCard';
+import { RequestCompanyCard } from './RequestCompanyCard';
+import { AddDeliveryCompanyCard } from './AddDeliveryCompanyCard';
 import { IntegrationDetails } from './IntegrationDetails';
 import type { DeliveryIntegration } from '../../../../../../types/delivery';
 
@@ -17,9 +18,15 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
   onSelect,
   savedData
 }) => {
+  const [editingIntegration, setEditingIntegration] = useState<DeliveryIntegration | null>(null);
+  
   const activeIntegrationDetails = activeIntegration 
     ? integrations.find(i => i.id === activeIntegration)
     : undefined;
+
+  const handleEdit = (integration: DeliveryIntegration) => {
+    setEditingIntegration(integration);
+  };
 
   return (
     <div className="space-y-6">
@@ -30,10 +37,19 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
             integration={integration}
             isActive={activeIntegration === integration.id}
             onClick={() => onSelect(integration.id)}
+            onEdit={handleEdit}
           />
         ))}
-        <AddCompanyCard />
+ 
+        <RequestCompanyCard />
       </div>
+
+      {(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && (
+          <AddDeliveryCompanyCard
+            editingIntegration={editingIntegration}
+            onSubmit={() => setEditingIntegration(null)}
+          />
+        )}
 
       {activeIntegration && activeIntegrationDetails && (
         <IntegrationDetails

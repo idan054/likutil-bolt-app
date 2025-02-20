@@ -1,15 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-hot-toast';
-import { auth } from '../../config/firebase';
-import { DELIVERY_INTEGRATIONS } from '../../config/delivery';
+import { auth, db } from '../../config/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { testDeliveryConnection } from '../../services/delivery/api/test';
 import {
   saveDeliverySettings,
   getDeliverySettings,
   removeDeliveryConnection,
 } from '../../services/delivery/storage/firebase';
-// import { USE_DEBUG_AUTH, DEBUG_USER } from '../../config/constants';
 import { showErrorToast } from '../../utils/error';
 import type {
   DeliveryIntegration,
@@ -27,9 +26,24 @@ export const useDeliveryIntegrations = () => {
   const [savedData, setSavedData] = useState<
     Record<string, Record<string, string>>
   >({});
-  const [integrations, setIntegrations] = useState<DeliveryIntegration[]>(
-    DELIVERY_INTEGRATIONS
-  );
+  const [integrations, setIntegrations] = useState<DeliveryIntegration[]>([]);
+
+  const loadDeliveryCompanies = useCallback(async () => {
+    try {
+      const companiesSnapshot = await getDocs(collection(db, 'delivery_companies'));
+      const companies: DeliveryIntegration[] = [];
+      
+      companiesSnapshot.forEach((doc) => {
+        companies.push({ id: doc.id, ...doc.data() } as DeliveryIntegration);
+      });
+
+      return companies;
+    } catch (error) {
+      console.error('[useDeliveryIntegrations] Failed to load companies:', error);
+      showErrorToast(error);
+      return [];
+    }
+  }, []);
 
   const loadSettings = useCallback(async () => {
     const userId = user?.uid;
@@ -38,10 +52,11 @@ export const useDeliveryIntegrations = () => {
     try {
       setIsLoading(true);
       const settings = await getDeliverySettings(userId);
+      const companies = await loadDeliveryCompanies();
 
-      if (settings?.connections) {
+      if (settings?.connections && companies.length > 0) {
         // Update integrations status
-        const updatedIntegrations = DELIVERY_INTEGRATIONS.map(
+        const updatedIntegrations = companies.map(
           (integration) => ({
             ...integration,
             isConnected: settings.connections.some(
@@ -59,6 +74,8 @@ export const useDeliveryIntegrations = () => {
           }
         });
         setSavedData(newSavedData);
+      } else {
+        setIntegrations(companies);
       }
     } catch (error) {
       console.error(
@@ -69,7 +86,7 @@ export const useDeliveryIntegrations = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, loadDeliveryCompanies]);
 
   useEffect(() => {
     loadSettings();

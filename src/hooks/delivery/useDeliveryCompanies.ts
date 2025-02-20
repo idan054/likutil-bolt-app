@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { db, auth } from '../../config/firebase';
-import { DELIVERY_INTEGRATIONS } from '../../config/delivery';
 import { filterCompaniesByIds } from '../../utils/delivery/companies';
 import type { DeliveryIntegration } from '../../types/delivery';
 
@@ -10,6 +9,22 @@ export const useDeliveryCompanies = () => {
   const [user] = useAuthState(auth);
   const [availableCompanies, setAvailableCompanies] = useState<DeliveryIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const loadDeliveryCompanies = useCallback(async () => {
+    try {
+      const companiesSnapshot = await getDocs(collection(db, 'delivery_companies'));
+      const companies: DeliveryIntegration[] = [];
+      
+      companiesSnapshot.forEach((doc) => {
+        companies.push({ id: doc.id, ...doc.data() } as DeliveryIntegration);
+      });
+
+      return companies;
+    } catch (error) {
+      console.error('[delivery.hooks] Failed to load companies:', error);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUserCompanies = async () => {
@@ -28,8 +43,9 @@ export const useDeliveryCompanies = () => {
           return;
         }
 
+        const companies = await loadDeliveryCompanies();
         const filteredCompanies = filterCompaniesByIds(
-          DELIVERY_INTEGRATIONS,
+          companies,
           userData.showOnlyCompanies
         );
         setAvailableCompanies(filteredCompanies);
@@ -42,7 +58,7 @@ export const useDeliveryCompanies = () => {
     };
 
     fetchUserCompanies();
-  }, [user]);
+  }, [user, loadDeliveryCompanies]);
 
   return {
     companies: availableCompanies,

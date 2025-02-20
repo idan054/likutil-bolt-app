@@ -57,24 +57,28 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {integration.fields[0]?.label || 'מפתח התחברות'}
-        </label>
-        <input
-          type="text"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg font-mono text-sm"
-          placeholder={integration.fields[0]?.placeholder || 'הזן את מפתח ההתחברות שלך'}
-          required
-          disabled={isLoading}
-        />
-        {integration.fields[0]?.supportText && (
-          <p className="mt-1 text-sm text-gray-500">
-            {integration.fields[0].supportText}
-          </p>
-        )}
+      <div className="space-y-4">
+        {integration.fields.map((field, index) => (
+          <div key={index}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {field?.label || 'מפתח התחברות'}
+            </label>
+            <input
+              type="text"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg font-mono text-sm"
+              placeholder={field?.placeholder || 'הזן את מפתח ההתחברות שלך'}
+              required
+              disabled={isLoading}
+            />
+            {field?.supportText && (
+              <p className="mt-1 text-sm text-gray-500">
+                {field.supportText}
+              </p>
+            )}
+          </div>
+        ))}
       </div>
 
       <AnimatePresence mode="wait">

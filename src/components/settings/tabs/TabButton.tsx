@@ -16,7 +16,7 @@ export const TabButton: React.FC<TabButtonProps> = ({
   isActive,
   onClick,
   onLongPress,
-  longPressTime = 7000,
+  longPressTime = 2000,
 }) => {
   const [pressing, setPressing] = useState(false);
   const pressTimer = useRef<NodeJS.Timeout>();

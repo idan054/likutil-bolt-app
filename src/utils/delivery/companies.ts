@@ -4,6 +4,10 @@ export const filterCompaniesByIds = (
   companies: DeliveryIntegration[],
   allowedIds: string[]
 ): DeliveryIntegration[] => {
+
+  return companies; // AKA Diasbled
+
+  // Collection "users" -> "showOnlyCompanies" field is an array of company IDs
   if (!Array.isArray(allowedIds) || allowedIds.length === 0) {
     return [];
   }

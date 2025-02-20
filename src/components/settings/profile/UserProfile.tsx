@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { LogOut } from 'lucide-react';
+import { LogOut, TabletSmartphone } from 'lucide-react';
 import { auth } from '../../../config/firebase';
 import QRCode from 'react-qr-code';
 import { doc, setDoc } from 'firebase/firestore';
@@ -42,15 +42,25 @@ export const UserProfile: React.FC = () => {
       {/* QR Code Section */}
       {currentUser && (
         <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="flex justify-center">
-            <QRCode
-              value={`https://my.likutil.co.il/?source=${currentUser.email.split('@')[0]}&oneTimeToken=${Math.random().toString(36).substring(2, 8).toUpperCase()}`}
-              size={150}
-              level="H"
-              className="mx-auto"
-            />
+          <div className="relative">
+            <div className="flex justify-center opacity-50">
+              <QRCode
+                value={`https://my.likutil.co.il/?source=${currentUser.email.split('@')[0]}&oneTimeToken=${Math.random().toString(36).substring(2, 8).toUpperCase()}`}
+                size={150}
+                level="H"
+                className="mx-auto"
+              />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                זמין בקרוב...
+              </span>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-gray-600 text-center">סרוק להתחברות מהירה</p>
+          <p className="mt-2 text-sm text-gray-600 text-center flex items-center justify-center gap-1.5">
+            <TabletSmartphone size={16} className="inline-block" />
+            סרוק להתחברות מהירה
+          </p>
         </div>
       )}
 

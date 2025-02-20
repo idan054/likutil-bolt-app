@@ -1,18 +1,25 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, Edit } from 'lucide-react';
 import type { DeliveryIntegration } from '../../../../../../types/delivery';
 
 interface IntegrationCardProps {
   integration: DeliveryIntegration;
   isActive: boolean;
   onClick: () => void;
+  onEdit?: (integration: DeliveryIntegration) => void;
 }
 
 export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   integration,
   isActive,
-  onClick
+  onClick,
+  onEdit
 }) => {
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(integration);
+  };
+
   return (
     <div
       onClick={onClick}
@@ -29,6 +36,15 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           <Check size={16} />
           <span className="text-sm font-medium">מחובר</span>
         </div>
+      )}
+
+      {(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && onEdit && (
+        <button
+          onClick={handleEdit}
+          className="absolute top-2 left-2 p-1.5 bg-amber-100 text-amber-600 rounded-full hover:bg-amber-200 transition-colors"
+        >
+          <Edit size={16} />
+        </button>
       )}
 
       <div className="flex flex-col items-center text-center">
