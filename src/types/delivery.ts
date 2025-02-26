@@ -1,32 +1,32 @@
+import { DeliveryProgramType } from "../components/settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard";
+
+
 export interface DeliveryField {
-  id: string;
+  // id: string;
+  // type: 'text' | 'password';
   label: string;
-  type: 'text' | 'password';
   placeholder?: string;
-  supportText?: string;
-  supportPhone?: string;
 }
 
 export interface DeliveryIntegration {
-  id: string;
+  provider: string;
   name: string;
   description: string;
   logoUrl: string;
   isConnected: boolean;
-  isBaldar: boolean;
-  controlPanelLink?: string; // Added controlPanelLink field
-  fields: DeliveryField[];
+  programType: DeliveryProgramType;  
+  controlPanelLink: string;
+  
+  username: string | undefined;
+  password: string | undefined;
+  token: string | undefined;
+  clientId: string| undefined;
+  lastTested?: string;
 }
 
-export interface DeliveryConnection {
-  provider: string;
-  key: string;
-  lastTested?: string;
-  isConnected: boolean;
-}
 
 export interface DeliverySettings {
-  connections: DeliveryConnection[];
+  connections: DeliveryIntegration[];
 }
 
 export interface DeliveryTestRequest {

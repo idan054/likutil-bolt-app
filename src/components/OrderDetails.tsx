@@ -53,7 +53,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   } = useDeliveryCreation({
     order,
     provider: selectedDeliveryProvider!,
-    onSuccess: () => {}, // Success is handled by the response display
+    onSuccess: () => {}, 
   });
 
   useEffect(() => {

@@ -24,7 +24,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   // Auto-select single company
   useEffect(() => {
     if (companies.length === 1 && !selectedProvider) {
-      onSelect(companies[0].id as string);
+      onSelect(companies[0].provider as string);
     }
   }, [companies, selectedProvider, onSelect]);
 
@@ -74,13 +74,13 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
       >
         {sortedCompanies.map((integration) => (
           <CompactDeliveryCard
-            key={integration.id}
-            id={integration.id as string}
+            key={integration.provider}
+            id={integration.provider as string}
             name={integration.name}
             logoUrl={integration.logoUrl}
-            isSelected={selectedProvider === integration.id}
-            isConnected={connectedProviders.has(integration.id)}
-            onClick={() => onSelect(integration.id as string)}
+            isSelected={selectedProvider === integration.provider}
+            isConnected={connectedProviders.has(integration.provider)}
+            onClick={() => onSelect(integration.provider as string)}
           />
         ))}
       </div>

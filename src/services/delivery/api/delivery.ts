@@ -12,7 +12,7 @@ export const createDeliveryTask = async (
   params: DeliveryRequestParams
 ): Promise<DeliveryTaskResponse> => {
   // Use 'method' instead of 'Company' in the query params
-  const url = `${BASE_URL}/api/create-delivery?method=${params.provider}&key=${params.key}`;
+  const url = `${BASE_URL}/api/create-delivery?userId=${params.userId}&provider=${params.provider}&keys=${params.keys}`;
 
   try {
     console.log('[delivery.api] Creating delivery task:', {

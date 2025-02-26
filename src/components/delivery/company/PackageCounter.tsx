@@ -19,7 +19,7 @@ export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCo
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-blue-700">
           <Package size={20} />
-          <span className="font-medium">מספר חבילות למשלוח:</span>
+          <span className="font-medium">מספר חבילות למשלוח</span>
         </div>
         <div className="flex items-center gap-2">
           <button

@@ -18,7 +18,7 @@ export const useProcessingOrders = () => {
   const ordersRef = useRef<OrderSummary[]>([]);
 
   const fetchOrders = useCallback(
-    async (showNotification = false) => {
+    async () => {
       const isInitialFetch = orders.length === 0;
       isInitialFetch ? setIsLoading(true) : setIsRefetching(true);
       setError(null);
@@ -33,47 +33,7 @@ export const useProcessingOrders = () => {
         const data = await getProcessingOrders();
 
         // Compare with previous orders to detect changes
-        if (showNotification && ordersRef.current.length > 0) {
-          const newOrdersCount = data.length - ordersRef.current.length;
-          if (newOrdersCount > 0) {
-            const toastId = "new-orders";
-            toast.success(`יש ${newOrdersCount} הזמנות חדשות! מומלץ לרענן`, {
-              id: toastId,
-              // duration: Infinity,
-              icon: "🔄",
-              style: {
-                cursor: 'pointer',
-                transition: 'background-color 0.3s ease',
-              },
-              className: 'toast-hover'
-            });
-
-            // Add click event listener to the toast element and hover styles
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) {
-              // Add hover effect styles
-              const style = document.createElement('style');
-              style.textContent = `
-                .toast-hover:hover {
-                  background-color: rgba(0, 255, 0, 0.1) !important;
-                }
-              `;
-              document.head.appendChild(style);
-
-              toastElement.addEventListener('click', () => {
-
-              console.log('XXX')  
-
-                setOrders(data);
-                ordersRef.current = data;
-                setIsLoading(false);
-                setIsRefetching(false);
-                toast.dismiss(toastId);
-              });
-            }
-            return;
-          }
-        }
+ 
 
         setOrders(data);
         ordersRef.current = data;
@@ -95,41 +55,11 @@ export const useProcessingOrders = () => {
     [orders.length]
   );
 
-
-  // // Setup periodic refresh with initial delay
-  // useEffect(() => {
-  //   // Initial delay of 30 seconds before starting the interval
-  //   const startupDelay = setTimeout(() => {
-  //     console.log('Starting periodic order refresh...');
-      
-  //     const intervalId = setInterval(() => {
-  //       fetchOrders(true); // Show notification on background updates
-  //     }, REFRESH_INTERVAL);
-
-  //     return () => clearInterval(intervalId);
-  //   }, 15000); // 15 seconds delay
-
-  //   // Cleanup both the delay and interval
-  //   return () => clearTimeout(startupDelay);
-  // }, [fetchOrders]);
-
-  // Listen for settings changes
-  // useEffect(() => {
-  //   const handleStorageChange = (e: StorageEvent) => {
-  //     if (e.key === "wc_settings") {
-  //       fetchOrders(false);
-  //     }
-  //   };
-
-  //   window.addEventListener("storage", handleStorageChange);
-  //   return () => window.removeEventListener("storage", handleStorageChange);
-  // }, [fetchOrders]);
-
   return {
     orders,
     isLoading,
     isRefetching,
     error,
-    refetch: useCallback(() => fetchOrders(false), [fetchOrders]),
+    refetch: useCallback(() => fetchOrders(), [fetchOrders]),
   };
 };

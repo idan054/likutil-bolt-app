@@ -43,20 +43,20 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   
 
   const { customer, isLoading: isLoadingCustomer } = useCustomerDetails(customerId);
-  const { integrations, savedData } = useDeliveryIntegrations();
   const { companies } = useDeliveryCompanies();
   const [selectedStatus, setSelectedStatus] = React.useState('');
+  const { integrations, savedData } = useDeliveryIntegrations();
   
   // Create a set of connected provider IDs
   const connectedProviders = new Set(
     integrations
       .filter(integration => integration.isConnected)
-      .map(integration => integration.id)
+      .map(integration => integration.provider)
   );
 
   // Find selected integration
   const selectedIntegration = integrations.find(
-    integration => integration.id === selectedProvider
+    integration => integration.provider === selectedProvider
   );
 
 
@@ -85,7 +85,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         <DeliveryCompanyInfo
         order={order} 
           integration={selectedIntegration}
-          apiKey={savedData[selectedIntegration.id]?.key}
+          apiKey={savedData[selectedIntegration.provider]?.key}
           isCreating={isCreating}
           onCreateDelivery={onCreateDelivery}
           deliveryResponse={deliveryResponse}

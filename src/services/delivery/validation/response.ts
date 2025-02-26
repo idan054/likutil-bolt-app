@@ -3,7 +3,7 @@ import { extractIntFromXml } from '../../../utils/xml/parser';
 export const isSuccessfulDeliveryResponse = (responseBody: string): boolean => {
   const value = extractIntFromXml(responseBody);
   const isBaldarSucceeded = value !== null && value > 0; // Positive int
-  const isLionWheelSucceeded = responseBody.includes('tracking_link');
+  const isLionWheelSucceeded = responseBody.includes('tracking_link') || responseBody.includes('provider');
 
   return isBaldarSucceeded || isLionWheelSucceeded;
 };

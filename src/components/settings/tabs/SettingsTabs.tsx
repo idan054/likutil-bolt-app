@@ -52,23 +52,28 @@ export const SettingsTabs: React.FC<SettingsTabsProps> = ({
       <div className="mb-6">
         {/* Tabs - Grid on mobile, flex on desktop */}
         <div className="grid grid-cols-2 sm:flex gap-2">
-          <TabButton
-            icon={Store}
-            label="חיבור לחנות שלך"
-            isActive={activeTab === 'store'}
-            onClick={() => setActiveTab('store')}
-            onLongPress={() => setShowDeliveryTab(true)}
-          />
+
+
+        {showDeliveryTab && (
+            <TabButton
+              icon={Store}
+              label="חיבור לחנות שלך"
+              isActive={activeTab === 'store'}
+              onClick={() => setActiveTab('store')}
+              onLongPress={() => setShowDeliveryTab(true)}
+            />
+            )}
 
           
-          {showDeliveryTab && (
             <TabButton
               icon={Truck}
               label="חיבור לחברות המשלוחים"
               isActive={activeTab === 'delivery'}
               onClick={() => setActiveTab('delivery')}
+              onLongPress={() => setShowDeliveryTab(true)}
             />
-          )}
+            
+          
         </div>
       </div>
 

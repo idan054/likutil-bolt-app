@@ -4,21 +4,23 @@ import { mapOrderToDeliveryTask } from './mappers';
 import type { DeliveryTaskResponse } from './types';
 
 interface CreateDeliveryParams {
+  userId: string;
   order: OrderDetails;
-  // order: any;
   provider: string;
-  apiKey: string;
+  keys: string;
   packNum?: string;
 }
 
 export const createDelivery = async ({
+  userId,
   order,
   provider,
-  apiKey,
+  keys,
   packNum = "1"
 }: CreateDeliveryParams): Promise<DeliveryTaskResponse> => {
   console.log('[delivery.service] Creating delivery:', { 
     orderId: order.id, 
+    userId, 
     provider,
     packNum
   });
@@ -26,7 +28,8 @@ export const createDelivery = async ({
   const request = mapOrderToDeliveryTask(order, packNum);
   
   return createDeliveryTask(request, {
+    userId,
     provider,
-    key: apiKey
+    keys: keys
   });
 };

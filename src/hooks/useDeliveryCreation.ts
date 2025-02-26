@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { createDelivery } from '../services/delivery/delivery.service';
-import { useDeliveryIntegrations } from './settings/useDeliveryIntegrations';
+import { getKeysByProgramType, useDeliveryIntegrations } from './settings/useDeliveryIntegrations';
 import { showErrorToast } from '../utils/error';
 import { successMessages } from '../config/messages/success';
 // import type { OrderDetails } from '../types/order';
 import type { DeliveryTaskResponse } from '../services/delivery/types';
 import { OrderDetails } from '../types/order';
+import { DeliveryProgramType } from '../components/settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../config/firebase';
 
 interface UseDeliveryCreationProps {
   order: OrderDetails;
-  // order: any;
   provider: string;
   onSuccess: () => void;
 }
@@ -22,22 +24,55 @@ export const useDeliveryCreation = ({
 }: UseDeliveryCreationProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [deliveryResponse, setDeliveryResponse] = useState<DeliveryTaskResponse | null>(null);
-  const { savedData } = useDeliveryIntegrations();
+  const { activeIntegrations, integrations, savedData } = useDeliveryIntegrations();
+  const [user] = useAuthState(auth);
+
 
   const createDeliveryTask = async (packNum: string = "1") => {
-    const apiKey = savedData[provider]?.key;
-    if (!apiKey) {
+  console.log('START createDeliveryTask()')
+  console.log(provider)
+
+  // console.log(savedData[provider]?.provider)
+  // console.log(savedData[provider])
+
+  // // Find selected integration
+  const selectedIntegration = activeIntegrations.find(
+    integration => integration.provider === provider
+  );
+
+
+  console.log('selectedIntegration')
+  console.log(selectedIntegration)
+  // return;
+
+
+  if (!selectedIntegration) {
+    toast.error('מפתח API חסר');
+    return;
+  }
+
+  
+    let keys = getKeysByProgramType(selectedIntegration)
+    let userId = user?.uid ??'';
+
+
+    console.log(provider, ' KEYS ', keys)
+
+
+    if (!keys || keys === '') {
       toast.error('מפתח API חסר');
       return;
     }
 
-    setIsCreating(true);
 
+    setIsCreating(true);
+    
     try {
       const result = await createDelivery({
+        userId,
         order,
         provider,
-        apiKey,
+        keys,
         packNum
       });
 

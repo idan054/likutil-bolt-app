@@ -12,6 +12,7 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
 
 
 export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
+  console.log('[orders.service] Fetching processing orders...');
 
   console.log(new Date().toLocaleString('he-IL', { 
     day: '2-digit',

@@ -77,11 +77,12 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             isCompleting={isCompleting}
             onCreateDelivery={() => onCreateDelivery(packageCount.toString())}
             onComplete={onComplete}
+            packNum={packageCount.toString()}  // Add this line
           />
           
           <CompanyLinks 
             controlPanelLink={integration.controlPanelLink}
-            supportPhone={integration.fields[0]?.supportPhone}
+            // supportPhone={integration.fields[0]?.supportPhone}
           />
         </div>
       </div>

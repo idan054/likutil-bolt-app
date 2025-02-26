@@ -16,7 +16,7 @@ export const useDeliveryCompanies = () => {
       const companies: DeliveryIntegration[] = [];
       
       companiesSnapshot.forEach((doc) => {
-        companies.push({ id: doc.id, ...doc.data() } as DeliveryIntegration);
+        companies.push({ provider: doc.id, ...doc.data() } as DeliveryIntegration);
       });
 
       return companies;

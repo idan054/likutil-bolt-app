@@ -19,9 +19,9 @@ export const DeliverySettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="border-b pb-4">
-        <h2 className="text-xl font-semibold">חיבור לחברות משלוחים</h2>
+        <h2 className="text-xl font-semibold">התחבר לחברת המשלוחים שלך</h2>
         <p className="text-gray-600 mt-1">
-          חבר את החנות שלך לחברות המשלוחים המובילות בישראל
+          התחבר בקלות לכל לחברות המשלוחים המובילות בישראל
         </p>
       </div>
 

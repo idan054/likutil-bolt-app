@@ -12,7 +12,7 @@ export const filterCompaniesByIds = (
     return [];
   }
 
-  return companies.filter(company => allowedIds.includes(company.id));
+  return companies.filter(company => allowedIds.includes(company.provider));
 };
 
 export const sortCompaniesByConnection = (
@@ -20,8 +20,8 @@ export const sortCompaniesByConnection = (
   connectedIds: Set<string>
 ): DeliveryIntegration[] => {
   return [...companies].sort((a, b) => {
-    const aConnected = connectedIds.has(a.id);
-    const bConnected = connectedIds.has(b.id);
+    const aConnected = connectedIds.has(a.provider);
+    const bConnected = connectedIds.has(b.provider);
     if (aConnected && !bConnected) return -1;
     if (!aConnected && bConnected) return 1;
     return 0;

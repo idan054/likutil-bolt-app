@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { ApiError } from '../../api/types';
-import type { DeliverySettings, DeliveryConnection } from '../../../types/delivery';
+import type { DeliveryIntegration, DeliverySettings } from '../../../types/delivery';
 
 const createEmptySettings = (): DeliverySettings => ({
   connections: []
@@ -9,7 +9,7 @@ const createEmptySettings = (): DeliverySettings => ({
 
 export const saveDeliverySettings = async (
   userId: string,
-  connection: DeliveryConnection
+  connection: DeliveryIntegration
 ): Promise<void> => {
   try {
     const docRef = doc(db, 'users', userId, 'delivery_settings', 'config');
@@ -29,8 +29,15 @@ export const saveDeliverySettings = async (
     const connections = existingSettings.connections.filter(
       c => c && c.provider !== connection.provider
     );
-    connections.push(connection);
     
+     // Remove undefined fields from connection before pushing
+     const cleanConnection = Object.fromEntries(
+      Object.entries(connection).filter(([_, value]) => value !== undefined)
+    ) as DeliveryIntegration;
+    
+    connections.push(cleanConnection);
+
+
     await setDoc(docRef, { connections });
   } catch (error) {
     console.error('[delivery.storage.firebase] Failed to save settings:', error);

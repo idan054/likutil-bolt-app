@@ -12,20 +12,34 @@ import {
 import { showErrorToast } from '../../utils/error';
 import type {
   DeliveryIntegration,
-  DeliveryConnection,
 } from '../../types/delivery';
+import { DeliveryProgramType } from '../../components/settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
+
+export const getKeysByProgramType = (integration: DeliveryIntegration, testData?: Record<string, string>) => {
+  switch (integration.programType) {
+    case DeliveryProgramType.BALDAR:
+      // return testData ? `${testData.clientId}` : `${integration.clientId}`;
+      return testData ? `${testData.username},${testData.password}` : `${integration.username},${integration.password}`;
+    case DeliveryProgramType.RUN:
+      return testData ? `${testData.username},${testData.password}` : `${integration.username},${integration.password}`;
+    case DeliveryProgramType.LION_WHEEL:
+      return testData ? `${testData.token}` : `${integration.token}`;
+    default: 
+      return '';
+  }
+};
 
 export const useDeliveryIntegrations = () => {
   const [user] = useAuthState(auth);
-  const [activeIntegration, setActiveIntegration] = useState<string | null>(
-    null
-  );
+  const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [savedData, setSavedData] = useState<
     Record<string, Record<string, string>>
   >({});
+
+  const [activeIntegrations, setActiveIntegrations] = useState<DeliveryIntegration[]>([]);
   const [integrations, setIntegrations] = useState<DeliveryIntegration[]>([]);
 
   const loadDeliveryCompanies = useCallback(async () => {
@@ -34,7 +48,7 @@ export const useDeliveryIntegrations = () => {
       const companies: DeliveryIntegration[] = [];
       
       companiesSnapshot.forEach((doc) => {
-        companies.push({ id: doc.id, ...doc.data() } as DeliveryIntegration);
+        companies.push({ provider: doc.id, ...doc.data() } as DeliveryIntegration);
       });
 
       return companies;
@@ -54,27 +68,35 @@ export const useDeliveryIntegrations = () => {
       const settings = await getDeliverySettings(userId);
       const companies = await loadDeliveryCompanies();
 
+      
+      
       if (settings?.connections && companies.length > 0) {
-        // Update integrations status
+
         const updatedIntegrations = companies.map(
           (integration) => ({
             ...integration,
             isConnected: settings.connections.some(
-              (conn) => conn.provider === integration.id && conn.isConnected
+              (conn) => conn.provider === integration.provider && conn.isConnected
             ),
           })
         );
-        setIntegrations(updatedIntegrations);
+
+  
+        setIntegrations(updatedIntegrations);  // All possible integrations
+        setActiveIntegrations(settings.connections); // User connected include Token & info
 
         // Update saved data
         const newSavedData: Record<string, Record<string, string>> = {};
         settings.connections.forEach((conn) => {
-          if (conn?.provider) {
-            newSavedData[conn.provider] = { key: conn.key };
+          if (conn?.provider && conn.clientId) {
+            newSavedData[conn.provider] = { clientId: conn.clientId };
           }
         });
         setSavedData(newSavedData);
       } else {
+
+        console.log('companies')
+      console.log(companies)
         setIntegrations(companies);
       }
     } catch (error) {
@@ -94,20 +116,103 @@ export const useDeliveryIntegrations = () => {
 
   const saveIntegration = useCallback(
     async (id: string, data: Record<string, string>) => {
-      const userId =  user?.uid;
+      const userId = user?.uid;
       if (!userId) {
         toast.error('משתמש לא מחובר');
         return;
       }
 
+      let currentIntegrations = integrations;
+      if (currentIntegrations.length === 0) {
+        const companies = await loadDeliveryCompanies();
+        currentIntegrations = companies;
+      }
+
+      const integration = currentIntegrations.find(i => i.provider === id);
+      if (!integration) {
+        toast.error('חברת המשלוחים לא נמצאה');
+        return;
+      }
+
+      let connection: DeliveryIntegration;
       setIsLoading(true);
+
+      // console.log('data')
+      // console.log(data)
+      // return
+
       try {
-        const connection: DeliveryConnection = {
-          provider: id,
-          key: data.key,
-          lastTested: new Date().toISOString(),
-          isConnected: true,
-        };
+   
+        switch (integration?.programType) {
+          case DeliveryProgramType.BALDAR:
+            connection = {
+              provider: id,
+              token: '',
+              clientId: '',
+              username: data.username,
+              password: data.password,
+              lastTested: new Date().toISOString(),
+
+              isConnected: true,
+              name: integration.name,
+              description:  integration.description,
+              logoUrl:   integration.logoUrl,
+              programType: integration.programType,
+              controlPanelLink: integration.controlPanelLink,
+            };
+            break
+          case DeliveryProgramType.RUN:
+            connection = {
+              provider: id,
+              token: '',
+              clientId: '',
+              username: data.username,
+              password: data.password,
+              lastTested: new Date().toISOString(),
+              
+              isConnected: true,
+              name: integration.name,
+              description:  integration.description,
+              logoUrl:   integration.logoUrl,
+              programType: integration.programType,
+              controlPanelLink: integration.controlPanelLink,
+            };
+            break
+          case DeliveryProgramType.LION_WHEEL:
+            connection = {
+              provider: id,
+              token: data.token,
+              clientId: undefined,
+              username: undefined,
+              password: undefined,
+              lastTested: new Date().toISOString(),
+              
+              isConnected: true,
+              name: integration.name,
+              description:  integration.description,
+              logoUrl:   integration.logoUrl,
+              programType: integration.programType,
+              controlPanelLink: integration.controlPanelLink,
+            };
+            break
+
+          default:
+            connection = {
+              provider: integration.provider,
+              clientId: undefined,
+              token: undefined,
+              username: undefined,
+              password: undefined,
+              lastTested: new Date().toISOString(),
+
+              isConnected: false,
+              name: integration.name,
+              description:  integration.description,
+              logoUrl:   integration.logoUrl,
+              programType: integration.programType,
+              controlPanelLink: integration.controlPanelLink,
+            };
+        }
 
         await saveDeliverySettings(userId, connection);
         setSavedData((prev) => ({ ...prev, [id]: data }));
@@ -161,19 +266,23 @@ export const useDeliveryIntegrations = () => {
     [user, loadSettings]
   );
 
+
+
   const testIntegration = useCallback(
-    async (id: string, key: string): Promise<boolean> => {
-      if (!key) {
+    async (integration: DeliveryIntegration, data: Record<string, string>): Promise<boolean> => {
+      if (!data) {
         toast.error('נא להזין מפתח התחברות');
         return false;
       }
 
+      const userId = user?.uid;
+
       setIsTesting(true);
       try {
-        const result = await testDeliveryConnection(id, key);
+        const result = await testDeliveryConnection(integration.provider, getKeysByProgramType(integration, data),userId ??'');
 
         if (result.success) {
-          toast.success('בדיקת החיבור הצליחה, מומלץ לוודא שנפתחה הזמנת בדיקה במערכת חברת השליחויות');
+          toast.success('בדיקת החיבור הצליחה, רק וודאו שנפתחה הזמנת בדיקה בחברת המשלוחים (:');
           return true;
         }
 
@@ -194,7 +303,9 @@ export const useDeliveryIntegrations = () => {
   );
 
   return {
+    
     integrations,
+    activeIntegrations,
     activeIntegration,
     setActiveIntegration,
     saveIntegration,

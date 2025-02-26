@@ -3,30 +3,145 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Key, Loader2, CheckCircle2, Save, XCircle } from 'lucide-react';
 import { useDeliveryIntegrations } from '../../../../hooks/settings/useDeliveryIntegrations';
 import type { DeliveryIntegration } from '../../../../types/delivery';
+import { DeliveryProgramType } from '../../../settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
 
 interface ConfigFormProps {
   integration: DeliveryIntegration;
-  initialApiKey?: string;
 }
+
+interface ConfigFormField {
+  id: string;
+  label: string;
+  placeholder: string;
+  type: 'text' | 'password';
+  supportText?: string;
+}
+
+const getFieldsByProgramType = (type: DeliveryProgramType): ConfigFormField[] => {
+  switch (type) {
+    case DeliveryProgramType.BALDAR:
+      return [
+        {
+          id: 'username',
+          label: 'שם משתמש',
+          placeholder: 'הזן את שם המשתמש שלך',
+          type: 'text',
+          // supportText: 'שם המשתמש לחשבון BALDAR שלך'
+        },
+        {
+          id: 'password',
+          label: 'סיסמה',
+          placeholder: 'הזן את הסיסמה שלך',
+          type: 'password',
+          // supportText: 'הסיסמה לחשבון BALDAR שלך'
+        }
+      ];
+    case DeliveryProgramType.RUN:
+      return [
+        {
+          id: 'username',
+          label: 'שם משתמש',
+          placeholder: 'הזן את שם המשתמש שלך',
+          type: 'text',
+          // supportText: 'שם המשתמש לחשבון RUN שלך'
+        },
+        {
+          id: 'password',
+          label: 'סיסמה',
+          placeholder: 'הזן את הסיסמה שלך',
+          type: 'password',
+          // supportText: 'הסיסמה לחשבון RUN שלך'
+        }
+      ];
+    case DeliveryProgramType.LION_WHEEL:
+      return [
+        {
+          id: 'token',
+          label: 'טוקן',
+          placeholder: 'הזן את הטוקן שלך',
+          type: 'text',
+          supportText: 'הטוקן שקיבלת מחברת Lion Wheel'
+        }
+      ];
+    default:
+      return [
+        {
+          id: 'key',
+          label: 'מפתח התחברות',
+          placeholder: 'הזן את מפתח ההתחברות שלך',
+          type: 'text',
+          supportText: ''
+        }
+      ];
+  }
+};
 
 export const ConfigForm: React.FC<ConfigFormProps> = ({ 
   integration,
-  initialApiKey = ''
 }) => {
-  const [apiKey, setApiKey] = useState(initialApiKey);
+  const { activeIntegrations } = useDeliveryIntegrations();
+
+  const activeIntegration = activeIntegrations.find(
+    (item) => item.provider === integration.provider
+  );
+
+  const [formData, setFormData] = useState<Record<string, string>>(() => {
+    const initialData: Record<string, string> = {};
+    switch (activeIntegration?.programType) {
+      case DeliveryProgramType.RUN:
+        initialData.username = activeIntegration?.username || '';
+        initialData.password = activeIntegration?.password || '';
+        break;
+      case DeliveryProgramType.BALDAR:
+        initialData.username = activeIntegration?.username || '';
+        initialData.password = activeIntegration?.password || '';
+        break;
+      case DeliveryProgramType.LION_WHEEL:
+        initialData.token = activeIntegration?.token || '';
+        break;
+    }
+    return initialData;
+  });
+
+
+  useEffect(() => {
+    if (!activeIntegrations) return;
+
+    const currentActiveIntegration = activeIntegrations.find(
+      (item) => item.provider === integration.provider
+    );
+
+    // Update form data when integration changes
+    const newFormData = (() => {
+      switch (currentActiveIntegration?.programType) {
+        case DeliveryProgramType.RUN:
+          return {
+            username: currentActiveIntegration?.username || '',
+            password: currentActiveIntegration?.password || ''
+          };
+        case DeliveryProgramType.BALDAR:
+          return {
+            username: currentActiveIntegration?.username || '',
+            password: currentActiveIntegration?.password || ''
+          };
+        case DeliveryProgramType.LION_WHEEL:
+          return {
+            token: currentActiveIntegration?.token || ''
+          };
+        default:
+          return {};
+      }
+    })();
+    setFormData(newFormData as Record<string, string>);
+  }, [integration, activeIntegrations]);
+
   const { saveIntegration, testIntegration, isLoading, isTesting } = useDeliveryIntegrations();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
 
-  useEffect(() => {
-    if (initialApiKey) {
-      setApiKey(initialApiKey);
-    }
-  }, [initialApiKey]);
-
   const handleTest = async () => {
-    if (!apiKey.trim()) return;
-    const success = await testIntegration(integration.id, apiKey);
+    if (Object.values(formData).some(value => !value.trim())) return;
+    const success = await testIntegration(integration, formData);
     if (success) {
       setShowSuccess(true);
       setShowError(false);
@@ -40,10 +155,10 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey.trim() || isLoading) return;
+    // if (Object.values(formData).some(value => !value.trim()) || isLoading) return;
 
     try {
-      await saveIntegration(integration.id, { key: apiKey });
+      await saveIntegration(integration.provider, formData);
       setShowSuccess(true);
       setShowError(false);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -55,24 +170,27 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
     }
   };
 
+  const fields = getFieldsByProgramType(integration.programType as DeliveryProgramType);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-4">
-        {integration.fields.map((field, index) => (
+        {fields.map((field, index) => (
           <div key={index}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {field?.label || 'מפתח התחברות'}
+              {field.label}
             </label>
             <input
-              type="text"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              type={field.type}
+              // Replace the value prop in the input component
+              value={formData[field.id] || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
               className="w-full px-4 py-2 border rounded-lg font-mono text-sm"
-              placeholder={field?.placeholder || 'הזן את מפתח ההתחברות שלך'}
+              placeholder={field.placeholder}
               required
               disabled={isLoading}
             />
-            {field?.supportText && (
+            {field.supportText && (
               <p className="mt-1 text-sm text-gray-500">
                 {field.supportText}
               </p>
@@ -123,7 +241,7 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
         <button
           type="button"
           onClick={handleTest}
-          disabled={isLoading || isTesting || !apiKey.trim()}
+          disabled={isLoading || isTesting || fields.some(field => !formData[field.id]?.trim())}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
         >
           <Key size={20} />
@@ -132,7 +250,7 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
 
         <button
           type="submit"
-          disabled={isLoading || !apiKey.trim()}
+          disabled={isLoading || fields.some(field => !formData[field.id]?.trim())}
           className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
           <Save size={20} />

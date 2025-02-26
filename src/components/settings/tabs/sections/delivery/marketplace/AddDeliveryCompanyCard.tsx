@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../../../../config/firebase';
-import type { DeliveryIntegration } from '../../../../../../types/delivery';
+import type { DeliveryField, DeliveryIntegration } from '../../../../../../types/delivery';
+
+export enum DeliveryProgramType {
+    BALDAR = 'baldar',
+    RUN = 'run',
+    LION_WHEEL = 'lionWheel',
+    GET_PACKAGE = 'getPackage',
+    UNKNOWN = 'unknown'
+  }
 
 interface AddDeliveryCompanyFormData {
-  id: string;
+  provider: string;
   name: string;
   description: string;
   logoUrl: string;
-  isBaldar: boolean;
+  programType: DeliveryProgramType;  
   controlPanelLink: string;
-  fields: Array<{
-    id: string;
-    label: string;
-    type: string;
-    placeholder: string;
-  }>;
+  fields: Array<DeliveryField>;
 }
 
 interface AddDeliveryCompanyCardProps {
@@ -30,16 +33,16 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState<AddDeliveryCompanyFormData>({
-    id: '',
+    provider: '',
     name: '',
     description: '',
     logoUrl: '',
-    isBaldar: false,
+    programType: DeliveryProgramType.UNKNOWN, 
     controlPanelLink: '',
     fields: [{
-      id: 'key',
+    //   id: 'key',
+    // type: 'text',
       label: '',
-      type: 'text',
       placeholder: ''
     }]
   });
@@ -48,13 +51,16 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
     if (editingIntegration) {
       setIsFormOpen(true);
       setFormData({
-        id: editingIntegration.id,
+        provider: editingIntegration.provider,
         name: editingIntegration.name,
         description: editingIntegration.description,
         logoUrl: editingIntegration.logoUrl,
-        isBaldar: editingIntegration.isBaldar,
+        programType: editingIntegration.programType,
         controlPanelLink: editingIntegration.controlPanelLink,
-        fields: editingIntegration.fields
+        fields: [{
+          label: '',
+          placeholder: ''
+        }]
       });
     }
   }, [editingIntegration]);
@@ -67,21 +73,21 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
         isConnected: editingIntegration?.isConnected ?? false
       };
 
-      const docRef = doc(db, 'delivery_companies', formData.id);
+      const docRef = doc(db, 'delivery_companies', formData.provider);
       await setDoc(docRef, deliveryCompany);
       
       setIsFormOpen(false);
       setFormData({
-        id: '',
+        provider: '',
         name: '',
         description: '',
         logoUrl: '',
-        isBaldar: false,
+        programType: DeliveryProgramType.UNKNOWN,
         controlPanelLink: '',
         fields: [{
-          id: 'key',
+        //   id: 'key',
+        //   type: 'text',
           label: '',
-          type: 'text',
           placeholder: ''
         }]
       });
@@ -118,7 +124,7 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
               <label className="block text-sm font-medium text-gray-700">מזהה</label>
               <input
                 type="text"
-                value={formData.id}
+                value={formData.provider}
                 onChange={e => setFormData(prev => ({ ...prev, id: e.target.value }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
@@ -165,17 +171,22 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
                 required
               />
             </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isBaldar}
-                onChange={e => setFormData(prev => ({ ...prev, isBaldar: e.target.checked }))}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label className="mr-2 block text-sm font-medium text-gray-700">Baldar</label>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">סוג חברת משלוחים</label>
+              <select
+                value={formData.programType}
+                onChange={e => setFormData(prev => ({ ...prev, programType: e.target.value as DeliveryProgramType }))}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                {Object.values(DeliveryProgramType).map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
             </div>
+ 
             
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h4 className="font-medium text-gray-700">שדות</h4>
               {formData.fields.map((field, index) => (
                 <div key={index} className="space-y-2">
@@ -203,6 +214,7 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
                   />
                 </div>
               ))}
+              
               <button
                 type="button"
                 onClick={addField}
@@ -210,7 +222,7 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
               >
                 + הוסף שדה
               </button>
-            </div>
+            </div> */}
             
             <div className="flex justify-end space-x-3">
               <button
@@ -218,16 +230,16 @@ export const AddDeliveryCompanyCard: React.FC<AddDeliveryCompanyCardProps> = ({
                 onClick={() => {
                   setIsFormOpen(false);
                   setFormData({
-                    id: '',
+                    provider: '',
                     name: '',
                     description: '',
                     logoUrl: '',
-                    isBaldar: false,
+                    programType: DeliveryProgramType.UNKNOWN,
                     controlPanelLink: '',
                     fields: [{
-                      id: 'key',
+                    //   id: 'key',
+                    // type: 'text',
                       label: '',
-                      type: 'text',
                       placeholder: ''
                     }]
                   });

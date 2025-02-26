@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { IntegrationCard } from './IntegrationCard';
 import { RequestCompanyCard } from './RequestCompanyCard';
 import { AddDeliveryCompanyCard } from './AddDeliveryCompanyCard';
-import { IntegrationDetails } from './IntegrationDetails';
+// import { IntegrationDetails } from './IntegrationDetails';
 import type { DeliveryIntegration } from '../../../../../../types/delivery';
+import { NonConnectedCompany } from '../../../../../delivery/company/NonConnectedCompany';
 
 interface DeliveryMarketplaceProps {
   integrations: DeliveryIntegration[];
@@ -21,22 +22,62 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
   const [editingIntegration, setEditingIntegration] = useState<DeliveryIntegration | null>(null);
   
   const activeIntegrationDetails = activeIntegration 
-    ? integrations.find(i => i.id === activeIntegration)
+    ? integrations.find(i => i.provider === activeIntegration)
     : undefined;
 
   const handleEdit = (integration: DeliveryIntegration) => {
     setEditingIntegration(integration);
   };
 
+  // console.log('activeIntegration', activeIntegration)
+  // console.log('activeIntegrationDetails', activeIntegrationDetails)
+
   return (
     <div className="space-y-6">
+
+           {activeIntegration && activeIntegrationDetails && (
+        <div
+          className="transition-all duration-300 ease-in-out transform"
+          style={{
+            animation: 'fadeInScale 0.3s ease-out'
+          }}
+        >
+  
+
+      {/* <button
+          onClick={() => onSelect(null)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button> */}
+
+        <NonConnectedCompany integration={activeIntegrationDetails} />
+
+
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {integrations.map(integration => (
           <IntegrationCard
-            key={integration.id}
+            key={integration.provider}
             integration={integration}
-            isActive={activeIntegration === integration.id}
-            onClick={() => onSelect(integration.id)}
+            isActive={activeIntegration === integration.provider}
+            onClick={() => onSelect(integration.provider)}
             onEdit={handleEdit}
           />
         ))}
@@ -44,20 +85,16 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
         <RequestCompanyCard />
       </div>
 
-      {(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && (
+
+ 
+
+
+{(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && (
           <AddDeliveryCompanyCard
             editingIntegration={editingIntegration}
             onSubmit={() => setEditingIntegration(null)}
           />
         )}
-
-      {activeIntegration && activeIntegrationDetails && (
-        <IntegrationDetails
-          integration={activeIntegrationDetails}
-          onClose={() => onSelect(null)}
-          savedData={savedData}
-        />
-      )}
     </div>
   );
 };

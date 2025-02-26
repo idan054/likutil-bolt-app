@@ -8,6 +8,7 @@ interface ActionButtonsProps {
   isCompleting: boolean;
   onCreateDelivery: (packNum: string) => void;
   onComplete: () => Promise<void>;
+  packNum: string;  // Add this line
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -16,11 +17,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   isCompleting,
   onCreateDelivery,
   onComplete,
+  packNum,  
 }) => (
   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
     {!deliveryResponse ? (
       <button
-        onClick={() => onCreateDelivery("1")}
+        onClick={() => onCreateDelivery(packNum)}
         disabled={isCreating}
         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >

@@ -40,13 +40,14 @@ export interface DeliveryTestResult {
 }
 
 export const testDeliveryConnection = async (
-  method: string,
-  key: string
+  provider: string,
+  keys: string,
+  userId: string
 ): Promise<DeliveryTestResult> => {
   try {
     // Use 'method' instead of 'Company' in the query params
     const response = await fetch(
-      `${BASE_URL}/api/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
+      `${BASE_URL}/api/create-delivery?userId=${userId}&provider=${provider}&keys=${keys}&isConnectionTest=true`,
       {
         method: 'POST',
         headers: {
@@ -73,7 +74,7 @@ export const testDeliveryConnection = async (
     }
 
     throw new ApiError({
-      requestUrl: `${BASE_URL}/api/create-delivery?method=${method}&key=${key}&isConnectionTest=true`,
+      requestUrl: `${BASE_URL}/api/create-delivery?userId=${userId}&provider=${provider}&keys=${keys}&isConnectionTest=true`,
       requestMethod: 'POST',
       requestBody: JSON.stringify(createTestRequest()),
       requestHeaders: {
