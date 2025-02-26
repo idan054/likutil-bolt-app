@@ -45,6 +45,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     },
   });
 
+  const handleComplete = async () => {
+    await completeOrder();
+    clearDeliveryResponse();
+  };
+
   const {
     isCreating,
     createDelivery,
@@ -64,10 +69,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     }
   }, [isLocalPickup, resetMessaging]);
 
-  const handleComplete = async () => {
-    await completeOrder();
-    clearDeliveryResponse();
-  };
+
 
   return (
     <AnimatePresence mode="wait">
