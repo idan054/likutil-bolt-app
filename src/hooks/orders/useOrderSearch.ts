@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { searchOrderById } from '../../services/orders/search.service';
 import { ApiError } from '../../services/api/types';
 import type { OrderDetails } from '../../types/order';
+import { searchOrderById } from '../../services/orders/orders.service';
+import { useGetFirebaseMetadata } from '../useGetFirebaseMetadata';
 
 export const useOrderSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<OrderDetails | null>(null);
+  const { options } = useGetFirebaseMetadata();
 
   const searchOrder = async (orderId: string) => {
     if (!orderId.trim()) return;
@@ -20,7 +22,13 @@ export const useOrderSearch = () => {
     
     setIsLoading(true);
     try {
-      const result = await searchOrderById(orderId);
+
+      const metadataConfigs = options.map(config => ({
+        label_path: config.original_path?.label_path,
+        value_path: config.original_path?.value_path,
+        parent_path: config.original_path?.parent_path
+      }));
+      const result = await searchOrderById(orderId, metadataConfigs);
 
 
       setOrder(result);

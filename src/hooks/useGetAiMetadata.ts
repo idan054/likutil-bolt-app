@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiClient } from '../services/api/client';
 import { OrderStatus } from '../types/order';
 import { BASE_URL } from '../services/auth/woo-auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
+import { toast } from 'react-hot-toast';
+import { useGetFirebaseMetadata } from './useGetFirebaseMetadata';
 
-interface MetadataOption {
+export interface MetadataOption {
   index: number;
   key: string;
   value: string;
@@ -18,7 +23,7 @@ interface MetadataOption {
 }
 
 interface UseGetAiMetadataReturn {
-  options: MetadataOption[];
+  options: MetadataOption[]; // Get results From The AI And show to the user
   isLoading: boolean;
   error: string | null;
   selectedOptions: number[];
@@ -29,14 +34,6 @@ interface UseGetAiMetadataReturn {
   setShowResults: (show: boolean) => void;
 }
 
-export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
-
-    return apiClient<OrderStatus[]>({
-      method: 'GET',
-      path: `/orders/statuses`,
-    });
-  };
-
 export const useGetAiMetadata = (meta_data: Array<any>): UseGetAiMetadataReturn => {
   const [options, setOptions] = useState<MetadataOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +42,8 @@ export const useGetAiMetadata = (meta_data: Array<any>): UseGetAiMetadataReturn 
   const [showResults, setShowResults] = useState(false);
 
   const fetchMetadataOptions = async () => {
+    setSelectedOptions([]);
+    setOptions([]);
     setIsLoading(true);
     setError(null);
 
@@ -87,13 +86,23 @@ export const useGetAiMetadata = (meta_data: Array<any>): UseGetAiMetadataReturn 
     );
   };
 
+  const {saveFbOptions} = useGetFirebaseMetadata();
   const handleSubmitSelection = () => {
+
+
     const selectedItems = options.filter(option => 
       selectedOptions.includes(option.index)
     );
     console.log('Selected items:', selectedItems);
+
+    if (selectedItems.length > 0) {
+      saveFbOptions(selectedItems);
+    }
+    
     setSelectedOptions([]);
   };
+
+
 
   return {
     options,
@@ -104,7 +113,7 @@ export const useGetAiMetadata = (meta_data: Array<any>): UseGetAiMetadataReturn 
     fetchMetadataOptions,
     handleOptionSelect,
     handleSubmitSelection,
-    setShowResults
+    setShowResults,
   };
 
 };

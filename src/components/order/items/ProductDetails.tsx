@@ -1,7 +1,9 @@
 import React from 'react';
 import { Package } from 'lucide-react';
+import { LineItem } from '../../../types/order';
 
 interface ProductDetailsProps {
+  item: LineItem;
   name: string;
   sku: string;
   quantity: number;
@@ -9,6 +11,7 @@ interface ProductDetailsProps {
 }
 
 export const ProductDetails: React.FC<ProductDetailsProps> = ({
+  item,
   name,
   sku,
   quantity,
@@ -33,6 +36,10 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
           <span>מלאי: {stockQuantity}</span>
         </span>
       )}
+
+
+
+      
     </div>
   </div>
 );

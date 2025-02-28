@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { getProcessingOrders } from "../services/orders/orders.service";
 import { showErrorToast } from "../utils/error";
-import type { OrderSummary } from "../types/order";
-import { useSettings } from "./useSettings";
+import type { OrderDetails, OrderSummary } from "../types/order";
+import { useGetFirebaseMetadata } from "./useGetFirebaseMetadata";
+import { apiClient } from "../services/api/client";
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 export const useProcessingOrders = () => {
-  const { settings } = useSettings();
-
+  const { options } = useGetFirebaseMetadata();
 
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,17 +23,19 @@ export const useProcessingOrders = () => {
       isInitialFetch ? setIsLoading(true) : setIsRefetching(true);
       setError(null);
 
-      if(!settings){
+      if(!options){
         setIsLoading(false);
         setIsRefetching(false);
         return;
       }
 
       try {
-        const data = await getProcessingOrders();
-
-        // Compare with previous orders to detect changes
- 
+        const metadataConfigs = options.map(config => ({
+          label_path: config.original_path?.label_path,
+          value_path: config.original_path?.value_path,
+          parent_path: config.original_path?.parent_path
+        }));
+        const data = await getProcessingOrders(metadataConfigs);
 
         setOrders(data);
         ordersRef.current = data;
@@ -52,8 +54,10 @@ export const useProcessingOrders = () => {
         setIsRefetching(false);
       }
     },
-    [orders.length]
+    [orders.length, options]
   );
+
+
 
   return {
     orders,
