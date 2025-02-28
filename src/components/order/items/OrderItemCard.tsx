@@ -5,7 +5,7 @@ import { useSettings } from '../../../hooks/useSettings';
 import { getProductUrl } from '../../../utils/product';
 import type { LineItem } from '../../../types/order';
 import { QuantityBadge } from '../../ui/QuantityBadge';
-import { Eclipse, MoreHorizontal, PanelBottomClose, X, Check, RefreshCcw, RotateCw, Divide, Loader2, BookmarkPlus, ListPlus, Diamond, PackagePlus, RectangleHorizontal, ListCollapse, LayoutList, Wrench, Settings2, Pencil, Settings, Bolt, Delete, XCircle } from 'lucide-react';
+import { Eclipse, MoreHorizontal, PanelBottomClose, X, Check, RefreshCcw, RotateCw, Divide, Loader2, BookmarkPlus, ListPlus, Diamond, PackagePlus, RectangleHorizontal, ListCollapse, LayoutList, Wrench, Settings2, Pencil, Settings, Bolt, Delete, XCircle, EyeOff, Eye } from 'lucide-react';
 import { useGetAiMetadata } from '../../../hooks/useGetAiMetadata';
 
 interface OrderItemCardProps {
@@ -28,12 +28,24 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
   const productUrl = getProductUrl(settings?.storeUrl, item.product_data?.permalink);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
   const [localMetaData, setLocalMetaData] = useState(item.meta_data);
+  const [hiddenMetaKeys, setHiddenMetaKeys] = useState<string[]>(() => {
+    const cached = localStorage.getItem('hiddenMetaKeys');
+    return cached ? JSON.parse(cached) : [];
+  });
 
-  const handleDeleteMetadata = (indexToDelete: number) => {
-    setLocalMetaData((prevMetaData) => 
-      prevMetaData.filter((_, index) => index !== indexToDelete)
-    );
+  const toggleMetadataVisibility = (key: string) => {
+    setHiddenMetaKeys(prev => {
+      const newHiddenKeys = prev.includes(key)
+        ? prev.filter(k => k !== key)
+        : [...prev, key];
+      localStorage.setItem('hiddenMetaKeys', JSON.stringify(newHiddenKeys));
+      return newHiddenKeys;
+    });
   };
+
+  const visibleMetaData = localMetaData?.filter(meta => !hiddenMetaKeys.includes(meta.key));
+
+
   const {
     options: metadataOptions,
     isLoading,
@@ -108,31 +120,31 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
       {Array.isArray(localMetaData) && localMetaData.length > 0 && (
         <div className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
           {localMetaData.map((meta, index) => (
-            <div key={index} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors">
-              
-              
-              {isMetadataOpen && (
-                <button 
-                  className="p-1 rounded-full hover:bg-gray-100 transition-all pl-3"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleDeleteMetadata(index);
-                  }}
-                >
-                  <XCircle size={18} className="text-red-500" />
-                </button>
-              )}
+            (!hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
+              <div key={index} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors">
+                {isMetadataOpen && (
+                  <button 
+                    className="p-1 rounded-full hover:bg-gray-100 transition-all pl-3"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleMetadataVisibility(meta.key);
+                    }}
+                  >
+                    {hiddenMetaKeys.includes(meta.key) ? (
+                      <EyeOff size={18} className="text-red-500" />
+                    ) : (
+                      <Eye size={18} className="text-blue-500" />
+                    )}
+                  </button>
+                )}
 
-          
-
-          <div className="flex items-center gap-2 flex-1">
-          <span className=" font-medium text-m text-gray-900 mt-1">{`${meta.key}`}</span>
-                <span className="text-gray-400">•</span>
-          <span className=" text-m text-gray-600 mt-1">{`${meta.value}`}</span>
-
-
+                <div className={`flex items-center gap-2 flex-1 ${hiddenMetaKeys.includes(meta.key) ? 'opacity-50' : ''}`}>
+                  <span className="font-medium text-m text-gray-900 mt-1">{`${meta.key}`}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-m text-gray-600 mt-1">{`${meta.value}`}</span>
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
