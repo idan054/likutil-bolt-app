@@ -33,35 +33,45 @@ export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
 
     
 
+    
+
       const buildMetadataEntry = (
         item: any,
-        config: { label_path?: string; value_path?: string; parent_path?: string }
+        configs: { label_path?: string; value_path?: string; parent_path?: string }[]
       ) => {
-        if (!config.parent_path) {
-          console.error('Missing parent_path in config.');
-          return [];
-        }
-      
-        // Get parent objects using parent_path
-        const parents = JSONPath({ path: config.parent_path, json: item });
-      
+
+        // ADD THIS SIGN TOO!!!!
+        // Add the path_value. this will helps know which metadata is based on the path
+        // And those will eb shown in the order details page!
+        // let newMetadata: { label: any; value: any path_based}[] = [];
+
         let newMetadata: { label: any; value: any }[] = [];
       
-        parents.forEach((parent) => {
-          // Extract labels & values within the same parent object
-          const labels = config.label_path ? JSONPath({ path: config.label_path, json: parent }) : [];
-          const values = config.value_path ? JSONPath({ path: config.value_path, json: parent }) : [];
+        configs.forEach((config) => {
+          if (!config.parent_path) {
+            console.error('Missing parent_path in config:', config);
+            return;
+          }
       
-          // Pair labels with their corresponding values
-          labels.forEach((label, index) => {
-            if (values[index] !== undefined) {
-              const entry = { label, value: values[index] };
-
-              // Ensure no duplicates
-              if (!newMetadata.some((existing) => existing.label === entry.label && existing.value === entry.value)) {
-                newMetadata.push(entry);
+          // Get parent objects using parent_path
+          const parents = JSONPath({ path: config.parent_path, json: item });
+      
+          parents.forEach((parent) => {
+            // Extract labels & values within the same parent object
+            const labels = config.label_path ? JSONPath({ path: config.label_path, json: parent }) : [];
+            const values = config.value_path ? JSONPath({ path: config.value_path, json: parent }) : [];
+      
+            // Pair labels with their corresponding values
+            labels.forEach((label, index) => {
+              if (values[index] !== undefined) {
+                const entry = { label, value: values[index] };
+      
+                // Ensure no duplicates
+                if (!newMetadata.some((existing) => existing.label === entry.label && existing.value === entry.value)) {
+                  newMetadata.push(entry);
+                }
               }
-            }
+            });
           });
         });
       
@@ -77,15 +87,15 @@ export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
       
       const processMetadata = (
         data: OrderSummary[],
-        config?: { label_path?: string; value_path?: string; parent_path?: string }
+        configs: { label_path?: string; value_path?: string; parent_path?: string }[]
       ) => {
-        if (!config) return data;
+        if (!configs || configs.length === 0) return data;
       
         let result = data.map((order) => ({
           ...order,
           line_items: order.line_items.map((item) => ({
             ...item,
-            meta_data: [...(item.meta_data || []), ...buildMetadataEntry(item, config)]
+            meta_data: [...(item.meta_data || []), ...buildMetadataEntry(item, configs)]
           }))
         }));
       
@@ -93,18 +103,26 @@ export const getProcessingOrders = async (): Promise<OrderSummary[]> => {
         return result;
       };
       
-      // Example configurations:
-      let config = {
-        label_path: '$..Label',
-        value_path: '$..SelectedValues[*].Value',
-        parent_path: '$..Fields[*]'
-      };
+      // Example configurations (now supports multiple config objects)
+      let configs = [
+        // {
+        //   label_path: '$..NOT_WORKINGS',
+        //   value_path: '$..SelectedValues[*].JustSample',
+        //   parent_path: '$..ItsOk[*]'
+        // },
+        // {
+        //   label_path: '$..Label',
+        //   value_path: '$..SelectedValues[*].Value',
+        //   parent_path: '$..Fields[*]'
+        // }
+      ];
+      
     
     
     return apiClient<OrderSummary[]>({      method: 'GET',
       path: `/orders/?${params.toString()}`,
     })
-    .then(response => processMetadata(response, config)
+    .then(response => processMetadata(response, configs)
   );
 };
 

@@ -1,9 +1,20 @@
 import { useState } from 'react';
+import { apiClient } from '../services/api/client';
+import { OrderStatus } from '../types/order';
+import { BASE_URL } from '../services/auth/woo-auth';
 
 interface MetadataOption {
-  id: number;
-  name: string;
-  description: string;
+  index: number;
+  key: string;
+  value: string;
+  parent?: string;
+  extra?: string;
+  original_path?: {
+    parent_path: string;
+    label_path: string;
+    value_path: string;
+    extra_path: string;
+  };
 }
 
 interface UseGetAiMetadataReturn {
@@ -18,7 +29,15 @@ interface UseGetAiMetadataReturn {
   setShowResults: (show: boolean) => void;
 }
 
-export const useGetAiMetadata = (productId: string | number): UseGetAiMetadataReturn => {
+export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
+
+    return apiClient<OrderStatus[]>({
+      method: 'GET',
+      path: `/orders/statuses`,
+    });
+  };
+
+export const useGetAiMetadata = (meta_data: Array<any>): UseGetAiMetadataReturn => {
   const [options, setOptions] = useState<MetadataOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,25 +48,25 @@ export const useGetAiMetadata = (productId: string | number): UseGetAiMetadataRe
     setIsLoading(true);
     setError(null);
 
+
     try {
-    //   const response = await fetch(`/api/ai/metadata/${productId}`, {
-    //     method: 'GET',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //   });
+      console.log(meta_data)
+    
+      const response = await fetch(`${BASE_URL}/api/ai-get-clean-metadata`, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({meta_data : meta_data})
+      });
 
-    //   if (!response.ok) {
-    //     throw new Error(`HTTP error! status: ${response.status}`);
-    //   }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+      }
 
-    //   const data = await response.json();
+      const data: MetadataOption[] =    await response.json();
 
-    const data = [
-        { id: 1, name: 'שדות מוצר מותאמים אישית', description: 'מפרט מוצר נוסף' },
-        { id: 2, name: 'פרטי מלאי', description: 'מידע מורחב על המלאי' },
-        { id: 3, name: 'מאפייני משלוח', description: 'כללי משלוח ספציפיים למוצר' }
-      ];
 
       setOptions(data);
     } catch (err) {
@@ -63,14 +82,14 @@ export const useGetAiMetadata = (productId: string | number): UseGetAiMetadataRe
   const handleOptionSelect = (optionId: number) => {
     setSelectedOptions(prev => 
       prev.includes(optionId)
-        ? prev.filter(id => id !== optionId)
+        ? prev.filter(index => index !== optionId)
         : [...prev, optionId]
     );
   };
 
   const handleSubmitSelection = () => {
     const selectedItems = options.filter(option => 
-      selectedOptions.includes(option.id)
+      selectedOptions.includes(option.index)
     );
     console.log('Selected items:', selectedItems);
     setSelectedOptions([]);

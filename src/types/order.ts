@@ -24,11 +24,14 @@ export interface LineItem {
     price: number;
     stock_quantity?: number;
   };
-  meta_data?: Array<{
-    id: number;
-    key: string;
-    value: any;
-  }>;
+  // meta_data?: Array<
+  // {
+  //   id: number;
+  //   key: string;
+  //   value: any;
+  // }>;
+
+  meta_data?: Array<any>;
   
 }
 
