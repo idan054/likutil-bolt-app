@@ -9,6 +9,8 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
+// npx vite build && netlify deploy --prod --dir=dist       
+// npm run dev
 export const APP_VERSION = '19.02.25 | Version 1.0';
 
 // FROM MAC
