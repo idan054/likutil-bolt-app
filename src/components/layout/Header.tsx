@@ -37,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
 
       {/* Logo and Toggle */}
       <div className="flex justify-center items-center gap-1 mt-4">
+        
         <ChevronDown 
           className={`text-gray-300 transition-transform duration-200 cursor-pointer ${
             showAdvantages ? 'transform rotate-180' : ''

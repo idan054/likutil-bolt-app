@@ -33,9 +33,11 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
   // console.log('activeIntegrationDetails', activeIntegrationDetails)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="integration-popup">
 
-           {activeIntegration && activeIntegrationDetails && (
+
+
+      {activeIntegration && activeIntegrationDetails && (
         <div
           className="transition-all duration-300 ease-in-out transform"
           style={{
@@ -71,18 +73,23 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
       `}</style>
 
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {integrations.map(integration => (
-          <IntegrationCard
-            key={integration.provider}
-            integration={integration}
-            isActive={activeIntegration === integration.provider}
-            onClick={() => onSelect(integration.provider)}
-            onEdit={handleEdit}
-          />
-        ))}
- 
-        <RequestCompanyCard />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="integration-grid">
+      <RequestCompanyCard />
+
+        {[...integrations]
+          .sort((a, b) => (a.index || 0) - (b.index || 0))
+          .map(integration => (
+            <IntegrationCard
+              key={integration.provider}
+              integration={integration}
+              isActive={activeIntegration === integration.provider}
+              onClick={() => {
+                document.getElementById('integration-popup')?.scrollIntoView({ behavior: 'smooth' });
+                onSelect(integration.provider);
+              }}
+              onEdit={handleEdit}
+            />
+          ))}
       </div>
 
 

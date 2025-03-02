@@ -19,7 +19,7 @@ export const SettingsTabs: React.FC<SettingsTabsProps> = ({
   onClose,
   onSave,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>('store');
+  const [activeTab, setActiveTab] = useState<TabId>('delivery');
   const [showDeliveryTab, setShowDeliveryTab] = useState(false);
   const [formData, setFormData] = useState<SettingsFormData>(
     initialData || {

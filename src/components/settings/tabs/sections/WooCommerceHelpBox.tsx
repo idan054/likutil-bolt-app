@@ -1,7 +1,7 @@
 import React from 'react';
 import { Info, Lock } from 'lucide-react';
 
-export const WooCommerceInfoBox: React.FC = () => (
+export const WooCommerceHelpBox: React.FC = () => (
   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
     
     <Info className="text-blue-600 shrink-0" size={24} />

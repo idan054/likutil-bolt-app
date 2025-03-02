@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 export const RequestCompanyCard: React.FC = () => {
   const handleAddCompany = () => {
     const message = encodeURIComponent('שלום, אשמח שתוסיפו חברת משלוחים נוספת למערכת ליקוטיל');
-    const whatsappUrl = `https://wa.me/972584770076?text=${message}`;
+    const whatsappUrl = `https://wa.me/972557113987?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { WooCommerceInfoBox } from './WooCommerceInfoBox';
+import { WooCommerceHelpBox } from './WooCommerceHelpBox';
 import { ChevronDown } from 'lucide-react';
 import type { SettingsFormData } from '../../../../types/settings';
 
@@ -19,7 +19,7 @@ export const WooCommerceSettings: React.FC<WooCommerceSettingsProps> = ({
   return (
     <div className="space-y-6">
       {/* WooCommerce Info Box */}
-      <WooCommerceInfoBox />
+      
 
       {/* Store URL - Most important field */}
       <div>

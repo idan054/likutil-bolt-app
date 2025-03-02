@@ -9,6 +9,7 @@ export interface DeliveryField {
 }
 
 export interface DeliveryIntegration {
+  index: number;
   provider: string;
   name: string;
   description: string;

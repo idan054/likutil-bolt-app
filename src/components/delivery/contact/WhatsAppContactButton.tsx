@@ -13,7 +13,7 @@ export const WhatsAppContactButton: React.FC = () => {
       `אשמח לקבל פרטים על חיבור חברת משלוחים.`
     );
     
-    window.open(`https://wa.me/972584770076?text=${message}`, '_blank');
+    window.open(`https://wa.me/972557113987?text=${message}`, '_blank');
   };
 
   return (
