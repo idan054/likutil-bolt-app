@@ -7,6 +7,7 @@ import type { LineItem } from '../../../types/order';
 import { QuantityBadge } from '../../ui/QuantityBadge';
 import { Eclipse, MoreHorizontal, PanelBottomClose, X, Check, RefreshCcw, RotateCw, Divide, Loader2, BookmarkPlus, ListPlus, Diamond, PackagePlus, RectangleHorizontal, ListCollapse, LayoutList, Wrench, Settings2, Pencil, Settings, Bolt, Delete, XCircle, EyeOff, Eye } from 'lucide-react';
 import { useGetAiMetadata } from '../../../hooks/useGetAiMetadata';
+import toast from 'react-hot-toast';
 
 interface OrderItemCardProps {
   item: LineItem;
@@ -88,7 +89,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
           }}
           className="p-1 rounded-full hover:bg-blue-100 transition-colors"
         >
-          <Wrench
+          <Settings2
             size={14}
             className={`transform transition-transform ${isMetadataOpen ? '-rotate-90' : 'rotate-0'} text-gray-400 hover:text-blue-600`}
           />
@@ -121,28 +122,29 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
         <div className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
           {localMetaData.map((meta, index) => (
             (!hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
-              <div key={index} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors">
-                {isMetadataOpen && (
-                  <button 
-                    className="p-1 rounded-full hover:bg-gray-100 transition-all pl-3"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleMetadataVisibility(meta.key);
-                    }}
-                  >
-                    {hiddenMetaKeys.includes(meta.key) ? (
-                      <EyeOff size={18} className="text-red-500" />
-                    ) : (
-                      <Eye size={18} className="text-blue-500" />
-                    )}
-                  </button>
-                )}
+              <div key={index} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors relative">
+        
 
                 <div className={`flex items-center gap-2 flex-1 ${hiddenMetaKeys.includes(meta.key) ? 'opacity-50' : ''}`}>
                   <span className="font-medium text-m text-gray-900 mt-1">{`${meta.key}`}</span>
                   <span className="text-gray-400">•</span>
                   <span className="text-m text-gray-600 mt-1">{`${meta.value}`}</span>
                 </div>
+
+                <button 
+                  className={`p-1 rounded-full hover:bg-gray-100 transition-all pl-3 ${!isMetadataOpen && 'opacity-0 group-hover:opacity-100'}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleMetadataVisibility(meta.key);
+                    toast.success(`${meta.key} • ${hiddenMetaKeys.includes(meta.key)? 'יוצג מעכשיו בכל המוצרים' : 'יוסתר מעכשיו בכל המוצרים'}`);
+                  }}
+                >
+                  {hiddenMetaKeys.includes(meta.key) ? (
+                    <EyeOff size={18} className="text-gray-400" />
+                  ) : (
+                    <Eye size={18} className="text-gray-400" />
+                  )}
+                </button>
               </div>
             )
           ))}
