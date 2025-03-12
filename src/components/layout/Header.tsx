@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { SystemAdvantages } from './advantages/SystemAdvantages';
@@ -7,6 +7,8 @@ import { UserMenu } from '../auth/UserMenu';
 import { SettingsModal } from '../settings/SettingsModal';
 import { auth } from '../../config/firebase';
 import { useSettings } from '../../hooks/useSettings';
+import { useDeliveryIntegrations } from '../../hooks/settings/useDeliveryIntegrations';
+
 
 interface HeaderProps {
   isLoading?: boolean;
@@ -17,10 +19,24 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [user] = useAuthState(auth);
   const { settings, updateSettings } = useSettings();
+  const { activeIntegrations } = useDeliveryIntegrations();
 
   const toggleAdvantages = () => setShowAdvantages(prev => !prev);
 
   const currentUser = user;
+useEffect(() => {
+  const timer = setTimeout(() => {
+    console.log('activeIntegrations.length', activeIntegrations.length)
+
+    if (currentUser && activeIntegrations && activeIntegrations.length === 0) {
+      setShowSettings(true);
+    } else {
+      setShowSettings(false);
+    }
+  }, 1000);
+
+  return () => clearTimeout(timer);
+}, [currentUser, activeIntegrations]);
 
   return (
     <div className="mb-2">

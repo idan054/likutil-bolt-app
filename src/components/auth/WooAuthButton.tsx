@@ -71,7 +71,7 @@ export const WooAuthButton: React.FC = () => {
       password
     )}&source=${encodeURIComponent(cleanUrl)}&oneTimeToken=${oneTimeToken}`;
 
-    const wooAuthUrl = `https://${cleanUrl}/wc-auth/v1/authorize?app_name=Likutil&scope=read_write&user_id=1&return_url=${encodeURIComponent(
+    const wooAuthUrl = `https://${cleanUrl}/wc-auth/v1/authorize?app_name=Likutil Login&scope=read_write&user_id=1&return_url=${encodeURIComponent(
       returnUrl
     )}&callback_url=${BASE_URL}/woo-auth-callback?source=${cleanUrl}/${oneTimeToken}`;
 

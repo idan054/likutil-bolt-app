@@ -43,6 +43,7 @@ export const useDeliveryIntegrations = () => {
   const [integrations, setIntegrations] = useState<DeliveryIntegration[]>([]);
 
   const loadDeliveryCompanies = useCallback(async () => {
+    console.log('loadDeliveryCompanies()')
     try {
       const companiesSnapshot = await getDocs(collection(db, 'delivery_companies'));
       const companies: DeliveryIntegration[] = [];
@@ -70,6 +71,9 @@ export const useDeliveryIntegrations = () => {
 
       
       
+      console.log('settings?.connections', settings?.connections)
+      console.log('companies.length', companies.length)
+      
       if (settings?.connections && companies.length > 0) {
 
         const updatedIntegrations = companies.map(
@@ -80,6 +84,8 @@ export const useDeliveryIntegrations = () => {
             ),
           })
         );
+
+        
 
   
         setIntegrations(updatedIntegrations);  // All possible integrations

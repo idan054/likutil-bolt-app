@@ -9,7 +9,7 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
-//
+// ?success=1&pass=mVxqs-B1h07XqIOL&source=woocommerce-665866-5129043.cloudwaysapps.com&oneTimeToken=N32SAP&user_id=1
 // npx vite build && netlify deploy --prod --dir=dist       
 // npm run dev
 export const APP_VERSION = '02.03.25 | Version 1.0';

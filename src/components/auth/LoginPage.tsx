@@ -1,6 +1,6 @@
 import React from 'react';
 import { WooAuthButton } from './WooAuthButton';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, ArrowRight } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
 
 const CLOUD_BG = '/assets/images/clouds-bg-1.jpg';
@@ -25,7 +25,15 @@ export const LoginPage: React.FC = () => {
           />
         </a>
       </div>
-      <div className="w-full max-w-lg bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl">
+      <div className="w-full max-w-lg bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl relative">
+        {/* Back button */}
+        <a 
+          href="https://likutil.co.il" 
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 flex items-center gap-1 text-sm"
+        >
+          <ArrowRight size={16} />
+          
+        </a>
         <div className="text-center">
           <a href="https://likutil.co.il" target="_self" className="inline-block">
             <div className="bg-white/99 backdrop-blur-sm p-3 rounded-[24px] shadow-lg mb-6 mx-auto inline-block">
