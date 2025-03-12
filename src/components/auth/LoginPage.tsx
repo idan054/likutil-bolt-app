@@ -1,6 +1,6 @@
 import React from 'react';
 import { WooAuthButton } from './WooAuthButton';
-import { ShieldCheck, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, ArrowRight, Rocket, Clock, BarChart3, Truck, Cloud, MonitorSmartphone } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
 
 const CLOUD_BG = '/assets/images/clouds-bg-1.jpg';
@@ -45,19 +45,62 @@ export const LoginPage: React.FC = () => {
             </div>
           </a>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {/* <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-3 transform transition-all duration-300 hover:scale-105"> */}
             הממשק המשופר
           </h1>
           <p className="text-gray-400 text-lg font-medium mb-8">
           הממשק המשופר מייעל כל שלב בתהליך – מקבלת ההזמנה, דרך הליקוט ועד המשלוח וחוויית הלקוח
           </p>
+
+          {/* Advantages Grid */}
+          {/* <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="flex items-start gap-3 p-4 bg-blue-50/50 rounded-xl transition-all duration-300 hover:bg-blue-50">
+              <Rocket className="text-blue-500 shrink-0" size={24} />
+              <div className="text-right">
+                <h3 className="font-semibold text-gray-900 mb-1">ייעול תהליכים</h3>
+                <p className="text-sm text-gray-600">אוטומציה חכמה לניהול הזמנות ומשלוחים</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-green-50/50 rounded-xl transition-all duration-300 hover:bg-green-50">
+              <Clock className="text-green-500 shrink-0" size={24} />
+              <div className="text-right">
+                <h3 className="font-semibold text-gray-900 mb-1">חיסכון בזמן</h3>
+                <p className="text-sm text-gray-600">ליקוט מהיר ויעיל של הזמנות</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-purple-50/50 rounded-xl transition-all duration-300 hover:bg-purple-50">
+              <BarChart3 className="text-purple-500 shrink-0" size={24} />
+              <div className="text-right">
+                <h3 className="font-semibold text-gray-900 mb-1">ניתוח נתונים</h3>
+                <p className="text-sm text-gray-600">תובנות עסקיות וניהול מלאי חכם</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 bg-orange-50/50 rounded-xl transition-all duration-300 hover:bg-orange-50">
+              <Truck className="text-orange-500 shrink-0" size={24} />
+              <div className="text-right">
+                <h3 className="font-semibold text-gray-900 mb-1">ניהול משלוחים</h3>
+                <p className="text-sm text-gray-600">מעקב ובקרה על כל המשלוחים</p>
+              </div>
+            </div>
+          </div> */}
+
+
         </div>
 
         <div className="space-y-6">
+        {/* Mobile Remote Login Message */}
+          <div className="md:hidden flex items-center gap-2 justify-center text-blue-600 text-sm bg-blue-50 py-3 px-4 rounded-lg">
+            <span>הכי מומלץ להכנס מהמחשב ולסרוק את הברקוד</span>
+            <MonitorSmartphone size={16} className="text-blue-500" />
+          </div>
+
           <WooAuthButton />
           <div className="flex items-center gap-2 justify-center text-gray-500 text-sm bg-gray-50 py-2 px-4 rounded-lg">
             <ShieldCheck size={16} className="text-green-500" />
             <span>כניסה מאובטחת ומוגנת</span>
           </div>
+          
+  
         </div>
 
         <div className="mt-8 border-t pt-6">
