@@ -158,6 +158,7 @@ export const useProcessingOrders = () => {
     isLoading,
     isRefetching,
     error,
+    fetchOrders,
     refetch: useCallback((force = false) => fetchOrders(force), [fetchOrders]),
     lastFetched: lastFetchedRef.current,
   };
