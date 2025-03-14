@@ -97,7 +97,7 @@ export const NoteInput: React.FC<NoteInputProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={translations.orderNotes.placeholder}
+          placeholder={translations.orderNotes.placeholders[noteType]}
           className="flex-1 px-4 py-2 border rounded-lg text-right min-h-[40px] max-h-[200px]"
           disabled={isSubmitting}
         />

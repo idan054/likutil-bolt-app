@@ -118,7 +118,8 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
 
       
 
-      {Array.isArray(localMetaData) && localMetaData.length > 0 && (
+      {Array.isArray(localMetaData) && localMetaData.length > 0 && 
+       localMetaData.some(meta => !hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
         <div className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
           {localMetaData.map((meta, index) => (
             (!hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (

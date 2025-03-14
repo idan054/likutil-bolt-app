@@ -77,6 +77,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeU
           title="הגדרות"
         >
           <Settings size={19} />
+          {/* <img
+          src="/assets/svg/truck_settings.svg"
+          alt="WooCommerce Logo"
+          className="h-8 transition-transform group-hover:scale-110"
+        /> */}
         </button>
       </div>
     </a>

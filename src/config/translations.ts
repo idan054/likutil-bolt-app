@@ -52,6 +52,11 @@ export const translations = {
   },
   
   orderNotes: {
+    placeholders: {
+      private: "הוסף הערה פנימית...",
+      customer: "עדכון ללקוח במייל...",
+      whatsapp: "ה WhatsApp ישלח מליקוטיל, כדי לקבל תשובה מהלקוח יש לצרף מס׳ עסקי."
+    },
     title: 'הערות להזמנה',
     placeholder: 'הוסף הערה חדשה...',
     noNotes: 'אין הערות להזמנה זו',

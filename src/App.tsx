@@ -12,7 +12,7 @@ import { DevPage } from './components/dev/DevPage';
 // ?success=1&pass=mVxqs-B1h07XqIOL&source=woocommerce-665866-5129043.cloudwaysapps.com&oneTimeToken=N32SAP&user_id=1
 // npx vite build && netlify deploy --prod --dir=dist       
 // npm run dev
-export const APP_VERSION = '12.03.25 | Version 1.0';
+export const APP_VERSION = '12.03.25 | Version 1.1';
 
 // FROM MAC
 export const App: React.FC = () => {

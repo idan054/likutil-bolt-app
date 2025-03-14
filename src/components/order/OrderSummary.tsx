@@ -16,20 +16,28 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 }) => (
   <div className="mt-6 mx-3">
     <div className="flex justify-between items-center gap-2">
-      <div className="flex items-center gap-2 text-gray-600">
-        <Truck size={20} className="transform scale-x-[-1]" />
-        {/* <span>{translations.shipping}: {formatCurrency(shippingTotal)}</span> */}
-        <span>{formatCurrency(shippingTotal)}</span>
-      </div>
-      <div className="flex items-center gap-2 text-gray-600">
-        <CreditCard size={20} />
+    <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 ease-in-out hover:shadow-md">
+        <CreditCard size={24} className="text-blue-600" />
         {/* <span>{translations.paymentMethod}: {paymentMethod}</span> */}
-        <span>{paymentMethod}</span>
+        <span className="font-semibold text-blue-700">{paymentMethod}</span>
+    </div>
+
+
+
+      <div className="flex flex-col gap-2">
+        
+        <div className="flex items-center justify-between gap-2 text-gray-600">
+          <Truck size={20} className="transform scale-x-[-1]" />
+          {/* <span>{translations.shipping}: {formatCurrency(shippingTotal)}</span> */}
+          <span className="text-sm">{formatCurrency(shippingTotal)}</span>
+        </div>
+
+        <div className="flex items-center gap-2 font-bold text-xl">
+          <ShoppingBasketIcon size={20} />
+          <span>{formatCurrency(total)}</span>
+        </div>
       </div>
-      <div className="flex items-center gap-2 font-bold text-lg">
-        <ShoppingBasketIcon size={20} />
-        <span>{formatCurrency(total)}</span>
-      </div>
+      
     </div>
   </div>
 );

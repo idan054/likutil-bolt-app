@@ -15,7 +15,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
   return (
     <div className="space-y-2 text-right">
       {hasEmail && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-1.5">
           <a
             href={`mailto:${email}`}
             className="text-gray-700 hover:text-blue-600 flex-1"
@@ -39,9 +39,8 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
       )}
 
       {phone && (
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2`}>
           <a
-            // href={`tel:${phone}`}
             href="#"
             onClick={(e) => {
               e.preventDefault();
@@ -57,7 +56,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
               e.preventDefault();
               setWhatsAppNote(true);
             }}
-            className="text-green-600 hover:text-green-700"
+            className="text-green-600 hover:text-green-700 p-2 rounded-full bg-green-100 transition-all duration-200 transform hover:scale-110 hover:bg-green-200 flex items-center justify-center"
             title="צור קשר בוואטסאפ"
           >
             <WhatsAppIcon size={20} />

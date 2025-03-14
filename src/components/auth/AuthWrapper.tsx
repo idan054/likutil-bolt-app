@@ -19,11 +19,11 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   
 
   // Only show settings modal for authenticated users without settings
-  useEffect(() => {
-    const currentUser =  user;
-    const shouldShowSettings = currentUser && !isLoadingSettings && !settings;
-    setShowSettings(shouldShowSettings ?? false);
-  }, [user, settings, isLoadingSettings,]);
+  // useEffect(() => {
+  //   const currentUser =  user;
+  //   const shouldShowSettings = currentUser && !isLoadingSettings && !settings;
+  //   setShowSettings(shouldShowSettings ?? false);
+  // }, [user, settings, isLoadingSettings,]);
 
   // Handle initial auth loading
   if (!user) {
