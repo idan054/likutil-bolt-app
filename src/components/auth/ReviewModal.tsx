@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface ReviewModalProps {
   onClose: () => void;
@@ -17,9 +18,22 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ onClose, onShare, stor
     "מערכת מקצועית שעוזרת לי להתמקד בצמיחת העסק 🚀"
   ];
 
-  const handleShare = () => {
-    const text = reviewTemplates.join('\n\n');
-    onShare(text);
+  const handleTemplateClick = (template: string) => {
+    setCustomReview(template);
+  };
+
+  const handleShareToWooGroup = () => {
+    if (!customReview) return;
+    
+    navigator.clipboard.writeText(customReview)
+      .then(() => {
+        toast.success('הטקסט הועתק! שתפו אותו!');
+        // Wait 1 second before redirecting
+        setTimeout(() => {
+          window.open('https://www.facebook.com/groups/search/groups_home/?q=%D7%95%D7%95%D7%A8%D7%93%D7%A4%D7%A8%D7%A1%20Woocommerce%20%D7%95%D7%95%D7%A7%D7%95%D7%9E%D7%A8%D7%A1', '_blank');
+        }, 1000);
+      })
+      .catch(() => toast.error('שגיאה בהעתקה ללוח'));
   };
 
   return (
@@ -47,7 +61,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ onClose, onShare, stor
               <div
                 key={index}
                 className="p-4 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer"
-                onClick={() => onShare(template)}
+                onClick={() => handleTemplateClick(template)}
               >
                 <p className="text-blue-900">{template}</p>
               </div>
@@ -74,10 +88,11 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ onClose, onShare, stor
             ביטול
           </button>
           <button
-            onClick={() => customReview ? onShare(customReview) : handleShare()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={handleShareToWooGroup}
+            disabled={!customReview}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {customReview ? 'שתף משוב אישי' : 'שתף את כל המשובים'}
+            שתף בקבוצת ווקומרס
           </button>
         </div>
       </div>
