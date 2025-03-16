@@ -1,6 +1,6 @@
 import React from 'react';
 import { WooAuthButton } from './WooAuthButton';
-import { ShieldCheck, ArrowLeft, ArrowRight, Rocket, Clock, BarChart3, Truck, Cloud, MonitorSmartphone } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, ArrowRight, Rocket, Clock, BarChart3, Truck, Cloud, MonitorSmartphone, Camera } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
 
 const CLOUD_BG = '/assets/images/clouds-bg-1.jpg';
@@ -53,7 +53,7 @@ export const LoginPage: React.FC = () => {
           </p>
 
           {/* Advantages Grid */}
-          {/* <div className="grid grid-cols-2 gap-4 mb-8">
+           {/* <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="flex items-start gap-3 p-4 bg-blue-50/50 rounded-xl transition-all duration-300 hover:bg-blue-50">
               <Rocket className="text-blue-500 shrink-0" size={24} />
               <div className="text-right">
@@ -82,16 +82,16 @@ export const LoginPage: React.FC = () => {
                 <p className="text-sm text-gray-600">מעקב ובקרה על כל המשלוחים</p>
               </div>
             </div>
-          </div> */}
+          </div>  */}
 
 
         </div>
 
         <div className="space-y-6">
         {/* Mobile Remote Login Message */}
-          <div className="md:hidden flex items-center gap-2 justify-center text-blue-600 text-sm bg-blue-50 py-3 px-4 rounded-lg">
-            <span>הכי מומלץ להכנס מהמחשב ולסרוק את הברקוד</span>
-            <MonitorSmartphone size={16} className="text-blue-500" />
+          <div className="md:hidden flex items-center gap-3 justify-center text-blue-600 font-semibold text-base bg-white py-4 px-6 rounded-lg border-2 border-blue-500 mt-4">
+            <span>מומלץ להכנס מהמחשב ולסרוק את הברקוד QR!</span>
+            <MonitorSmartphone size={24} className="text-blue-600" />
           </div>
 
           <WooAuthButton />
@@ -99,6 +99,7 @@ export const LoginPage: React.FC = () => {
             <ShieldCheck size={16} className="text-green-500" />
             <span>כניסה מאובטחת ומוגנת</span>
           </div>
+          
           
   
         </div>

@@ -16,8 +16,15 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 }) => (
   <div className="mt-6 mx-3">
     <div className="flex justify-between items-center gap-2">
-    <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 ease-in-out hover:shadow-md">
-        <CreditCard size={24} className="text-blue-600" />
+    <div className="flex items-center gap-2 bg-blue-50 p-3 rounded-lg border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 ease-in-out hover:shadow-md">
+        {/* <CreditCard size={24} className="text-blue-600" /> */}
+
+        <img
+          src="/assets/svg/credit-coin.svg"
+          alt="WooCommerce Logo"
+          className="h-6 transition-transform group-hover:scale-100"
+        />
+
         {/* <span>{translations.paymentMethod}: {paymentMethod}</span> */}
         <span className="font-semibold text-blue-700">{paymentMethod}</span>
     </div>

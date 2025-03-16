@@ -13,6 +13,33 @@ import { toast } from 'react-hot-toast';
 
 export const QR_MODE_PASS = 'GodMode2003';
 
+export const generateReturnUrl = (cleanUrl: string, godMode: boolean, oneTimeToken: String | undefined) => {
+  const isDevMode = (process.env.NODE_ENV === 'development');
+  const host =  isDevMode ? 'https://my.likutil.co.il/dev' : 'https://my.likutil.co.il';
+  
+  const password = generateStorePassword(cleanUrl);
+  
+  const returnUrl = `${host}/?success=1&pass=${encodeURIComponent(
+    password
+  )}&source=${encodeURIComponent(cleanUrl)}&oneTimeToken=${godMode ?QR_MODE_PASS :  oneTimeToken}`;
+
+  return returnUrl;
+};
+
+
+export const generateWooAuthUrl = (cleanUrl: string) => {
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const phone = urlParams.get('phone') ?? '';
+  const oneTimeToken = Math.random().toString(36).substring(2, 8).toUpperCase();
+  
+  const returnUrl = generateReturnUrl(cleanUrl, false, oneTimeToken);
+
+  return `https://${cleanUrl}/wc-auth/v1/authorize?app_name=Likutil Login&scope=read_write&user_id=1&return_url=${encodeURIComponent(
+    returnUrl
+  )}&callback_url=${BASE_URL}/woo-auth-callback?source=${cleanUrl}/${oneTimeToken}/${phone}`;
+};
+
 export const WooAuthButton: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [storeUrl, setStoreUrl] = useState(() => {
@@ -61,26 +88,16 @@ export const WooAuthButton: React.FC = () => {
     }
   }, [showUrlInput]);
 
-  const openWooAuthPopup = (cleanUrl: string) => {
-    const isDevMode = (process.env.NODE_ENV === 'development');
-    const host =  isDevMode ? 'https://my.likutil.co.il/dev' : 'https://my.likutil.co.il';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const phone = urlParams.get('phone');
-    const oneTimeToken = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const password = generateStorePassword(cleanUrl);
-    const returnUrl = `${host}/?success&pass=${encodeURIComponent(
-      password
-    )}&source=${encodeURIComponent(cleanUrl)}&oneTimeToken=${oneTimeToken}`;
 
-    const wooAuthUrl = `https://${cleanUrl}/wc-auth/v1/authorize?app_name=Likutil Login&scope=read_write&user_id=1&return_url=${encodeURIComponent(
-      returnUrl
-    )}&callback_url=${BASE_URL}/woo-auth-callback?source=${cleanUrl}/${oneTimeToken}/${phone}`;
+const openWooAuthPopup = (cleanUrl: string) => {
+  const isDevMode = (process.env.NODE_ENV === 'development');
+  const wooAuthUrl = generateWooAuthUrl(cleanUrl);
 
-    isDevMode
+  isDevMode
     ? window.open(wooAuthUrl, '_blank') // Opens in new tab
     : window.location.href = wooAuthUrl; // Current Tab
-  };
+};
 
   const handleWooAuth = async () => {
     if (!storeUrl.trim() || isLoading) return;

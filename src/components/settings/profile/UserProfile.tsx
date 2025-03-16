@@ -6,6 +6,8 @@ import QRCode from 'react-qr-code';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../hooks/useAuth';
+import { generateReturnUrl, generateWooAuthUrl } from '../../auth/WooAuthButton';
+import { useSettings } from '../../../hooks/useSettings';
 
 export const UserProfile: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -14,6 +16,8 @@ export const UserProfile: React.FC = () => {
   const currentUser = user;
   
   if (!currentUser) return null;
+
+  const { settings } = useSettings();
 
   return (
     <div className="text-center">
@@ -39,23 +43,32 @@ export const UserProfile: React.FC = () => {
         </div>
       </div>
 
-      {/* QR Code Section */}
+      {/* QR Code Section - Hidden on mobile, visible on desktop */}
       {currentUser && (
-        <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="hidden sm:block mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
           <div className="relative">
-            <div className="flex justify-center opacity-50">
+            <div className="flex justify-center opacity-100">
               <QRCode
-                value={`https://my.likutil.co.il/?source=${currentUser.email.split('@')[0]}&oneTimeToken=${Math.random().toString(36).substring(2, 8).toUpperCase()}`}
+                value={`${generateReturnUrl(settings?.storeUrl ?? '', true, '')}`}
                 size={150}
-                level="H"
-                className="mx-auto"
+                level="L"
+                className="mx-auto p-3 bg-white rounded-lg shadow-sm"
+                fgColor="#1a1a1a"
+                bgColor="#ffffff"
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb',
+                }}
               />
             </div>
-            <div className="absolute inset-0 flex items-center justify-center">
+
+            {/* <div className="absolute inset-0 flex items-center justify-center">
               <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                 זמין בקרוב...
               </span>
-            </div>
+            </div> */}
+
           </div>
           <p className="mt-2 text-sm text-gray-600 text-center flex items-center justify-center gap-1.5">
             <TabletSmartphone size={16} className="inline-block" />
