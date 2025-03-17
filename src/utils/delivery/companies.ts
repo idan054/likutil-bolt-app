@@ -5,14 +5,21 @@ export const filterCompaniesByIds = (
   allowedIds: string[]
 ): DeliveryIntegration[] => {
 
-  return companies; // AKA Diasbled
+
+  // return companies; // AKA Show All - Filter Diasbled
 
   // Collection "users" -> "showOnlyCompanies" field is an array of company IDs
   if (!Array.isArray(allowedIds) || allowedIds.length === 0) {
     return [];
   }
 
-  return companies.filter(company => allowedIds.includes(company.provider));
+  let filteredCompanies = companies.filter(company => allowedIds.includes(company.provider));
+  console.log('filteredCompanies');
+  console.log(filteredCompanies.length);
+  console.log(filteredCompanies);
+
+
+  return filteredCompanies;
 };
 
 export const sortCompaniesByConnection = (

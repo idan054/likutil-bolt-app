@@ -71,6 +71,7 @@ useEffect(() => {
           : 'max-h-0 opacity-0 overflow-hidden'
       }`}>
         <div className="max-w-4xl mx-auto pt-4 pb-2">
+          <h2 className="text-2xl text-gray-700 font-extrabold text-center mb-4 transform hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-200 bg-clip-text text-transparent">צריכים פיתוח? פנו אלינו ✨</h2>
           <SystemAdvantages />
         </div>
       </div>

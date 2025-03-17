@@ -9,6 +9,7 @@ export const SystemAdvantages: React.FC = () => (
         key={index} 
         icon={advantage.icon} 
         text={advantage.text} 
+        email="idanbit80@gmail.com"
       />
     ))}
   </div>

@@ -39,7 +39,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   if (companies.length === 0) {
     return (
       <div className="flex flex-col items-center py-4">
-        <p className="text-gray-500 mb-2">לא נמצאו חברות משלוחים זמינות</p>
+        <p className="text-gray-500 mb-2">פנה אלינו ונחבר אותך תוך דקות לחברת השילוח שלך</p>
         <WhatsAppContactButton />
       </div>
     );

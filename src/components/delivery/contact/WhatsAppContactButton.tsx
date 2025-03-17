@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useSettings } from '../../../hooks/useSettings';
+import { WhatsAppIcon } from '../../icons/WhatsAppIcon';
 
 export const WhatsAppContactButton: React.FC = () => {
   const { settings } = useSettings();
@@ -21,8 +22,8 @@ export const WhatsAppContactButton: React.FC = () => {
       onClick={handleContact}
       className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto mt-4"
     >
-      <MessageCircle size={20} />
-      <span>ווטסאפ לבקשת הצטרפות חינם</span>
+      <WhatsAppIcon size={20} />
+      <span>ווטסאפ לחיבור סופר מהיר</span>
     </button>
   );
 };

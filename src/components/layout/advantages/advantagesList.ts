@@ -1,50 +1,35 @@
 import { 
-  Truck, 
-  Package, 
-  MessageSquare, 
-  Bell, 
-  Clock,
-  CheckCircle,
-  Calendar,
-  Star,
-  AlertTriangle
+  Code,
+  ShoppingCart,
+  Rocket,
+  Shield,
+  Mail,
+  HeartHandshake
 } from 'lucide-react';
 
 export const advantages = [
   {
-    icon: Truck,
-    text: 'חיבור לחברות שילוח מובילות ופתיחת משלוחים אוטומטית',
+    icon: Code,
+    text: 'פיתוח וורדפרס מתקדם',
   },
   {
-    icon: Package,
-    text: 'מעקב וניהול סטטוס הזמנות בזמן אמת',
+    icon: ShoppingCart,
+    text: 'פתרונות לחנויות אונליין WooCommerce',
   },
   {
-    icon: MessageSquare,
-    text: 'תקשורת מהירה עם לקוחות בצ׳אט, בווטסאפ ובמייל',
+    icon: Rocket,
+    text: 'אופטימיזציה ומהירות אתר',
   },
   {
-    icon: Bell,
-    text: 'עדכון אוטומטי של סטטוס הזמנה',
+    icon: Shield,
+    text: 'אבטחה ותחזוקה שוטפת',
   },
   {
-    icon: Clock,
-    text: 'חסכון בזמן עבודה',
+    icon: Mail,
+    text: 'צרו איתי קשר idanbit80@gmail.com',
   },
   {
-    icon: AlertTriangle,
-    text: 'התראות למניעת טעויות',
-  },
-  {
-    icon: CheckCircle,
-    text: 'ניהול משימות יעיל',
-  },
-  {
-    icon: Calendar,
-    text: 'תכנון משלוחים חכם',
-  },
-  {
-    icon: Star,
-    text: 'שירות לקוחות מעולה',
+    icon: HeartHandshake,
+    text: 'ליווי אישי והצלחת לקוח',
   },
 ];
