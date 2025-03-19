@@ -4,6 +4,7 @@ import Base64 from 'crypto-js/enc-base64';
 const SALT_PREFIX = 'likutil-v2';
 const SALT_SUFFIX = 'secure-access';
 
+// Should be genereted on Server (:
 export const generateStorePassword = (storeUrl: string): string => {
   const cleanUrl = storeUrl.replace(/[^a-z0-9]/gi, '').toLowerCase();
   const hashInput = `${SALT_PREFIX}${cleanUrl}${SALT_SUFFIX}`;

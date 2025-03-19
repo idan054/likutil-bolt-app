@@ -1,8 +1,9 @@
 export interface UserSettings {
   favicon: string | undefined;
   storeUrl: string;
-  consumerKey: string;
-  consumerSecret: string;
+  accessToken: string | undefined;
+  consumerKey: string | undefined;
+  consumerSecret: string | undefined;
   lastUpdated?: string;
 }
 
@@ -10,6 +11,7 @@ export interface UserSettings {
 export interface SettingsFormData {
   favicon: string | undefined;
   storeUrl: string;
-  consumerKey: string;
-  consumerSecret: string;
+  accessToken: string | undefined;
+  consumerKey: string | undefined;
+  consumerSecret: string | undefined;
 }

@@ -24,19 +24,19 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
   const toggleAdvantages = () => setShowAdvantages(prev => !prev);
 
   const currentUser = user;
-useEffect(() => {
-  const timer = setTimeout(() => {
-    console.log('activeIntegrations.length', activeIntegrations.length)
+// useEffect(() => {
+//   const timer = setTimeout(() => {
+//     console.log('activeIntegrations.length', activeIntegrations.length)
 
-    if (currentUser && activeIntegrations && activeIntegrations.length === 0) {
-      setShowSettings(true);
-    } else {
-      setShowSettings(false);
-    }
-  }, 1000);
+//     if (currentUser && activeIntegrations && activeIntegrations.length === 0) {
+//       // setShowSettings(true);
+//     } else {
+//       // setShowSettings(false);
+//     }
+//   }, 1000);
 
-  return () => clearTimeout(timer);
-}, [currentUser, activeIntegrations]);
+//   return () => clearTimeout(timer);
+// }, [currentUser, activeIntegrations]);
 
   return (
     <div className="mb-2">
@@ -80,7 +80,7 @@ useEffect(() => {
       {showSettings && (
         <SettingsModal
           initialData={settings || undefined}
-          onSave={updateSettings}
+          // onSave={updateSettings}
           onClose={() => setShowSettings(false)}
         />
       )}

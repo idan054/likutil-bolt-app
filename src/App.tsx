@@ -9,7 +9,12 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
-// ?success=1&pass=mVxqs-B1h07XqIOL&source=woocommerce-665866-5129043.cloudwaysapps.com&oneTimeToken=N32SAP&user_id=1
+// WooCommerce
+// /?success=1&pass=cGuvON8_8ewZCtKz&source=royal-reserve.shop&oneTimeToken=GodMode2003&user_id=1
+
+// WooCommerce
+
+
 // npx vite build && netlify deploy --prod --dir=dist       
 // npm run dev
 export const APP_VERSION = '12.03.25 | Version 1.1';

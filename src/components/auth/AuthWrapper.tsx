@@ -3,7 +3,6 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../config/firebase';
 import { LoginPage } from './LoginPage';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { SettingsModal } from '../settings/SettingsModal';
 import { useSettings } from '../../hooks/useSettings';
 
 
@@ -14,7 +13,7 @@ interface AuthWrapperProps {
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [user] = useAuthState(auth);
   const { settings, isLoading: isLoadingSettings } = useSettings();
-  const [showSettings, setShowSettings] = useState(false);
+  
 
   
 
@@ -42,12 +41,12 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   return (
     <>
       {children}
-      {showSettings && (
+      {/* {showSettings && (
         <SettingsModal
           initialData={settings || undefined}
           onClose={() => settings && setShowSettings(false)}
         />
-      )}
+      )} */}
     </>
   );
 };

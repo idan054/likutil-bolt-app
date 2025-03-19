@@ -90,10 +90,10 @@ class SettingsStorage {
     return (
       typeof settings.storeUrl === 'string' &&
       settings.storeUrl.trim().length > 0 &&
-      typeof settings.consumerKey === 'string' &&
-      settings.consumerKey.trim().length > 0 &&
-      typeof settings.consumerSecret === 'string' &&
-      settings.consumerSecret.trim().length > 0
+      (settings.consumerKey === undefined || 
+        (typeof settings.consumerKey === 'string' && settings.consumerKey.trim().length > 0)) &&
+      (settings.consumerSecret === undefined || 
+        (typeof settings.consumerSecret === 'string' && settings.consumerSecret.trim().length > 0))
     );
   }
 

@@ -4,9 +4,15 @@ import { settingsStorage } from './storage';
 import type { UserSettings } from '../../types/settings';
 
 export const getUserSettings = async (userId: string): Promise<UserSettings | null> => {
+
+
   try {
     const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
+
+    console.log("userId", userId)
+    console.log("docSnap", docSnap.data())
+    
     
     if (docSnap.exists()) {
       const userData = docSnap.data();
@@ -16,13 +22,17 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
       // Create settings object from user data
       const settings: UserSettings = {
         storeUrl: userData.storeUrl,
-        consumerKey: userData.consumerKey,
-        consumerSecret: userData.consumerSecret,
-        lastUpdated: userData.lastLogin || userData.createdAt,
+        consumerKey: userData?.consumerKey,
+        accessToken: userData?.accessToken,
+        consumerSecret: userData?.consumerSecret,
+        lastUpdated: userData?.lastLogin || userData?.createdAt,
         favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`
       };
 
       // Save to local storage for API client
+      console.log("settings", settings)
+
+      // ANY IDEA Y THIS NOT WORKS?
       settingsStorage.set(settings);
       
       return settings;

@@ -2,6 +2,7 @@ import React from 'react';
 import { WooAuthButton } from './WooAuthButton';
 import { ShieldCheck, ArrowLeft, ArrowRight, Rocket, Clock, BarChart3, Truck, Cloud, MonitorSmartphone, Camera } from 'lucide-react';
 import { AppInfoStatus } from '../ui/AppInfoStatus';
+import { ShopifyAuthButton } from './ShopifyAuthButton';
 
 const CLOUD_BG = '/assets/images/clouds-bg-1.jpg';
 
@@ -94,6 +95,7 @@ export const LoginPage: React.FC = () => {
             <MonitorSmartphone size={24} className="text-blue-600" />
           </div>
 
+          <ShopifyAuthButton />
           <WooAuthButton />
           <div className="flex items-center gap-2 justify-center text-gray-500 text-sm bg-gray-50 py-2 px-4 rounded-lg">
             <ShieldCheck size={16} className="text-green-500" />

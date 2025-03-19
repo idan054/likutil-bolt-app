@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowRightCircle, Loader2, LogInIcon } from 'lucide-react';
+import { ArrowRight, ArrowRightCircle, Loader2, LogInIcon } from 'lucide-react';
 import {
-  createWooUser,
-  checkExistingUser,
-  signInWooUser,
+  createFirebaseUser,
+  tryGetUserData,
+  signInFirebaseUser,
   BASE_URL,
   resetUserOneTimeToken,
+  checkExistingUser,
+  
 } from '../../services/auth/woo-auth';
 import { sanitizeUrl } from '../../utils/url';
 import { generateStorePassword } from '../../utils/auth/password';
@@ -17,6 +19,7 @@ export const generateReturnUrl = (cleanUrl: string, godMode: boolean, oneTimeTok
   const isDevMode = (process.env.NODE_ENV === 'development');
   const host =  isDevMode ? 'https://my.likutil.co.il/dev' : 'https://my.likutil.co.il';
   
+  // Should be genereted on Server (:
   const password = generateStorePassword(cleanUrl);
   
   const returnUrl = `${host}/?success=1&pass=${encodeURIComponent(
@@ -50,8 +53,8 @@ export const WooAuthButton: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const autoLogin = async () => {
-      console.log('START autoLogin')
+    const wooAutoLogin = async () => {
+      console.log('START wooAutoLogin')
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get('success');
       const source = urlParams.get('source');
@@ -59,19 +62,22 @@ export const WooAuthButton: React.FC = () => {
       const oneTimeToken = urlParams.get('oneTimeToken');
 
 
-      if (success && source && pass && oneTimeToken) {
+      if (success && source && oneTimeToken && pass) {
         // Auto Firebase Login Logic Here
-
-        console.log('Auto Login with Source:', source, 'and Pass:', pass, 'Using oneTimeToken', oneTimeToken);
-
+        
+        console.log('Auto Login with Source:', source, 'Using oneTimeToken', oneTimeToken, 'and pass ', pass);
+        
         try {
-          const cleanUrl = sanitizeUrl(source);
-
-          const existingUser = await checkExistingUser(source, oneTimeToken, oneTimeToken === QR_MODE_PASS);
+          
+        
+          // Auto Login Based Query Params
+          const existingUser = await tryGetUserData(source, oneTimeToken);
+          console.log('existingUser', existingUser)
+        
           
           // Will login ONLY if the query PARAM is same as the Server oneTimeToken!
-          await signInWooUser(existingUser.email, cleanUrl);
-          await resetUserOneTimeToken(existingUser.userId ??'')
+          await signInFirebaseUser(source);
+          await resetUserOneTimeToken(existingUser?.userId ??'')
 
         } catch (error) {
           console.error('Error during auto login:', error);
@@ -79,7 +85,7 @@ export const WooAuthButton: React.FC = () => {
       }
     };
 
-    autoLogin();
+    wooAutoLogin();
   }, []);
 
   useEffect(() => {
@@ -110,27 +116,20 @@ const openWooAuthPopup = (cleanUrl: string) => {
       localStorage.setItem('woo_store_url', cleanUrl);
 
       // Check if user exists
-      const existingUser = await checkExistingUser(cleanUrl, undefined);
+      const existingUser = await checkExistingUser(cleanUrl);
       console.log('existingUser');
       console.log(existingUser.exists);
 
       if (existingUser.exists) {
         toast.loading('מתחבר למשתמש קיים...', { id: toastId });
         console.log('Sign in existing user');
-        // await signInWooUser(existingUser.email, cleanUrl);
-        // openWooAuthPopup(cleanUrl, existingUser.userId);
-
-        openWooAuthPopup(cleanUrl);
-      } else {
+      } else {        
         toast.loading('יוצר משתמש חדש...', { id: toastId });
-
         console.log('Create new user');
-        const { firebaseId, cleanUrl: newCleanUrl } = await createWooUser(
-          storeUrl
-        );
-
-        openWooAuthPopup(newCleanUrl);
+        await createFirebaseUser(storeUrl);
       }
+      openWooAuthPopup(cleanUrl);
+      
     } catch (error) {
       console.error('[WooAuthButton] Auth failed:', error);
       toast.error('שגיאה בתהליך ההתחברות. אנא נסה שוב.', { id: toastId });
@@ -173,13 +172,23 @@ const openWooAuthPopup = (cleanUrl: string) => {
           disabled={!storeUrl.trim() || isLoading}
           className="text-gray-600 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110"
         >
-          <div className={`p-2 rounded-full bg-gray-100 ${(!isLoading && storeUrl.trim()) ? 'text-blue-500' : ''}`}>
+          <div className={`flex items-center gap-2 p-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-800 ${(!isLoading && storeUrl.trim()) ? 'text-white' : 'text-gray-300'}`}>
+    
+            
             {isLoading ? (
               <Loader2 className="w-8 h-8 animate-spin" />
             ) : (
-              <LogInIcon className="w-8 h-8" />
+              <ArrowRight className="w-8 h-8" />
             )}
+
+<img
+          src="/assets/svg/woo-white-logo-only.svg"
+          alt="WooCommerce Logo"
+          className="ml-2 h-10 transition-transform group-hover:scale-100"
+        />
           </div>
+
+
         </button>
 
         <input
@@ -195,6 +204,7 @@ const openWooAuthPopup = (cleanUrl: string) => {
           disabled={isLoading}
         />
       </div>
+      
     </div>
   );
 };

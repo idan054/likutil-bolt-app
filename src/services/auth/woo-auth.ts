@@ -111,17 +111,37 @@ export const BASE_URL = 'https://api.likutil.co.il';
 //   }
 // };
 
-export const checkExistingUser = async (storeUrl: string, oneTimeToken: string| undefined, sendAnyway: boolean = false ) => {
-  console.log('START checkExistingUser')
+
+export const checkExistingUser = async (storeUrl: string): Promise<{ exists: boolean }> => {
+  try {
+    const cleanUrl = sanitizeUrl(storeUrl);
+    const usersRef = collection(db, "users");
+    const q =  query(usersRef, where("storeUrl", "==", cleanUrl));
+
+    const snapshot = await getDocs(q);
+    return { exists: !snapshot.empty };
+  } catch (error) {
+    console.error("[checkExistingUser] Failed:", error);
+    throw error;
+  }
+};
+
+
+export const tryGetUserData = async (storeUrl: string, oneTimeToken: string) => {
+
   const cleanUrl = sanitizeUrl(storeUrl);
-  
-  // If oneTimeToken is not defined: It will still find the Relevant doc but only return .isExists
+  const sendAnyway = oneTimeToken === QR_MODE_PASS;
+
 
   try {
     const usersRef = collection(db, 'users');
     const q = query(usersRef,
-      where('storeUrl', '==', cleanUrl),
-      ...(oneTimeToken && oneTimeToken !== QR_MODE_PASS ? [where('oneTimeToken', '==', oneTimeToken)] : [])
+      ...(sendAnyway ? [
+        where('storeUrl', '==', cleanUrl),
+      ] : [
+        where('storeUrl', '==', cleanUrl),
+        where('oneTimeToken', '==', oneTimeToken),
+      ])
   );
     const snapshot = await getDocs(q);
 
@@ -129,23 +149,22 @@ export const checkExistingUser = async (storeUrl: string, oneTimeToken: string| 
       const userData = snapshot.docs[0].data();
       const result = {
         exists: true,
-        ...((oneTimeToken  || sendAnyway) ? {
           userId: snapshot.docs[0].id,
           email: userData.email,
-        } : {})
+      
       };
       console.log('result', result)
       return result
     }
 
-    return { exists: false };
+    
   } catch (error) {
     console.error('[woo-auth] Failed to check existing user:', error);
     throw error;
   }
 };
 
-export const createWooUser = async (storeUrl: string) => {
+export const createFirebaseUser = async (storeUrl: string) => {
   const cleanUrl = sanitizeUrl(storeUrl);
   const email = `${cleanUrl.replace(/[^a-zA-Z0-9]/g, '')}@likutil.co.il`;
   const password = generateStorePassword(cleanUrl);
@@ -178,14 +197,17 @@ export const createWooUser = async (storeUrl: string) => {
   }
 };
 
-export const signInWooUser = async (email: string, storeUrl: string) => {
+export const signInFirebaseUser = async (storeUrl: string) => {
   try {
-    console.log('START signInWooUser()');
-    const urlParams = new URLSearchParams(window.location.search);
-    const password = urlParams.get('pass');
+    const cleanUrl = sanitizeUrl(storeUrl);
+    const email = `${cleanUrl.replace(/[^a-zA-Z0-9]/g, '')}@likutil.co.il`;
+    const password = generateStorePassword(cleanUrl);
 
-    console.log('Email: ', email);
-    console.log('Pass: ', password);
+    console.log('START signInWooUser()');
+  
+
+    // console.log('Email: ', email);
+    // console.log('Pass: ', password);
     if (password) {
       await signInWithEmailAndPassword(auth, email, password);
     }
