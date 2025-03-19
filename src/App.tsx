@@ -12,7 +12,8 @@ import { DevPage } from './components/dev/DevPage';
 // WooCommerce
 // /?success=1&pass=cGuvON8_8ewZCtKz&source=royal-reserve.shop&oneTimeToken=GodMode2003&user_id=1
 
-// WooCommerce
+// Shopify
+// ?success=1&shopify=1&source=likutil-tests.myshopify.com&oneTimeToken=GodMode2003&pass=g1PxSbO5E2n83vYe
 
 
 // npx vite build && netlify deploy --prod --dir=dist       
