@@ -9,15 +9,9 @@ import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
-// WooCommerce
-// /?success=1&pass=cGuvON8_8ewZCtKz&source=royal-reserve.shop&oneTimeToken=GodMode2003&user_id=1
-
-// Shopify
-// ?success=1&shopify=1&source=likutil-tests.myshopify.com&oneTimeToken=GodMode2003&pass=g1PxSbO5E2n83vYe
 
 
-// npx vite build && netlify deploy --prod --dir=dist       
-// npm run dev
+
 export const APP_VERSION = '12.03.25 | Version 1.1';
 
 // FROM MAC
