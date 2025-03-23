@@ -14,19 +14,22 @@ export const useOrderSelection = (orders: OrderSummary[], setOrders: React.Dispa
   
   
   const handleSearchOrder = useCallback((searchOrder: OrderSummary) => {
-    setOrders(prevOrders => [searchOrder, ...prevOrders]);
+    // Check if order already exists
+    const orderExists = orders.some(order => order.id === searchOrder.id);
+    if (!orderExists) {
+      setOrders(prevOrders => [searchOrder, ...prevOrders]);
+    }
     setSelectedOrderId(searchOrder.id.toString());
   }, [orders]);
 
   const handleOrderSelect = useCallback((orderId: string) => {
-
     const order = orders.find(o => o.id.toString() === orderId);
     if (order) {
       setSelectedOrderId(orderId);
     } else {
       toast.error('הזמנה לא נמצאה או שאינה בסטטוס "בטיפול"');
     }
-  }, []);
+  }, [orders]);
 
   const handleReset = useCallback(() => {
     setSelectedOrderId(null);

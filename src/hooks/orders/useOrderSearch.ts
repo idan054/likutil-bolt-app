@@ -7,12 +7,21 @@ import { useGetFirebaseMetadata } from '../useGetFirebaseMetadata';
 import { useAppState } from '../useAppState';
 
 export const useOrderSearch = () => {
+  const { orders,  } = useAppState();
+
+
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const { options } = useGetFirebaseMetadata();
 
 
   const searchOrder = async (orderId: string) => {
+    const orderExists = orders.find(order => order.id.toString() === orderId);
+    if(orderExists){
+      setOrder(orderExists); 
+      return orderExists;
+    }
+
     if (!orderId.trim()) return;
 
     // Check if settings exist
