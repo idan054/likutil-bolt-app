@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
     <div className="mb-2">
       {/* User Menu */}
       {currentUser && (
-        <div className="flex justify-end px-4 py-2 border-b">
+        <div className="flex justify-end px-4 py-2 border-b mb-5">
           <UserMenu 
             user={currentUser} 
             onOpenSettings={() => setShowSettings(true)} 
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
       )}
 
       {/* Logo and Toggle */}
-      <div className="flex justify-center items-center gap-1 mt-4">
+      {/* <div className="flex justify-center items-center gap-1 mt-4">
         
         <ChevronDown 
           className={`text-gray-300 transition-transform duration-200 cursor-pointer ${
@@ -62,10 +62,10 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
           onClick={toggleAdvantages}
         />
         <Logo isLoading={isLoading} onClick={toggleAdvantages} />
-      </div>
+      </div> */}
       
       {/* Advantages Section */}
-      <div className={`transition-all duration-300 ${
+      {/* <div className={`transition-all duration-300 ${
         showAdvantages 
           ? 'max-h-[2000px] opacity-100' 
           : 'max-h-0 opacity-0 overflow-hidden'
@@ -74,7 +74,9 @@ export const Header: React.FC<HeaderProps> = ({ isLoading = false }) => {
           <h2 className="text-2xl text-gray-700 font-extrabold text-center mb-4 transform hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-200 bg-clip-text text-transparent">צריכים פיתוח? פנו אלינו ✨</h2>
           <SystemAdvantages />
         </div>
-      </div>
+      </div> */}
+
+
 
       {/* Settings Modal */}
       {showSettings && (

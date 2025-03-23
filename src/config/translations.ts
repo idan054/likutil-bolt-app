@@ -2,7 +2,7 @@ export const translations = {
   title: 'מערכת ניהול הזמנות',
   subtitle: 'חפש הזמנה לפי מספר',
   searchPlaceholder: 'הזן מספר הזמנה...',
-  orderNumber: 'הזמנה מספר',
+  orderNumber: 'הזמנה ',
   orderedOn: 'הוזמן ב',
   customerDetails: 'פרטי לקוח',
   shippingAddress: 'כתובת למשלוח',

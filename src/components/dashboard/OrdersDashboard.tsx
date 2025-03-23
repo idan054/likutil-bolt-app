@@ -121,10 +121,13 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
                 onComplete={() => handleOrderComplete(selectedOrderId)}
               />
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <div className="text-center">
-                  <h3 className="text-lg font-medium text-gray-900">No order selected</h3>
-                  <p className="mt-1 text-sm text-gray-500">Select an order from the list to view details</p>
+              <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
+                <div className="text-center p-8">
+                <svg className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                  <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
+                  <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
                 </div>
               </div>
             )}
@@ -136,10 +139,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
 
   return (
     <>
-   
-
       {renderContent()}
-
       {superOrderItems && (
         <SuperOrderModal items={superOrderItems} onClose={clearSuperOrder} />
       )}
