@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { OrderSearch } from "../OrderSearch";
-import { OrderDetails } from "../OrderDetails";
+// import { OrderDetails } from "../OrderDetails";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
 import { OrdersList } from "./OrdersList";
 import { SuperOrderModal } from "../superOrder/SuperOrderModal";
@@ -12,15 +12,17 @@ import { useSuperOrder } from "../../hooks/useSuperOrder";
 import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
+import { OrderDetails } from "../OrderDetails";
+// import { OrderDetails } from '../../types/order';
+
 
 interface OrdersDashboardProps {
   
 }
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
-  const { orders, isLoading, isRefetching } = useAppState();
-  const { selectedOrderId, handleOrderSelect, handleReset } =
-    useOrderSelection(orders);
+  const { orders, isLoading, isRefetching, setOrders } = useAppState();
+  const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
     generateSuperOrder,
@@ -65,6 +67,12 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     handleOrderSelect(orderId);
   };
 
+  const handleSearchOrdered = (order: any) => {
+    handleSearchOrder(order);
+  };
+
+
+
   const handleBackToList = () => {
     window.history.pushState({ view: "orders-list" }, "", "/");
     handleReset();
@@ -79,27 +87,12 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       return <EmptyState />;
     }
 
-    if (selectedOrderId) {
-      const selectedOrder = orders.find(
-        (o) => o.id.toString() === selectedOrderId
-      );
-      if (selectedOrder) {
-        return (
-          <div className="flex justify-center">
-            <OrderDetails
-              order={selectedOrder}
-              onReset={handleBackToList}
-              onComplete={() => handleOrderComplete(selectedOrderId)}
-            />
-          </div>
-        );
-      }
-      handleReset();
-      return null;
-    }
+    const selectedOrder = selectedOrderId
+      ? orders.find((o) => o.id.toString() === selectedOrderId)
+      : null;
 
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <ProcessingOrdersCounter
           orders={orders}
           onGenerateSuperOrder={generateSuperOrder}
@@ -107,27 +100,43 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           completedOrdersCount={completedOrdersCount}
           isRefetching={isRefetching}
         />
-        {orders.length > 0 ? (
-          <OrdersList
-            orders={orders}
-            onSelectOrder={handleOrderSelection}
-            isCompleted={isCompleted}
-            isRefetching={isRefetching}
-          />
-        ) : (
-          !isLoading && <EmptyState />
-        )}
-
-      <AppInfoStatus/>
+        <div className="flex gap-1 mt-6">
+          <div className="w-1/4">
+            <div className="mb-2">
+              <OrderSearch onSearch={handleSearchOrdered}/>
+            </div>
+            <OrdersList
+              orders={orders}
+              onSelectOrder={handleOrderSelection}
+              isCompleted={isCompleted}
+              selectedOrderId={selectedOrderId}
+            />
+            <AppInfoStatus />
+          </div>
+          <div className="w-3/4">
+            {selectedOrder ? (
+              <OrderDetails
+                order={selectedOrder}
+                onReset={handleBackToList}
+                onComplete={() => handleOrderComplete(selectedOrderId)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <div className="text-center">
+                  <h3 className="text-lg font-medium text-gray-900">No order selected</h3>
+                  <p className="mt-1 text-sm text-gray-500">Select an order from the list to view details</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
     <>
-      <div className="flex justify-center mb-8">
-        <OrderSearch onSearch={handleOrderSelect} isLoading={false} />
-      </div>
+   
 
       {renderContent()}
 

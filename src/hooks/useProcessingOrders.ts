@@ -155,6 +155,7 @@ export const useProcessingOrders = () => {
 
   return {
     orders,
+    setOrders,
     isLoading,
     isRefetching,
     error,

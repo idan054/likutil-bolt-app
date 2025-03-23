@@ -11,12 +11,14 @@ interface OrderListItemProps {
   order: OrderSummary;
   onSelect: (orderId: string) => void;
   isCompleted: boolean;
+  selectedOrderId?: string;
 }
 
 export const OrderListItem: React.FC<OrderListItemProps> = ({ 
   order, 
   onSelect,
-  isCompleted 
+  isCompleted,
+  selectedOrderId
 }) => {
   const { customer, isLoading, refetch } = useCustomerDetails(order.customer_id);
 
@@ -29,55 +31,20 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   return (
     <div 
       onClick={() => onSelect(order.id.toString())}
-      className={`bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer relative ${
-        isCompleted ? 'border-l-4 border-green-500' : ''
-      }`}
+      className={`bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-l-4 border-green-500' : ''} ${order.id.toString() === selectedOrderId ? 'ring-2 ring-blue-500' : ''}`}
     >
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Package className="text-blue-600" size={24} />
-            <span className="text-xl font-bold text-blue-900">#{order.id}</span>
-            {isCompleted && (
-              <CheckCircle size={16} className="text-green-500" />
-            )}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-blue-900">#{order.id}</span>
+            <span className="text-base text-gray-900">{order.billing.first_name} {order.billing.last_name}</span>
           </div>
-          <div className="space-y-2 text-right">
-            <h3 className="text-lg font-bold text-gray-900">
-              {order.billing.first_name} {order.billing.last_name}
-            </h3>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Truck size={16} className="text-blue-500" />
-              <TruncatedText text={order.shipping_lines[0]?.method_title || 'משלוח רגיל'} maxLength={60} />
-            </div>
-            <p className="text-gray-600 text-base">{order.billing.city}</p>
-          </div>
+          {isCompleted && <CheckCircle size={14} className="text-green-500" />}
         </div>
-        
-    
-        <div className="text-left flex flex-col gap-2">
-
-          
-        <div className="inline-flex flex-row-reverse items-center gap-1 text-sm text-gray-500 ml-2">
-            <span>{formatTimeAgo(order.date_created)}</span>
-            <Clock size={14} />
-          </div>
-          
-
-
-          <div className="text-left text-sm text-gray-500 ml-2 ">
-            {formatCurrency(order.total)}
-          </div>
-
-          <div className="mt-1">
-            <RoleBadge 
-              role={customer?.role} 
-              isLoading={isLoading}
-            />
-          </div>
-
+        <div className="flex items-center gap-1 text-sm text-gray-500">
+          <Clock size={12} />
+          <span>{formatTimeAgo(order.date_created)}</span>
         </div>
-
       </div>
     </div>
   );
