@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { toast } from "react-hot-toast";
 import { getProcessingOrders } from "../services/orders/orders.service";
 import { showErrorToast } from "../utils/error";
 import type { OrderSummary } from "../types/order";
@@ -60,7 +59,11 @@ export const useProcessingOrders = () => {
 
       // Only update loading states if component is mounted
       if (isMountedRef.current) {
-        isInitialFetch ? setIsLoading(true) : setIsRefetching(true);
+        if (isInitialFetch) {
+          setIsLoading(true);
+        } else {
+          setIsRefetching(true);
+        }
         setError(null);
       }
 

@@ -3,20 +3,41 @@ import type {
   OrderDetails,
   OrderStatus,
   OrderSummary,
+  LineItem,
 } from "../../types/order";
 import { JSONPath } from "jsonpath-plus";
+import { getApiConfig } from "../api/config";
 
+// Cache configuration
 const ITEMS_PER_PAGE = 100;
-
-// Request cache to prevent duplicate in-flight requests
-const requestCache = new Map<string, Promise<any>>();
-// Data cache to store responses
-const dataCache = new Map<string, { data: any; timestamp: number }>();
-// Cache expiration time (30 seconds)
 const CACHE_EXPIRATION = 30 * 1000;
+const STATUSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Request and data caching
+const requestCache = new Map<string, Promise<any>>();
+const dataCache = new Map<string, { data: any; timestamp: number }>();
+
+// Platform-specific configuration
+const PLATFORM_ENDPOINTS = {
+  woo: {
+    orders: "/orders",
+    orderStatuses: "/orders/statuses",
+  },
+  shopify: {
+    orders: "/shopify_orders",
+    orderStatuses: "/shopify_orders/statuses",
+  },
+};
+
+// Metadata configuration interface
+export interface MetadataConfig {
+  label_path?: string;
+  value_path?: string;
+  parent_path?: string;
+}
 
 /**
- * Makes an API request with deduplication
+ * Makes an API request with deduplication and caching
  */
 const dedupedApiRequest = <T>(
   key: string,
@@ -57,28 +78,281 @@ const dedupedApiRequest = <T>(
   return request;
 };
 
-export interface MetadataConfig {
-  label_path?: string;
-  value_path?: string;
-  parent_path?: string;
-}
+/**
+ * Maps line item data from different platforms to a common format
+ */
+const mapLineItem = (item: any, platform: string): LineItem => {
+  if (platform === "shopify") {
+    // Calculate total tax from tax_lines
+    const totalTax = item.tax_lines
+      ? item.tax_lines
+          .reduce((sum: number, t: any) => sum + parseFloat(t.price || "0"), 0)
+          .toFixed(2)
+      : "0";
 
-export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
-  const cacheKey = `order_${orderId}`;
+    // Map properties to meta_data format
+    const metaData = item.properties
+      ? item.properties.map((p: any) => ({
+          id: Math.floor(Math.random() * 1000),
+          key: p.name || "",
+          value: p.value || "",
+        }))
+      : [];
 
-  return dedupedApiRequest(cacheKey, () =>
-    apiClient<OrderDetails>({
-      method: "GET",
-      path: `/orders/${orderId}`,
-    })
-  );
+    // Optional product data if available
+    const productData = item.product_id
+      ? {
+          id: item.product_id,
+          name: item.title || item.name || "",
+          permalink: "",
+          sku: item.sku || "",
+          price: parseFloat(item.price || "0"),
+          stock_quantity: undefined,
+        }
+      : undefined;
+
+    return {
+      id: item.id,
+      name: item.title || item.name || "",
+      sku: item.sku || "",
+      quantity: item.quantity,
+      price: parseFloat(item.price || "0"),
+      total: (parseFloat(item.price || "0") * item.quantity).toFixed(2),
+      product_id: item.product_id || 0,
+      variation_id: item.variant_id || undefined,
+      tax_class: item.tax_lines?.[0]?.title || "",
+      subtotal: item.price || "0",
+      subtotal_tax: totalTax,
+      total_tax: totalTax,
+      image: item.image
+        ? {
+            src: item.image.src || "",
+            alt: item.image.alt || "",
+          }
+        : undefined,
+      product_data: productData,
+      meta_data: metaData,
+    };
+  }
+
+  // WooCommerce mapping (unchanged)
+  return {
+    id: item.id,
+    name: item.name,
+    sku: item.sku || "",
+    quantity: item.quantity,
+    price: parseFloat(item.price),
+    total: item.total || (parseFloat(item.price) * item.quantity).toFixed(2),
+    product_id: item.product_id,
+    variation_id: item.variation_id,
+    tax_class: item.tax_class || "",
+    subtotal: item.subtotal || "",
+    subtotal_tax: item.subtotal_tax || "0",
+    total_tax: item.total_tax || "0",
+    image: item.image,
+    product_data: item.product_data,
+    meta_data: item.meta_data || [],
+  };
 };
 
+/**
+ * Maps order data from different platforms to a common format
+ */
+const mapOrder = (
+  order: any,
+  platform: string
+): OrderSummary | OrderDetails => {
+  // Initialize billing address with default empty values
+  const billing = {
+    first_name: "",
+    last_name: "",
+    company: "",
+    address_1: "",
+    address_2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    email: "",
+    phone: "",
+  };
+
+  // Initialize shipping address with default empty values
+  const shipping = {
+    first_name: "",
+    last_name: "",
+    company: "",
+    address_1: "",
+    address_2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    phone: "",
+  };
+
+  if (platform === "shopify") {
+    // Map Shopify billing address - handle minimal or missing data gracefully
+    if (order.billing_address) {
+      billing.first_name = order.billing_address.first_name || "";
+      billing.last_name = order.billing_address.last_name || "";
+      billing.company = order.billing_address.company || "";
+      billing.address_1 = order.billing_address.address1 || "";
+      billing.address_2 = order.billing_address.address2 || "";
+      billing.city = order.billing_address.city || "";
+      billing.state = order.billing_address.province || "";
+      billing.postcode = order.billing_address.zip || "";
+      billing.country =
+        order.billing_address.country ||
+        order.billing_address.country_code ||
+        "";
+      // For email, fall back to the main order email if not in the address
+      billing.email = order.billing_address.email || order.email || "";
+      billing.phone = order.billing_address.phone || order.phone || "";
+    } else if (order.customer) {
+      // Try to get details from customer if billing_address is missing
+      billing.email = order.email || order.customer.email || "";
+      // Other customer details could be used here if available
+    }
+
+    // Map Shopify shipping address - handle completely null shipping_address
+    if (order.shipping_address) {
+      shipping.first_name = order.shipping_address.first_name || "";
+      shipping.last_name = order.shipping_address.last_name || "";
+      shipping.company = order.shipping_address.company || "";
+      shipping.address_1 = order.shipping_address.address1 || "";
+      shipping.address_2 = order.shipping_address.address2 || "";
+      shipping.city = order.shipping_address.city || "";
+      shipping.state = order.shipping_address.province || "";
+      shipping.postcode = order.shipping_address.zip || "";
+      shipping.country =
+        order.shipping_address.country ||
+        order.shipping_address.country_code ||
+        "";
+      shipping.phone = order.shipping_address.phone || order.phone || "";
+    } else if (order.billing_address) {
+      // Fall back to billing address if shipping is null
+      // This is common in Shopify when shipping and billing are the same
+      shipping.first_name = billing.first_name;
+      shipping.last_name = billing.last_name;
+      shipping.company = billing.company;
+      shipping.address_1 = billing.address_1;
+      shipping.address_2 = billing.address_2;
+      shipping.city = billing.city;
+      shipping.state = billing.state;
+      shipping.postcode = billing.postcode;
+      shipping.country = billing.country;
+      shipping.phone = billing.phone;
+    }
+
+    // Calculate shipping total from shipping_lines
+    const shippingTotal = order.shipping_lines
+      ? order.shipping_lines
+          .reduce(
+            (sum: number, sl: any) =>
+              sum + parseFloat(sl.price || sl.total || "0"),
+            0
+          )
+          .toFixed(2)
+      : "0";
+
+    // Map shipping_lines
+    const shippingLines = order.shipping_lines
+      ? order.shipping_lines.map((sl: any) => ({
+          method_id: sl.code || "shopify",
+          method_title: sl.title || "Shopify Shipping",
+          total: sl.price || "0",
+        }))
+      : [];
+
+    // Determine order status - in Shopify, status is a combination of fulfillment and financial status
+    const status =
+      order.fulfillment_status ||
+      order.financial_status ||
+      order.status ||
+      "processing";
+
+    // Build base order
+    return {
+      id: order.id,
+      status: status,
+      total: order.total_price || order.total || "0",
+      customer_id: order.customer?.id || null,
+      date_created: order.created_at || order.date_created,
+      billing,
+      shipping,
+      customer_note: order.note || "",
+      shipping_total: shippingTotal,
+      payment_method: order.gateway || "",
+      payment_method_title: order.payment_gateway_names?.[0] || "",
+      shipping_lines: shippingLines,
+      line_items: (order.line_items || []).map((item: any) =>
+        mapLineItem(item, platform)
+      ),
+    };
+  } else {
+    // WooCommerce mapping (unchanged)
+    if (order.billing) {
+      billing.first_name = order.billing.first_name || "";
+      billing.last_name = order.billing.last_name || "";
+      billing.company = order.billing.company || "";
+      billing.address_1 = order.billing.address_1 || "";
+      billing.address_2 = order.billing.address_2 || "";
+      billing.city = order.billing.city || "";
+      billing.state = order.billing.state || "";
+      billing.postcode = order.billing.postcode || "";
+      billing.country = order.billing.country || "";
+      billing.email = order.billing.email || "";
+      billing.phone = order.billing.phone || "";
+    }
+
+    if (order.shipping) {
+      shipping.first_name = order.shipping.first_name || "";
+      shipping.last_name = order.shipping.last_name || "";
+      shipping.company = order.shipping.company || "";
+      shipping.address_1 = order.shipping.address_1 || "";
+      shipping.address_2 = order.shipping.address_2 || "";
+      shipping.city = order.shipping.city || "";
+      shipping.state = order.shipping.state || "";
+      shipping.postcode = order.shipping.postcode || "";
+      shipping.country = order.shipping.country || "";
+      shipping.phone = order.shipping.phone || "";
+    }
+
+    return {
+      id: order.id,
+      status: order.status || "processing",
+      total: order.total || "0",
+      customer_id: order.customer_id || null,
+      date_created: order.date_created,
+      billing,
+      shipping,
+      customer_note: order.customer_note || "",
+      shipping_total: order.shipping_total || "0",
+      payment_method: order.payment_method || "",
+      payment_method_title: order.payment_method_title || "",
+      shipping_lines:
+        order.shipping_lines?.map((sl: any) => ({
+          method_id: sl.method_id || "flat_rate",
+          method_title: sl.method_title || "Flat Rate",
+          total: sl.total || "0",
+        })) || [],
+      line_items: (order.line_items || []).map((item: any) =>
+        mapLineItem(item, platform)
+      ),
+    };
+  }
+};
+
+/**
+ * Builds metadata entries from configurations
+ */
 const buildMetadataEntry = (
   item: any,
-  configs: { label_path?: string; value_path?: string; parent_path?: string }[]
+  configs: MetadataConfig[],
+  platform: string
 ) => {
-  let newMetadata: { label: any; value: any }[] = [];
+  let newMetadata: Array<{ label: string; value: any }> = [];
 
   configs.forEach((config) => {
     if (!config.parent_path) {
@@ -101,46 +375,83 @@ const buildMetadataEntry = (
       // Pair labels with their corresponding values
       labels.forEach((label, index) => {
         if (values[index] !== undefined) {
-          const entry = { label, value: values[index] };
-
-          // Ensure no duplicates
-          if (
-            !newMetadata.some(
-              (existing) =>
-                existing.label === entry.label && existing.value === entry.value
-            )
-          ) {
-            newMetadata.push(entry);
-          }
+          newMetadata.push({ label, value: values[index] });
         }
       });
     });
   });
 
+  // Get existing metadata based on platform
+  const existingMetadata =
+    platform === "shopify" ? item.properties || [] : item.meta_data || [];
+
   // Filter out duplicates against existing metadata
-  const existingMetadata = item.meta_data || [];
   return newMetadata.filter(
     (newEntry) =>
       !existingMetadata.some(
         (existing) =>
-          existing.label === newEntry.label && existing.value === newEntry.value
+          (existing.key === newEntry.label &&
+            existing.value === newEntry.value) ||
+          (existing.name === newEntry.label &&
+            existing.value === newEntry.value)
       )
   );
 };
 
-const processMultiOrdersMetadata = (
-  orders: OrderSummary[],
-  configs: { label_path?: string; value_path?: string; parent_path?: string }[]
-) => {
-  if (!configs || configs.length === 0) return orders;
+/**
+ * Processes metadata for a single order
+ */
+const processOrderMetadata = (
+  order: OrderDetails,
+  configs: MetadataConfig[],
+  platform: string
+): OrderDetails => {
+  console.log("Processing order metadata...");
 
-  let result = orders.map((order) => ({
+  if (!configs || configs.length === 0) return order;
+
+  const result = {
     ...order,
     line_items: order.line_items.map((item) => ({
       ...item,
       meta_data: [
         ...(item.meta_data || []),
-        ...buildMetadataEntry(item, configs),
+        ...buildMetadataEntry(item, configs, platform).map((entry) => ({
+          id: Math.floor(Math.random() * 1000),
+          key: entry.label,
+          value: entry.value,
+        })),
+      ],
+    })),
+  };
+
+  console.log("ORDER METADATA EMBEDDED:", result);
+  return result;
+};
+
+/**
+ * Processes metadata for multiple orders
+ */
+const processMultiOrdersMetadata = (
+  orders: OrderSummary[],
+  configs: MetadataConfig[],
+  platform: string
+): OrderSummary[] => {
+  console.log("Processing multiple orders metadata...");
+
+  if (!configs || configs.length === 0) return orders;
+
+  const result = orders.map((order) => ({
+    ...order,
+    line_items: order.line_items.map((item) => ({
+      ...item,
+      meta_data: [
+        ...(item.meta_data || []),
+        ...buildMetadataEntry(item, configs, platform).map((entry) => ({
+          id: Math.floor(Math.random() * 1000),
+          key: entry.label,
+          value: entry.value,
+        })),
       ],
     })),
   }));
@@ -149,137 +460,203 @@ const processMultiOrdersMetadata = (
   return result;
 };
 
-const processOrderMetadata = (
-  order: OrderDetails,
-  configs: { label_path?: string; value_path?: string; parent_path?: string }[]
-) => {
-  console.log("Processing order metadata...");
-
-  if (!configs || configs.length === 0) return order;
-
-  let result = {
-    ...order,
-    line_items: order.line_items.map((item) => ({
-      ...item,
-      meta_data: [
-        ...(item.meta_data || []),
-        ...buildMetadataEntry(item, configs),
-      ],
-    })),
-  };
-
-  console.log("1 ORDER METADATA EMBEDDED:", result);
-  return result;
-};
-
-export const getProcessingOrders = async (
-  metadataConfigs?: MetadataConfig[]
-): Promise<OrderSummary[]> => {
-  const cacheKey = "processing_orders";
-  console.log("[orders.service] Fetching processing orders...");
-  console.log("MULTI metadataConfigs", metadataConfigs);
+/**
+ * Gets an order by ID
+ */
+export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
+  const config = getApiConfig();
+  const platform = config.platform;
+  const cacheKey = `order_${platform}_${orderId}`;
 
   console.log(
-    new Date().toLocaleString("he-IL", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
+    `[orders.service] Getting order by ID: ${orderId} for platform: ${platform}`
   );
 
   return dedupedApiRequest(cacheKey, async () => {
+    const response = await apiClient<any>({
+      method: "GET",
+      path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
+    });
+
+    return mapOrder(response, platform) as OrderDetails;
+  });
+};
+
+/**
+ * Gets all processing orders
+ */
+export const getProcessingOrders = async (
+  metadataConfigs?: MetadataConfig[]
+): Promise<OrderSummary[]> => {
+  const config = getApiConfig();
+  const platform = config.platform;
+  const cacheKey = `processing_orders_${platform}`;
+
+  console.log(
+    `[orders.service] Fetching processing orders for platform: ${platform}`
+  );
+  console.log("Metadata configs:", metadataConfigs);
+
+  return dedupedApiRequest(cacheKey, async () => {
+    // Platform-specific parameters
     const params = new URLSearchParams({
+      [platform === "shopify" ? "limit" : "per_page"]:
+        ITEMS_PER_PAGE.toString(),
       status: "processing",
-      per_page: ITEMS_PER_PAGE.toString(),
       orderby: "date",
       order: "desc",
     });
 
-    const response = await apiClient<OrderSummary[]>({
+    // Special case for Shopify
+    if (platform === "shopify") {
+      params.set("shopId", "likutil-tests"); // This might need to be configurable
+    }
+
+    const response = await apiClient<any>({
       method: "GET",
-      path: `/orders/?${params.toString()}`,
+      path: `${PLATFORM_ENDPOINTS[platform].orders}?${params.toString()}`,
     });
 
-    
+    // Handle different response formats
+    let orders: OrderSummary[] = [];
 
-    console.log('response ', response)
+    if (platform === "shopify" && response.orders) {
+      // Shopify returns { orders: [...] }
+      orders = response.orders.map(
+        (order: any) => mapOrder(order, platform) as OrderSummary
+      );
+    } else if (Array.isArray(response)) {
+      // WooCommerce returns an array
+      orders = response.map(
+        (order) => mapOrder(order, platform) as OrderSummary
+      );
+    }
 
-  
-    return processMultiOrdersMetadata(response, metadataConfigs || []);
+    console.log(
+      `[orders.service] Retrieved ${orders.length} processing orders`
+    );
+
+    return metadataConfigs?.length
+      ? processMultiOrdersMetadata(orders, metadataConfigs, platform)
+      : orders;
   });
 };
 
+/**
+ * Searches for an order by ID with optional metadata processing
+ */
 export const searchOrderById = async (
   orderId: string,
   metadataConfigs?: MetadataConfig[]
 ): Promise<OrderDetails> => {
-  const cacheKey = `search_order_${orderId}`;
+  const config = getApiConfig();
+  const platform = config.platform;
+  const cacheKey = `search_${platform}_${orderId}`;
 
-  console.log("[orders.search.service] Searching order by ID:", orderId);
-  console.log("metadataConfigs", metadataConfigs);
-
-  // Validate settings before making the request
-  const settings = localStorage.getItem("wc_settings");
-  if (!settings) {
-    throw new Error("WooCommerce settings not found");
-  }
+  console.log(
+    `[orders.search.service] Searching for order ID: ${orderId} on platform: ${platform}`
+  );
 
   return dedupedApiRequest(cacheKey, async () => {
     try {
-      const response = await apiClient<OrderDetails>({
-        method: "GET",
-        path: `/orders/${orderId}`,
-      });
-
-      const orderDetails = processOrderMetadata(
-        response,
-        metadataConfigs || []
-      );
-      console.log("[orders.search.service] Search successful:", orderDetails);
-
-      return orderDetails;
+      const order = await getOrderById(orderId);
+      return processOrderMetadata(order, metadataConfigs || [], platform);
     } catch (error) {
-      console.error("[orders.search.service] Search failed:", error);
+      console.error(
+        `[orders.search.service] Failed to find order ${orderId}:`,
+        error
+      );
       throw error;
     }
   });
 };
 
+/**
+ * Gets all available order statuses
+ */
 export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
-  const cacheKey = "order_statuses";
+  const config = getApiConfig();
+  const platform = config.platform;
+  const cacheKey = `statuses_${platform}`;
+
+  console.log(
+    `[orders.service] Getting order statuses for platform: ${platform}`
+  );
 
   return dedupedApiRequest(
     cacheKey,
-    () =>
-      apiClient<OrderStatus[]>({
-        method: "GET",
-        path: `/orders/statuses`,
-      }),
-    // Statuses change infrequently, so cache longer (5 minutes)
-    5 * 60 * 1000
+    async () => {
+      // Default statuses for WooCommerce
+      if (platform === "woo") {
+        try {
+          const response = await apiClient<OrderStatus[]>({
+            method: "GET",
+            path: PLATFORM_ENDPOINTS.woo.orderStatuses,
+          });
+          return response;
+        } catch (error) {
+          console.error(
+            "Failed to fetch WooCommerce statuses, using fallback",
+            error
+          );
+          return [
+            { slug: "pending", name: "Pending" },
+            { slug: "processing", name: "Processing" },
+            { slug: "completed", name: "Completed" },
+            { slug: "cancelled", name: "Cancelled" },
+          ];
+        }
+      }
+
+      // Shopify statuses
+      try {
+        const response = await apiClient<any>({
+          method: "GET",
+          path: PLATFORM_ENDPOINTS.shopify.orderStatuses,
+        });
+        return response.statuses || [];
+      } catch (error) {
+        console.error(
+          "Failed to fetch Shopify statuses, using fallback",
+          error
+        );
+        return [
+          { slug: "processing", name: "Processing" },
+          { slug: "fulfilled", name: "Fulfilled" },
+          { slug: "paid", name: "Paid" },
+          { slug: "cancelled", name: "Cancelled" },
+        ];
+      }
+    },
+    STATUSES_CACHE_DURATION // Cache statuses longer
   );
 };
 
+/**
+ * Updates an order's status
+ */
 export const updateOrderStatus = async (
   orderId: string,
   status: string
 ): Promise<OrderDetails> => {
-  console.log("[orders.service] Updating order status:", { orderId, status });
+  const config = getApiConfig();
+  const platform = config.platform;
 
-  // Clear any cached data for this order and processing orders
-  dataCache.delete(`order_${orderId}`);
-  dataCache.delete(`search_order_${orderId}`);
-  dataCache.delete("processing_orders");
+  console.log(
+    `[orders.service] Updating order ${orderId} status to ${status} on platform ${platform}`
+  );
 
-  const response = await apiClient<OrderDetails>({
-    method: "POST",
-    path: `/orders/${orderId}`,
+  // Clear relevant caches
+  dataCache.delete(`order_${platform}_${orderId}`);
+  dataCache.delete(`search_${platform}_${orderId}`);
+  dataCache.delete(`processing_orders_${platform}`);
+
+  const response = await apiClient<any>({
+    method: platform === "shopify" ? "PUT" : "POST",
+    path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
     body: { status },
   });
 
-  console.log("[orders.service] Order status updated:", response);
-  return response;
+  console.log(`[orders.service] Order status updated successfully`);
+  return mapOrder(response, platform) as OrderDetails;
 };
