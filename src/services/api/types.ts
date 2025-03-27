@@ -1,8 +1,11 @@
 export interface ApiConfig {
+  platform: string;
   baseUrl: string;
   headers: {
-    Authorization: string;
-    'Content-Type': string;
+    "X-Shopify-Access-Token"?: string;
+    "X-Shopify-Shop-Id"?: string;
+    Authorization?: string;
+    "Content-Type": string;
     Accept: string;
   };
 }
@@ -11,6 +14,7 @@ export interface ApiRequestConfig {
   method: string;
   path: string;
   body?: unknown;
+  signal?: AbortSignal;
 }
 
 export interface ApiResponse<T> {
@@ -34,7 +38,7 @@ export class ApiError extends Error {
 
   constructor(details: ApiErrorDetails) {
     super(`API Request Failed: ${details.responseStatusText}`);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.details = details;
   }
 }

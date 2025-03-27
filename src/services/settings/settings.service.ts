@@ -1,24 +1,23 @@
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { settingsStorage } from './storage';
-import type { UserSettings } from '../../types/settings';
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../config/firebase";
+import { settingsStorage } from "./storage";
+import type { UserSettings } from "../../types/settings";
 
-export const getUserSettings = async (userId: string): Promise<UserSettings | null> => {
-
-
+export const getUserSettings = async (
+  userId: string
+): Promise<UserSettings | null> => {
   try {
-    const docRef = doc(db, 'users', userId);
+    const docRef = doc(db, "users", userId);
     const docSnap = await getDoc(docRef);
 
-    console.log("userId", userId)
-    console.log("docSnap", docSnap.data())
-    
-    
+    console.log("userId", userId);
+    console.log("docSnap", docSnap.data());
+
     if (docSnap.exists()) {
       const userData = docSnap.data();
 
       // Get favicon to use it in const settings: UserSettings = {
-      
+
       // Create settings object from user data
       const settings: UserSettings = {
         storeUrl: userData.storeUrl,
@@ -26,27 +25,31 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
         accessToken: userData?.accessToken,
         consumerSecret: userData?.consumerSecret,
         lastUpdated: userData?.lastLogin || userData?.createdAt,
-        favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`
+        authType: userData?.authType,
+        favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`,
       };
 
       // Save to local storage for API client
-      console.log("settings", settings)
+      console.log("settings", settings);
 
       // ANY IDEA Y THIS NOT WORKS?
       settingsStorage.set(settings);
-      
+
       return settings;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('[settings.service] Failed to get user settings:', error);
+    console.error("[settings.service] Failed to get user settings:", error);
     throw error;
   }
 };
 
 // Keep this as a no-op since we don't need to save settings separately anymore
-export const saveUserSettings = async (userId: string, settings: UserSettings): Promise<void> => {
+export const saveUserSettings = async (
+  userId: string,
+  settings: UserSettings
+): Promise<void> => {
   // Settings are now saved as part of the user document during auth
   settingsStorage.set(settings);
 };

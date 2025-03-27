@@ -1,3 +1,5 @@
+export type Platform = "woo" | "shopify";
+
 export interface UserSettings {
   favicon: string | undefined;
   storeUrl: string;
@@ -5,6 +7,8 @@ export interface UserSettings {
   consumerKey: string | undefined;
   consumerSecret: string | undefined;
   lastUpdated?: string;
+  authType?: Platform;
+  shopifyToken?: string;
 }
 
 // Remove EncryptedSettings since we don't need it anymore

@@ -1,61 +1,82 @@
-import { getApiConfig } from './config';
-import { ApiError, type ApiRequestConfig } from './types';
+import { settingsStorage } from "../settings";
+import { getApiConfig } from "./config";
+import { ApiError, type ApiRequestConfig } from "./types";
 
-export const apiClient = async <T>({ method, path, body}: ApiRequestConfig): Promise<T> => {
-  // Get API configuration
-  const config = getApiConfig();
+// Unified apiClient to handle both WooCommerce and Shopify
+export const apiClient = async <T>({
+  method,
+  path,
+  body,
+}: ApiRequestConfig): Promise<T> => {
+  const config = getApiConfig(); // Retrieve API configuration based on platform
+  const settings = settingsStorage.get();
 
-
-    // Log full request details
-    const requestDetails = {
-      timestamp: new Date().toISOString(),
-      method,
-      path,
-      headers: config?.headers,
-      body: body || null,
-      baseUrl: config?.baseUrl
-    };
-
-    
   if (!config) {
-    console.error('[apiClient] Configuration error:', {
-    
-      timestamp: new Date().toISOString(),
-      error: 'API configuration not available',
-    });
-    throw new Error(`API configuration not available - Method: ${method}, Path: ${path}. Full Details: ${requestDetails}`);
+    throw new Error("API configuration not available.");
   }
 
-  // console.info('[apiClient] Full request details:', requestDetails);
+  const { baseUrl, headers, platform } = config;
+  const url = `${baseUrl}${path}`; // Append path without modification
 
-  const { baseUrl, headers } = config;
-  const url = `${baseUrl}${path}`;
+  // Setup headers dynamically for Shopify & WooCommerce
+  const requestHeaders = {
+    ...headers,
+    ...(platform === "shopify" && {
+      "X-Shopify-Access-Token": settings?.accessToken, // Shopify API Token (from cURL)
+    }),
+    ...(platform === "woo" && {
+      Authorization: headers.Authorization || "", // WooCommerce Basic Auth
+    }),
+  };
+
+  // 🔥 Debugging log (optional)
+  console.log("[DEBUG] API Request:", {
+    url,
+    method,
+    headers: requestHeaders,
+    body: body || "No body",
+    platform,
+  });
 
   try {
     const response = await fetch(url, {
       method,
-      headers,
+      headers: requestHeaders,
       ...(body ? { body: JSON.stringify(body) } : {}),
-      mode: 'cors',
-      cache: 'no-cache',
-      referrerPolicy: 'no-referrer',
+      mode: "cors",
+      cache: "no-cache",
+      referrerPolicy: "no-referrer",
+    });
+
+    const responseText = await response.text();
+
+    // 🔥 Log raw response (optional)
+    console.log("[DEBUG] Raw API Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      responseText,
     });
 
     let parsedData;
-    const responseText = await response.text();
-    
     try {
       parsedData = responseText ? JSON.parse(responseText) : null;
-    } catch (e) {
-      console.warn('[apiClient] Failed to parse response as JSON:', responseText);
+    } catch {
+      console.warn("[WARNING] Failed to parse API response:", responseText);
       parsedData = responseText;
     }
 
     if (!response.ok) {
+      console.error("[ERROR] API Request Failed:", {
+        url,
+        method,
+        status: response.status,
+        responseBody: parsedData,
+      });
+
       throw new ApiError({
         requestUrl: url,
         requestMethod: method,
-        requestHeaders: headers,
+        requestHeaders: requestHeaders,
         requestBody: body,
         responseStatus: response.status,
         responseStatusText: response.statusText,
@@ -63,20 +84,25 @@ export const apiClient = async <T>({ method, path, body}: ApiRequestConfig): Pro
       });
     }
 
+    console.log("[SUCCESS] API Request Completed:", {
+      url,
+      method,
+      status: response.status,
+      responseBody: parsedData,
+    });
+
     return parsedData;
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    
+    console.error("[ERROR] Network/API Failure:", error);
+
     throw new ApiError({
       requestUrl: url,
       requestMethod: method,
-      requestHeaders: headers,
+      requestHeaders: requestHeaders,
       requestBody: body,
       responseStatus: 0,
-      responseStatusText: 'Network Error',
-      responseBody: error instanceof Error ? error.message : 'Failed to fetch',
+      responseStatusText: "Network Error",
+      responseBody: error instanceof Error ? error.message : "Failed to fetch",
     });
   }
 };
