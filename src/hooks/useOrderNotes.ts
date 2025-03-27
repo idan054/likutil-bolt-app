@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getOrderNotes, createOrderNote } from '../services/orders/notes.service';
-import { showErrorToast } from '../utils/error';
-import { translations } from '../config/translations';
-import type { OrderNote, CreateNoteRequest } from '../types/order';
+import { useState, useEffect, useCallback } from "react";
+import {
+  getOrderNotes,
+  createOrderNote,
+} from "../services/orders/notes.service";
+import { showErrorToast } from "../utils/error";
+import type { OrderNote, CreateNoteRequest } from "../types/order";
 
 export const useOrderNotes = (orderId: string) => {
   const [notes, setNotes] = useState<OrderNote[]>([]);
@@ -10,7 +12,7 @@ export const useOrderNotes = (orderId: string) => {
 
   const fetchNotes = useCallback(async () => {
     // Don't try to fetch notes if settings are not available
-    const settings = localStorage.getItem('wc_settings');
+    const settings = localStorage.getItem("wc_settings");
     if (!settings) {
       setIsLoading(false);
       return;
@@ -19,8 +21,9 @@ export const useOrderNotes = (orderId: string) => {
     try {
       const data = await getOrderNotes(orderId);
       setNotes(data);
+      console.log("Notes format: ", data);
     } catch (error) {
-      console.error('[useOrderNotes] Failed to fetch notes:', error);
+      console.error("[useOrderNotes] Failed to fetch notes:", error);
       showErrorToast(error);
     } finally {
       setIsLoading(false);
@@ -40,16 +43,16 @@ export const useOrderNotes = (orderId: string) => {
       date_created: new Date().toISOString(),
       note: noteRequest.note,
       customer_note: noteRequest.customer_note,
-      author: 'You',
+      author: "You",
     };
 
-    setNotes(prevNotes => [optimisticNote, ...prevNotes]);
+    setNotes((prevNotes) => [optimisticNote, ...prevNotes]);
 
     try {
       const createdNote = await createOrderNote(orderId, noteRequest);
-      
-      setNotes(prevNotes => 
-        prevNotes.map(note => 
+
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
           note.id === optimisticNote.id ? createdNote : note
         )
       );
@@ -57,8 +60,8 @@ export const useOrderNotes = (orderId: string) => {
       return true;
     } catch (error) {
       // Remove optimistic note on error
-      setNotes(prevNotes => 
-        prevNotes.filter(note => note.id !== optimisticNote.id)
+      setNotes((prevNotes) =>
+        prevNotes.filter((note) => note.id !== optimisticNote.id)
       );
       showErrorToast(error);
       throw error;
