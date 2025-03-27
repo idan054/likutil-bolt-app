@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getCustomerById } from '../services/customers/customers.service';
-import { showErrorToast } from '../utils/error';
-import type { CustomerDetails } from '../types/customer';
+import { useState, useEffect, useCallback } from "react";
+import { getCustomerById } from "../services/customers/customers.service";
+import type { CustomerDetails } from "../types/customer";
 
 // Cache for customer data
 const customerCache = new Map<number, CustomerDetails>();
 
 export const useCustomerDetails = (customerId: number | null) => {
-  const [customer, setCustomer] = useState<CustomerDetails | null>(() => 
+  const [customer, setCustomer] = useState<CustomerDetails | null>(() =>
     customerId ? customerCache.get(customerId) || null : null
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -15,11 +14,19 @@ export const useCustomerDetails = (customerId: number | null) => {
   const fetchCustomer = useCallback(async () => {
     if (!customerId) return;
 
-    const settings = localStorage.getItem('wc_settings');
+    const settings = localStorage.getItem("wc_settings");
     if (!settings) {
       setIsLoading(false);
       return;
     }
+
+    // const { authType } = JSON.parse(settings);
+
+    // // Skip API call for Shopify auth
+    // if (authType === "shopify") {
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     // Check cache first
     const cachedData = customerCache.get(customerId);
@@ -35,7 +42,7 @@ export const useCustomerDetails = (customerId: number | null) => {
       customerCache.set(customerId, data);
       setCustomer(data);
     } catch (error) {
-      console.error('[useCustomerDetails] Failed to fetch customer:', error);
+      console.error("[useCustomerDetails] Failed to fetch customer:", error);
       setCustomer(null);
     } finally {
       setIsLoading(false);
@@ -57,13 +64,13 @@ export const useCustomerDetails = (customerId: number | null) => {
     }
   }, [customerId]);
 
-  return { 
-    customer, 
+  return {
+    customer,
     isLoading,
     refetch: useCallback(async () => {
       clearCache();
       await fetchCustomer();
     }, [clearCache, fetchCustomer]),
-    hasError: !isLoading && !customer && customerId !== null
+    hasError: !isLoading && !customer && customerId !== null,
   };
 };

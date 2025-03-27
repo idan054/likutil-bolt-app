@@ -83,14 +83,12 @@ const dedupedApiRequest = <T>(
  */
 const mapLineItem = (item: any, platform: string): LineItem => {
   if (platform === "shopify") {
-    // Calculate total tax from tax_lines
     const totalTax = item.tax_lines
       ? item.tax_lines
           .reduce((sum: number, t: any) => sum + parseFloat(t.price || "0"), 0)
           .toFixed(2)
       : "0";
 
-    // Map properties to meta_data format
     const metaData = item.properties
       ? item.properties.map((p: any) => ({
           id: Math.floor(Math.random() * 1000),
@@ -99,7 +97,6 @@ const mapLineItem = (item: any, platform: string): LineItem => {
         }))
       : [];
 
-    // Optional product data if available
     const productData = item.product_id
       ? {
           id: item.product_id,
@@ -107,6 +104,7 @@ const mapLineItem = (item: any, platform: string): LineItem => {
           permalink: "",
           sku: item.sku || "",
           price: parseFloat(item.price || "0"),
+          vendor: item.vendor || "", // Added vendor
           stock_quantity: undefined,
         }
       : undefined;
@@ -162,90 +160,30 @@ const mapOrder = (
   order: any,
   platform: string
 ): OrderSummary | OrderDetails => {
-  // Initialize billing address with default empty values
-  const billing = {
-    first_name: "",
-    last_name: "",
-    company: "",
-    address_1: "",
-    address_2: "",
-    city: "",
-    state: "",
-    postcode: "",
-    country: "",
-    email: "",
-    phone: "",
-  };
-
-  // Initialize shipping address with default empty values
-  const shipping = {
-    first_name: "",
-    last_name: "",
-    company: "",
-    address_1: "",
-    address_2: "",
-    city: "",
-    state: "",
-    postcode: "",
-    country: "",
-    phone: "",
-  };
-
   if (platform === "shopify") {
-    // Map Shopify billing address - handle minimal or missing data gracefully
-    if (order.billing_address) {
-      billing.first_name = order.billing_address.first_name || "";
-      billing.last_name = order.billing_address.last_name || "";
-      billing.company = order.billing_address.company || "";
-      billing.address_1 = order.billing_address.address1 || "";
-      billing.address_2 = order.billing_address.address2 || "";
-      billing.city = order.billing_address.city || "";
-      billing.state = order.billing_address.province || "";
-      billing.postcode = order.billing_address.zip || "";
-      billing.country =
-        order.billing_address.country ||
-        order.billing_address.country_code ||
-        "";
-      // For email, fall back to the main order email if not in the address
-      billing.email = order.billing_address.email || order.email || "";
-      billing.phone = order.billing_address.phone || order.phone || "";
-    } else if (order.customer) {
-      // Try to get details from customer if billing_address is missing
-      billing.email = order.email || order.customer.email || "";
-      // Other customer details could be used here if available
-    }
+    // Helper function for address mapping with customer fallback
+    const mapAddress = (address: any, isShipping = false) => ({
+      first_name: address?.first_name || order.customer?.first_name || "",
+      last_name: address?.last_name || order.customer?.last_name || "",
+      company: address?.company || "",
+      address_1: address?.address1 || "",
+      address_2: address?.address2 || "",
+      city: address?.city || "",
+      state: address?.province || "",
+      postcode: address?.zip || "",
+      country: address?.country || address?.country_code || "",
+      email: isShipping ? "" : address?.email || order.email || "",
+      phone: address?.phone || order.phone || "",
+    });
 
-    // Map Shopify shipping address - handle completely null shipping_address
-    if (order.shipping_address) {
-      shipping.first_name = order.shipping_address.first_name || "";
-      shipping.last_name = order.shipping_address.last_name || "";
-      shipping.company = order.shipping_address.company || "";
-      shipping.address_1 = order.shipping_address.address1 || "";
-      shipping.address_2 = order.shipping_address.address2 || "";
-      shipping.city = order.shipping_address.city || "";
-      shipping.state = order.shipping_address.province || "";
-      shipping.postcode = order.shipping_address.zip || "";
-      shipping.country =
-        order.shipping_address.country ||
-        order.shipping_address.country_code ||
-        "";
-      shipping.phone = order.shipping_address.phone || order.phone || "";
-    } else if (order.billing_address) {
-      // Fall back to billing address if shipping is null
-      // This is common in Shopify when shipping and billing are the same
-      shipping.first_name = billing.first_name;
-      shipping.last_name = billing.last_name;
-      shipping.company = billing.company;
-      shipping.address_1 = billing.address_1;
-      shipping.address_2 = billing.address_2;
-      shipping.city = billing.city;
-      shipping.state = billing.state;
-      shipping.postcode = billing.postcode;
-      shipping.country = billing.country;
-      shipping.phone = billing.phone;
-    }
+    // Billing address handling
+    const billing = mapAddress(order.billing_address);
 
-    // Calculate shipping total from shipping_lines
+    // Shipping address handling with billing fallback
+    const shippingAddress = order.shipping_address || order.billing_address;
+    const shipping = mapAddress(shippingAddress, true);
+
+    // Shipping calculations
     const shippingTotal = order.shipping_lines
       ? order.shipping_lines
           .reduce(
@@ -256,7 +194,6 @@ const mapOrder = (
           .toFixed(2)
       : "0";
 
-    // Map shipping_lines
     const shippingLines = order.shipping_lines
       ? order.shipping_lines.map((sl: any) => ({
           method_id: sl.code || "shopify",
@@ -265,12 +202,11 @@ const mapOrder = (
         }))
       : [];
 
-    // Determine order status - in Shopify, status is a combination of fulfillment and financial status
+    // Status handling
     const status =
-      order.fulfillment_status ||
-      order.financial_status ||
-      order.status ||
-      "processing";
+      [order.fulfillment_status, order.financial_status, order.status].find(
+        (s) => s
+      ) || "processing";
 
     // Build base order
     return {
@@ -289,59 +225,88 @@ const mapOrder = (
       line_items: (order.line_items || []).map((item: any) =>
         mapLineItem(item, platform)
       ),
-    };
-  } else {
-    // WooCommerce mapping (unchanged)
-    if (order.billing) {
-      billing.first_name = order.billing.first_name || "";
-      billing.last_name = order.billing.last_name || "";
-      billing.company = order.billing.company || "";
-      billing.address_1 = order.billing.address_1 || "";
-      billing.address_2 = order.billing.address_2 || "";
-      billing.city = order.billing.city || "";
-      billing.state = order.billing.state || "";
-      billing.postcode = order.billing.postcode || "";
-      billing.country = order.billing.country || "";
-      billing.email = order.billing.email || "";
-      billing.phone = order.billing.phone || "";
-    }
-
-    if (order.shipping) {
-      shipping.first_name = order.shipping.first_name || "";
-      shipping.last_name = order.shipping.last_name || "";
-      shipping.company = order.shipping.company || "";
-      shipping.address_1 = order.shipping.address_1 || "";
-      shipping.address_2 = order.shipping.address_2 || "";
-      shipping.city = order.shipping.city || "";
-      shipping.state = order.shipping.state || "";
-      shipping.postcode = order.shipping.postcode || "";
-      shipping.country = order.shipping.country || "";
-      shipping.phone = order.shipping.phone || "";
-    }
-
-    return {
-      id: order.id,
-      status: order.status || "processing",
-      total: order.total || "0",
-      customer_id: order.customer_id || null,
-      date_created: order.date_created,
-      billing,
-      shipping,
-      customer_note: order.customer_note || "",
-      shipping_total: order.shipping_total || "0",
-      payment_method: order.payment_method || "",
-      payment_method_title: order.payment_method_title || "",
-      shipping_lines:
-        order.shipping_lines?.map((sl: any) => ({
-          method_id: sl.method_id || "flat_rate",
-          method_title: sl.method_title || "Flat Rate",
-          total: sl.total || "0",
-        })) || [],
-      line_items: (order.line_items || []).map((item: any) =>
-        mapLineItem(item, platform)
-      ),
+      tax_exempt: order.tax_exempt || false,
+      tags: order.tags ? order.tags.split(", ") : [],
     };
   }
+
+  // WooCommerce mapping (unchanged)
+  const billing = {
+    first_name: "",
+    last_name: "",
+    company: "",
+    address_1: "",
+    address_2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    email: "",
+    phone: "",
+  };
+
+  const shipping = {
+    first_name: "",
+    last_name: "",
+    company: "",
+    address_1: "",
+    address_2: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    phone: "",
+  };
+
+  if (order.billing) {
+    billing.first_name = order.billing.first_name || "";
+    billing.last_name = order.billing.last_name || "";
+    billing.company = order.billing.company || "";
+    billing.address_1 = order.billing.address_1 || "";
+    billing.address_2 = order.billing.address_2 || "";
+    billing.city = order.billing.city || "";
+    billing.state = order.billing.state || "";
+    billing.postcode = order.billing.postcode || "";
+    billing.country = order.billing.country || "";
+    billing.email = order.billing.email || "";
+    billing.phone = order.billing.phone || "";
+  }
+
+  if (order.shipping) {
+    shipping.first_name = order.shipping.first_name || "";
+    shipping.last_name = order.shipping.last_name || "";
+    shipping.company = order.shipping.company || "";
+    shipping.address_1 = order.shipping.address_1 || "";
+    shipping.address_2 = order.shipping.address_2 || "";
+    shipping.city = order.shipping.city || "";
+    shipping.state = order.shipping.state || "";
+    shipping.postcode = order.shipping.postcode || "";
+    shipping.country = order.shipping.country || "";
+    shipping.phone = order.shipping.phone || "";
+  }
+
+  return {
+    id: order.id,
+    status: order.status || "processing",
+    total: order.total || "0",
+    customer_id: order.customer_id || null,
+    date_created: order.date_created,
+    billing,
+    shipping,
+    customer_note: order.customer_note || "",
+    shipping_total: order.shipping_total || "0",
+    payment_method: order.payment_method || "",
+    payment_method_title: order.payment_method_title || "",
+    shipping_lines:
+      order.shipping_lines?.map((sl: any) => ({
+        method_id: sl.method_id || "flat_rate",
+        method_title: sl.method_title || "Flat Rate",
+        total: sl.total || "0",
+      })) || [],
+    line_items: (order.line_items || []).map((item: any) =>
+      mapLineItem(item, platform)
+    ),
+  };
 };
 
 /**
