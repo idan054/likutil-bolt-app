@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { OrderSearch } from "../OrderSearch";
-// import { OrderDetails } from "../OrderDetails";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
+import { StatusFilter } from "./StatusFilter";
+import { useSettings } from "../../hooks/useSettings";
 import { OrdersList } from "./OrdersList";
 import { SuperOrderModal } from "../superOrder/SuperOrderModal";
 import { LoadingState } from "./states/LoadingState";
@@ -22,6 +23,8 @@ interface OrdersDashboardProps {
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   const { orders, isLoading, isRefetching, setOrders } = useAppState();
+  const { orderStatuses } = useSettings();
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
@@ -87,9 +90,13 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       return <LoadingState />;
     }
 
-    if (orders.length === 0) {
-      return <EmptyState />;
-    }
+    const filteredOrders = selectedStatus
+      ? orders.filter(order => order.status === selectedStatus)
+      : orders;
+
+    // if (filteredOrders.length === 0) {
+    //   return <EmptyState />;
+    // }
 
     const selectedOrder = selectedOrderId
       ? orders.find((o) => o.id.toString() === selectedOrderId)
@@ -106,11 +113,16 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
         />
         <div className="flex flex-col md:flex-row gap-1 mt-6">
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
-            <div className="mb-2">
+            <div className="space-y-2 mb-2">
               <OrderSearch onSearch={handleSearchOrdered}/>
+              <StatusFilter
+                statuses={orderStatuses}
+                selectedStatus={selectedStatus}
+                onStatusChange={setSelectedStatus}
+              />
             </div>
             <OrdersList
-              orders={orders}
+              orders={filteredOrders}
               onSelectOrder={handleOrderSelection}
               isCompleted={isCompleted}
               selectedOrderId={selectedOrderId}
