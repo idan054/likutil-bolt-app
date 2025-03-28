@@ -55,7 +55,8 @@ export const translations = {
     placeholders: {
       private: "הוסף הערה פנימית...",
       customer: "עדכון ללקוח במייל...",
-      whatsapp: "ה WhatsApp ישלח מליקוטיל, כדי לקבל תשובה מהלקוח יש לצרף מס׳ עסקי."
+      // whatsapp: "ה WhatsApp ישלח מליקוטיל, כדי לקבל תשובה מהלקוח יש לצרף מס׳ עסקי."
+      whatsapp: "הכנס הודעת ווטסאפ ללקוח..."
     },
     title: 'הערות להזמנה',
     placeholder: 'הוסף הערה חדשה...',

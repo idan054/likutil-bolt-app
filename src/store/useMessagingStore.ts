@@ -4,9 +4,13 @@ interface MessagingState {
   isWhatsAppNote: boolean;
   isCustomerNote: boolean;
   isExpanded: boolean;
+  isWhatsAppReplyEnabled: boolean;
+  businessPhone: string;
   setWhatsAppNote: (value: boolean) => void;
   setCustomerNote: (value: boolean) => void;
   setExpanded: (value: boolean) => void;
+  setWhatsAppReplyEnabled: (value: boolean) => void;
+  setBusinessPhone: (value: string) => void;
   toggleWhatsAppNote: () => void;
   toggleCustomerNote: () => void;
   reset: () => void;
@@ -16,6 +20,8 @@ export const useMessagingStore = create<MessagingState>((set) => ({
   isWhatsAppNote: false,
   isCustomerNote: false,
   isExpanded: false,
+  isWhatsAppReplyEnabled: false,
+  businessPhone: "",
   setWhatsAppNote: (value) => set({ isWhatsAppNote: value, isExpanded: true }),
   setCustomerNote: (value) => set({ isCustomerNote: value, isExpanded: true }),
   setExpanded: (value) => set({ isExpanded: value }),
@@ -47,10 +53,14 @@ export const useMessagingStore = create<MessagingState>((set) => ({
         };
       }
     }),
+  setWhatsAppReplyEnabled: (value) => set({ isWhatsAppReplyEnabled: value }),
+  setBusinessPhone: (value) => set({ businessPhone: value }),
   reset: () =>
     set({
       isWhatsAppNote: false,
       isCustomerNote: false,
       isExpanded: false,
+      isWhatsAppReplyEnabled: false,
+      businessPhone: "",
     }),
 }));

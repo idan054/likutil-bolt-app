@@ -34,23 +34,70 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     setCustomerNote,
     isExpanded,
     setExpanded,
+    isWhatsAppReplyEnabled,
+    setWhatsAppReplyEnabled,
+    businessPhone,
+    setBusinessPhone,
   } = useMessagingStore();
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
 
+  async function generateWhatsAppLink() {
+    const whatsappReply = `
+  שלום, קיבלתי עדכון לגבי הזמנה #${orderId}
+  
+  ${newNote.trim()}
+  `.trim().replace(/\n\s+/g, '\n');
+  
+    
+  const phone = businessPhone.replace(/\D/g, "").replace(/^0/, '972');
+    const encodedMessage = encodeURIComponent(whatsappReply);
+    const longUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+  
+    try {
+      const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+      const shortUrl = await response.text();
+      return shortUrl;
+    } catch (error) {
+      console.error('Error shortening URL:', error);
+      return longUrl; // Return the original if shortening fails
+    }
+  }
+  
+
   const handleSubmit = async () => {
     if (!newNote.trim() || isSubmitting) return;
+    
+    // Add validation for business phone when WhatsApp reply is enabled
+    if (isWhatsAppNote && isWhatsAppReplyEnabled && !businessPhone.trim()) {
+      toast.error('ההודעה עדיין לא נשלחה - יש להכניס מס׳ טלפון עסקי כדי לאפשר ללקוח להגיב');
+      return;
+    }
 
     setIsSubmitting(true);
     
     try {
       if (isWhatsAppNote && customerPhone) {
-       
 
-        const whatsappMessage = `📝 שלום, נוספה הערה להזמנה שלך מ ${settings?.storeUrl} 🛍️\n\n${newNote.trim()}\n───────\n🤖 לא ניתן להשיב להודעה זו`;
 
-        const whatsappNumber = customerPhone.replace(/\D/g, "");
+        const waReplyLink = await generateWhatsAppLink();
+
+const whatsappMessage = `
+  📝 שלום, התקבל עדכון מ
+${settings?.storeUrl}
+🛍️ להזמנה #${orderId}
+
+  ${newNote.trim()}
+
+  ───
+  ${isWhatsAppReplyEnabled 
+    ? `👇  לחץ כדי להשיב להודעה: 
+    ${waReplyLink}` 
+    : "🤖 לא ניתן להשיב להודעה זו"
+  }
+`.trim();
+
         const response = await fetch(`${BASE_URL}/api/send-whatsapp`, {
           method: 'POST',
           headers: {
@@ -60,8 +107,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
           body: JSON.stringify({
             message: 
             whatsappMessage,
-            
-            phone: whatsappNumber.startsWith('972') ? whatsappNumber : `972${whatsappNumber.slice(1)}`
+            phone: customerPhone.replace(/\D/g, "").replace(/^0/, '972')
           })
         });
 
@@ -133,7 +179,8 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
                 }
               }}
             />
-
+            
+         
             <NoteInput
               value={newNote}
               onChange={setNewNote}
@@ -149,7 +196,39 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
               showTemplates={showTemplates}
               onToggleTemplates={() => setShowTemplates(!showTemplates)}
             />
+
+{isWhatsAppNote && (
+            <div className="mt-1 flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer mr-1">
+                <input
+                  type="checkbox"
+                  checked={isWhatsAppReplyEnabled}
+                  onChange={() => setWhatsAppReplyEnabled(!isWhatsAppReplyEnabled)}
+                  className="w-4 h-8 text-blue-500 border-blue-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">אפשר ללקוח להשיב</span>
+              </label>
+              
+              {isWhatsAppReplyEnabled && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    value={businessPhone}
+                    onChange={(e) => setBusinessPhone(e.target.value)}
+                    placeholder="מס׳ וואטסאפ עסקי "
+                    className={`w-44 h-8 px-3 text-sm border-b text-right focus:border-b-gray-500 focus:ring-0 focus:outline-none`}
+                    dir="rtl"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+          )}
           </div>
+
+      
+
+
 
           <div className="max-h-[400px] overflow-y-auto pr-1">
             <NotesList notes={notes} isLoading={isLoading} />
