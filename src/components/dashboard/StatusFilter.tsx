@@ -21,7 +21,7 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
     <div className="relative inline-block w-full">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-2.5 text-sm bg-white border rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between transition-colors duration-200"
+         className="w-full px-4 py-2 text-sm bg-white border rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 flex items-center justify-between"
         whileTap={{ scale: 0.98 }}
       >
         <span className="font-medium">

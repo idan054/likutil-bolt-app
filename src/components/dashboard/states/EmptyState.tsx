@@ -2,7 +2,11 @@ import React from 'react';
 import { CopyCheck, ListChecks, ListRestart, PackageSearch, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export const EmptyState: React.FC = () => (
+interface EmptyStateProps {
+  onRefresh?: () => void;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({ onRefresh }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -37,7 +41,7 @@ export const EmptyState: React.FC = () => (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={() => window.location.reload()}
+      onClick={onRefresh}
       className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-4 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-300"
     >
       <ListRestart className="w-5 h-5" />

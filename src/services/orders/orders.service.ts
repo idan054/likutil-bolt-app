@@ -9,7 +9,7 @@ import { JSONPath } from "jsonpath-plus";
 import { getApiConfig } from "../api/config";
 
 // Cache configuration
-const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_PAGE = 15;
 const CACHE_EXPIRATION = 30 * 1000;
 const STATUSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -457,30 +457,38 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
   });
 };
 
+
 /**
- * Gets all processing orders
+ * Gets orders by status
  */
-export const getProcessingOrders = async (
+export const getFilteredOrders = async (
+  status: string | null,
   metadataConfigs?: MetadataConfig[]
 ): Promise<OrderSummary[]> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = `processing_orders_${platform}`;
+  const cacheKey = `orders_${platform}_${status || 'all'}`;
 
   console.log(
     `[orders.service] Fetching processing orders for platform: ${platform}`
   );
   console.log("Metadata configs:", metadataConfigs);
 
+  if(status === 'init') status = JSON.parse(localStorage.getItem('selectedOrderStatus') ?? '');
+  console.log("Cache status:", status);
+
+
   return dedupedApiRequest(cacheKey, async () => {
     // Platform-specific parameters
     const params = new URLSearchParams({
-      [platform === "shopify" ? "limit" : "per_page"]:
-        ITEMS_PER_PAGE.toString(),
-      status: "processing",
+      [platform === "shopify" ? "limit" : "per_page"]: ITEMS_PER_PAGE.toString(),
       orderby: "date",
       order: "desc",
     });
+
+    if (status && status !== 'null') {
+      params.append("status", status);
+    }
 
     // Special case for Shopify
     if (platform === "shopify") {
@@ -508,7 +516,7 @@ export const getProcessingOrders = async (
     }
 
     console.log(
-      `[orders.service] Retrieved ${orders.length} processing orders`
+      `[orders.service] Retrieved ${orders.length} orders for status: ${status || 'all'}`
     );
 
     return metadataConfigs?.length

@@ -14,6 +14,8 @@ import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { OrderDetails } from "../OrderDetails";
+import { getFilteredOrders, getOrdersByStatus } from "../../services/orders/orders.service";
+import { filter } from "framer-motion/client";
 // import { OrderDetails } from '../../types/order';
 
 
@@ -24,7 +26,19 @@ interface OrdersDashboardProps {
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   const { orders, isLoading, isRefetching, setOrders } = useAppState();
   const { orderStatuses } = useSettings();
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  
+  // Initialize selectedStatus from localStorage
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(() => {
+    const cached = localStorage.getItem('selectedOrderStatus');
+    return cached ? JSON.parse(cached) : null;
+  });
+
+  // Update localStorage when selectedStatus changes
+  useEffect(() => {
+    localStorage.setItem('selectedOrderStatus', JSON.stringify(selectedStatus));
+  }, [selectedStatus]);
+
+
   const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
@@ -76,6 +90,11 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   };
 
   const handleOrderSelection = (orderId: string) => {
+      if(orderId === selectedOrderId) {
+      handleBackToList();
+      return;
+    } 
+
     handleOrderSelect(orderId);
   };
 
@@ -83,6 +102,29 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     handleSearchOrder(order);
   };
 
+
+  const handleSelectedStatus = (status: string | null) => {
+    setSelectedStatus(status);
+    handleBackToList();
+
+    const filteredOrders = selectedStatus
+    ? orders.filter(order => order.status === selectedStatus)
+    : orders;
+
+    if(filteredOrders.length === 0) {
+      toast.promise(
+        getFilteredOrders(status),
+        {
+          loading: `טוען הזמנות ${status ?? ''}...`,
+          success: (data) => {
+            setOrders(data);
+            return `${data.length} הזמנות אחרונות נוספו בהצלחה`;
+          },
+          error: 'Failed to refresh orders'
+        }
+      );
+    }
+};
 
 
   const renderContent = () => {
@@ -94,9 +136,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       ? orders.filter(order => order.status === selectedStatus)
       : orders;
 
-    // if (filteredOrders.length === 0) {
-    //   return <EmptyState />;
-    // }
+ 
 
     const selectedOrder = selectedOrderId
       ? orders.find((o) => o.id.toString() === selectedOrderId)
@@ -118,10 +158,11 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
               <StatusFilter
                 statuses={orderStatuses}
                 selectedStatus={selectedStatus}
-                onStatusChange={setSelectedStatus}
+                onStatusChange={handleSelectedStatus}
               />
             </div>
             <OrdersList
+              key={filteredOrders.length}
               orders={filteredOrders}
               onSelectOrder={handleOrderSelection}
               isCompleted={isCompleted}
@@ -129,7 +170,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
             />
             <AppInfoStatus />
           </div>
-          <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ? 'block' : 'hidden md:block'}`}>
+          <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ||  filteredOrders.length === 0 ? 'block' : 'hidden md:block'}`}>
             {selectedOrder ? (
               <OrderDetails
                 order={selectedOrder}
@@ -137,13 +178,46 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
                 onComplete={() => handleOrderComplete(selectedOrderId)}
               />
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
+              <div className="flex items-center justify-center h-[800px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
                 <div className="text-center p-8">
-                <svg className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                  <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
-                  <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
+
+        {filteredOrders.length === 0 ? (
+          <EmptyState onRefresh={() => {
+            toast.promise(
+              getFilteredOrders(selectedStatus),
+              {
+                loading: 'Refreshing orders...',
+                success: (data) => {
+                  setOrders(data);
+                  return 'Orders refreshed successfully';
+                },
+                error: 'Failed to refresh orders'
+              }
+            );
+          }} />
+        ) : (
+          <>
+            <svg 
+              className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor" 
+              aria-hidden="true"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
+              />
+            </svg>
+            <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
+            <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
+          </>
+        )}
+
+           
+
                 </div>
               </div>
             )}

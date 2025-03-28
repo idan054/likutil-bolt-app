@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getProcessingOrders } from "../services/orders/orders.service";
+import { getFilteredOrders } from "../services/orders/orders.service";
 import { showErrorToast } from "../utils/error";
 import type { OrderSummary } from "../types/order";
 import { useSettings } from "./useSettings";
@@ -88,8 +88,8 @@ export const useProcessingOrders = () => {
           parent_path: config.original_path?.parent_path,
         }));
 
-        // Pass metadata configs to getProcessingOrders
-        const data = await getProcessingOrders(metadataConfigs);
+        // Pass metadata configs and processing status to getFilteredOrders
+        const data = await getFilteredOrders("init", metadataConfigs);
 
         // Record the fetch time
         lastFetchedRef.current = Date.now();
