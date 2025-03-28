@@ -29,8 +29,8 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
   customerId,
   onReset
 }) => {
-  // const { customer, isLoading } = useCustomerDetails(customerId);
-  const customer = order.billing
+  const { customer, isLoading } = useCustomerDetails(order.id);
+  const billingDetails = order.billing
 
   return (
     <div className="border-b pb-4 mb-4">
@@ -43,10 +43,10 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
           <span>חזור להזמנות</span>
         </button>
         <div className="flex items-center gap-2">
-          {/* <RoleBadge 
+          <RoleBadge 
             role={customer?.role} 
             isLoading={isLoading}
-          /> */}
+          />
           <StatusBadge status={status} orderId={order.id.toString()} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>
@@ -57,7 +57,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
       </div>
 <h2 className="text-2xl">
   <span className="font-bold">{translations.orderNumber} #{id}</span>
-  {customer?.first_name && <span className="font-normal"> {customer.first_name} {customer.last_name}</span>}
+  {billingDetails?.first_name && <span className="font-normal"> {billingDetails.first_name} {billingDetails.last_name}</span>}
 </h2>
 
       <p className="text-gray-600 mt-1">
