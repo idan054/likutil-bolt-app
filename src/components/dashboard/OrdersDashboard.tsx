@@ -43,6 +43,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [handleReset]);
 
+  const [isMobileDetailsVisible, setIsMobileDetailsVisible] = useState(false);
+
   // Update browser history when selecting an order
   useEffect(() => {
     if (selectedOrderId) {
@@ -51,8 +53,15 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
         "",
         `?order=${selectedOrderId}`
       );
+      setIsMobileDetailsVisible(true);
     }
   }, [selectedOrderId]);
+
+  const handleBackToList = () => {
+    window.history.pushState({ view: "orders-list" }, "", "/");
+    handleReset();
+    setIsMobileDetailsVisible(false);
+  };
 
   // Calculate completed orders count
   const completedOrdersCount = useMemo(() => {
@@ -72,11 +81,6 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   };
 
 
-
-  const handleBackToList = () => {
-    window.history.pushState({ view: "orders-list" }, "", "/");
-    handleReset();
-  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -100,8 +104,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           completedOrdersCount={completedOrdersCount}
           isRefetching={isRefetching}
         />
-        <div className="flex gap-1 mt-6">
-          <div className="w-1/4">
+        <div className="flex flex-col md:flex-row gap-1 mt-6">
+          <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
             <div className="mb-2">
               <OrderSearch onSearch={handleSearchOrdered}/>
             </div>
@@ -113,7 +117,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
             />
             <AppInfoStatus />
           </div>
-          <div className="w-3/4">
+          <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ? 'block' : 'hidden md:block'}`}>
             {selectedOrder ? (
               <OrderDetails
                 order={selectedOrder}
