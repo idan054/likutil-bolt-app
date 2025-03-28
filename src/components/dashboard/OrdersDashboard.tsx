@@ -14,9 +14,10 @@ import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { OrderDetails } from "../OrderDetails";
-import { getFilteredOrders, getOrdersByStatus } from "../../services/orders/orders.service";
+import { getFilteredOrders } from "../../services/orders/orders.service";
 import { filter } from "framer-motion/client";
 // import { OrderDetails } from '../../types/order';
+import { AnimatePresence, motion } from "framer-motion";
 
 
 interface OrdersDashboardProps {
@@ -128,9 +129,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
 
 
   const renderContent = () => {
-    if (isLoading) {
-      return <LoadingState />;
-    }
+
 
     const filteredOrders = selectedStatus
       ? orders.filter(order => order.status === selectedStatus)
@@ -181,40 +180,66 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
               <div className="flex items-center justify-center h-[800px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
                 <div className="text-center p-8">
 
-        {filteredOrders.length === 0 ? (
-          <EmptyState onRefresh={() => {
-            toast.promise(
-              getFilteredOrders(selectedStatus),
-              {
-                loading: 'Refreshing orders...',
-                success: (data) => {
-                  setOrders(data);
-                  return 'Orders refreshed successfully';
-                },
-                error: 'Failed to refresh orders'
-              }
-            );
-          }} />
-        ) : (
-          <>
-            <svg 
-              className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor" 
-              aria-hidden="true"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
-              />
-            </svg>
-            <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
-            <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
-          </>
-        )}
+<AnimatePresence mode="wait">
+  {isLoading ? (
+    <motion.div
+      key="loading"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <LoadingState />
+    </motion.div>
+  ) : filteredOrders.length === 0 ? (
+    <motion.div
+      key="empty"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <EmptyState onRefresh={() => {
+        toast.promise(
+          getFilteredOrders(selectedStatus),
+          {
+            loading: 'Refreshing orders...',
+            success: (data) => {
+              setOrders(data);
+              return 'Orders refreshed successfully';
+            },
+            error: 'Failed to refresh orders'
+          }
+        );
+      }} />
+    </motion.div>
+  ) : (
+    <motion.div
+      key="default"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <svg 
+        className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="currentColor" 
+        aria-hidden="true"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
+        />
+      </svg>
+      <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
+      <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
+    </motion.div>
+  )}
+</AnimatePresence>
 
            
 

@@ -44,6 +44,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
         <div className="flex items-center gap-1 text-sm text-gray-500">
           <Clock size={12} />
           <span>{formatTimeAgo(order.date_created)}</span>
+          {/* <span>{formatTimeAgo(order.date_created)} • {order.status}</span> */}
         </div>
       </div>
     </div>
