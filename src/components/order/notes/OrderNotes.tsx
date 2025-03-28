@@ -17,6 +17,7 @@ import { BASE_URL } from "../../../services/auth/woo-auth";
 interface OrderNotesProps {
   orderId: string;
   customerPhone?: string;
+  order?: any;
 }
 
 export const OrderNotes: React.FC<OrderNotesProps> = ({
@@ -42,6 +43,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     if (!newNote.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
+    
     try {
       if (isWhatsAppNote && customerPhone) {
        

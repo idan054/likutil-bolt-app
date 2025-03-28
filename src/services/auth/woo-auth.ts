@@ -129,6 +129,8 @@ export const checkExistingUser = async (storeUrl: string): Promise<{ exists: boo
 };
 
 
+// For super quick Debug users, Run the following on FireFoo App
+// https://gist.github.com/idan054/5d0048f43f1a93289c362d473a111e42
 export const tryGetUserData = async (storeUrl: string, oneTimeToken: string) => {
 
   const cleanUrl = sanitizeUrl(storeUrl);
@@ -144,20 +146,30 @@ export const tryGetUserData = async (storeUrl: string, oneTimeToken: string) => 
         where('storeUrl', '==', cleanUrl),
         where('oneTimeToken', '==', oneTimeToken),
       ]),
-      orderBy('__name__') // Use "__name__" to refer to the document ID
+    
   );
     const snapshot = await getDocs(q);
 
+    const DEV_DOC_ID = 'pBfxNPbjVicAqxZq0k5sYM5GExH2';
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+
+    const doc = isDev
+    ? snapshot.docs.find(d => d.id === DEV_DOC_ID) || snapshot.docs[0]
+    : snapshot.docs[0];
+    
+
     if (!snapshot.empty) {
-      const userData = snapshot.docs[0].data();
+      const userData = doc.data();
       const result = {
         exists: true,
-          userId: snapshot.docs[0].id,
+          userId: doc.id,
           email: userData.email,
       
       };
       console.log('result', result)
       return result
+
+      
     }
 
     

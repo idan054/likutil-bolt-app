@@ -230,6 +230,8 @@ const mapOrder = (
     };
   }
 
+
+
   // WooCommerce mapping (unchanged)
   const billing = {
     first_name: "",
@@ -285,12 +287,20 @@ const mapOrder = (
     shipping.phone = order.shipping.phone || "";
   }
 
+
+// Convert to Date object
+const gmtDate = new Date(order.date_created_gmt);
+const timezoneOffset = new Date().getTimezoneOffset();
+const localDate = new Date(gmtDate.getTime() - timezoneOffset * 60000);
+
+
   return {
     id: order.id,
     status: order.status || "processing",
     total: order.total || "0",
     customer_id: order.customer_id || null,
-    date_created: order.date_created,
+    // date_created: order.date_created,
+    date_created: localDate.toLocaleString() , // Convert to local time
     billing,
     shipping,
     customer_note: order.customer_note || "",

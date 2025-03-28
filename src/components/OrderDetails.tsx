@@ -118,7 +118,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           <div className="mt-8">
             <OrderNotes
               orderId={order.id.toString()}
-              customerPhone={order.shipping?.phone ?? order.billing?.phone}
+              customerPhone={!order.shipping?.phone || order.shipping.phone === '' ? order.billing?.phone : order.shipping.phone}
             />
           </div>
 
