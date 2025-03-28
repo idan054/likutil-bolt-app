@@ -7,6 +7,8 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
+import { FieldPath, orderBy } from 'firebase/firestore';
+
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -141,7 +143,8 @@ export const tryGetUserData = async (storeUrl: string, oneTimeToken: string) => 
       ] : [
         where('storeUrl', '==', cleanUrl),
         where('oneTimeToken', '==', oneTimeToken),
-      ])
+      ]),
+      orderBy('__name__') // Use "__name__" to refer to the document ID
   );
     const snapshot = await getDocs(q);
 
