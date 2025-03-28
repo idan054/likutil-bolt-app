@@ -1,11 +1,25 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
+import { de } from 'date-fns/locale';
 
-export const RequestCompanyCard: React.FC = () => {
+interface RequestCompanyCardProps {
+  onClick?: () => void;
+  title?: string;
+  desc?: string;
+}
+
+export const RequestCompanyCard: React.FC<RequestCompanyCardProps> = ({
+  onClick, title, desc
+
+}) => {
   const handleAddCompany = () => {
-    const message = encodeURIComponent('שלום, אשמח שתוסיפו חברת משלוחים נוספת למערכת ליקוטיל');
-    const whatsappUrl = `https://wa.me/972557113987?text=${message}`;
-    window.open(whatsappUrl, '_blank');
+    if (onClick) {
+      onClick();
+    } else {
+      const message = encodeURIComponent('שלום, אשמח שתוסיפו חברת משלוחים נוספת למערכת ליקוטיל');
+      const whatsappUrl = `https://wa.me/972557113987?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+    }
   };
 
   return (
@@ -16,9 +30,9 @@ export const RequestCompanyCard: React.FC = () => {
       <div className="bg-gray-100 rounded-full p-3 mb-4">
         <Plus size={24} className="text-gray-600" />
       </div>
-      <h3 className="font-semibold text-lg mb-2">בקש חברת משלוחים</h3>
+      <h3 className="font-semibold text-lg mb-2">{title ?? 'בקש חברת משלוחים'}</h3>
       <p className="text-sm text-gray-600">
-        לא מצאת את חברת המשלוחים? נוסיף אותה תוך שעות!
+        {desc ?? 'לא מצאת את חברת המשלוחים? נוסיף אותה תוך שעות!'}
       </p>
     </div>
   );

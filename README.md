@@ -50,8 +50,12 @@ Just use this link:
 ### ⚡ Better Push Option
 Use the **Bolt to GitHub** Chrome Extension for a seamless push process.
 
-### 💡 About
-The **Likutil Bolt App** streamlines quick logins, deployments, and integrations with GitHub & Bolt.AI, ensuring a seamless developer experience.
+### ⚙️ Configuration
+To display all delivery companies in the Order Details carousel:
+1. Open `companies.ts` file
+2. Locate line 10
+3. Uncomment `return companies;` flag
 
+For more configuration options, see the [Configuration Guide](./docs/configuration.md).
 
 

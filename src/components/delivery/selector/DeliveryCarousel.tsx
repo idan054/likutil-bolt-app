@@ -1,11 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { CompactDeliveryCard } from './CompactDeliveryCard';
+import { RequestCompanyCard } from '../../settings/tabs/sections/delivery/marketplace/RequestCompanyCard';
 import { WhatsAppContactButton } from '../contact/WhatsAppContactButton';
 import { useDeliveryCompanies } from '../../../hooks/delivery/useDeliveryCompanies';
 import { useHorizontalScroll } from '../../../hooks/ui/useHorizontalScroll';
 import { sortCompaniesByConnection } from '../../../utils/delivery/companies';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { SettingsModal } from '../../settings/SettingsModal';
+import { useSettings } from '../../../hooks/useSettings';
+import { title } from 'framer-motion/client';
 
 interface DeliveryCarouselProps {
   selectedProvider: string | null;
@@ -20,6 +24,9 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
 }) => {
   const { scrollRef, scrollLeft, scrollRight } = useHorizontalScroll(240);
   const { companies, isLoading } = useDeliveryCompanies();
+  const [showSettings, setShowSettings] = useState(false);
+  const { settings } = useSettings();
+  
 
   // Auto-select single company
   useEffect(() => {
@@ -38,9 +45,22 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
 
   if (companies.length === 0) {
     return (
-      <div className="flex flex-col items-center py-4">
-        <p className="text-gray-500 mb-2">פנה אלינו ונחבר אותך תוך דקות לחברת השילוח שלך</p>
-        <WhatsAppContactButton />
+      <div className="flex justify-center py-4">
+
+
+          <RequestCompanyCard
+          onClick={() => setShowSettings(true)}
+            title="הוסף חברת שילוח "
+            desc="חיבור מהיר לחברת השילוח שלך"
+           />
+
+
+        {showSettings && (
+          <SettingsModal
+            initialData={settings || undefined}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
       </div>
     );
   }
@@ -54,6 +74,12 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
 
   return (
     <div className="relative group">
+      {showSettings && (
+        <SettingsModal
+          initialData={settings || undefined}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
       <button 
         onClick={scrollLeft}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 p-1 rounded-full shadow-md border opacity-0 group-hover:opacity-100 transition-opacity"
@@ -84,6 +110,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
           />
         ))}
       </div>
+
     </div>
   );
 };
