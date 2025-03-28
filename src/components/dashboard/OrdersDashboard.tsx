@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { OrderSearch } from "../OrderSearch";
-import { OrderDetails } from "../OrderDetails";
+// import { OrderDetails } from "../OrderDetails";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
 import { OrdersList } from "./OrdersList";
 import { SuperOrderModal } from "../superOrder/SuperOrderModal";
@@ -12,15 +12,17 @@ import { useSuperOrder } from "../../hooks/useSuperOrder";
 import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
+import { OrderDetails } from "../OrderDetails";
+// import { OrderDetails } from '../../types/order';
+
 
 interface OrdersDashboardProps {
   
 }
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
-  const { orders, isLoading, isRefetching } = useAppState();
-  const { selectedOrderId, handleOrderSelect, handleReset } =
-    useOrderSelection(orders);
+  const { orders, isLoading, isRefetching, setOrders } = useAppState();
+  const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
     generateSuperOrder,
@@ -65,6 +67,12 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     handleOrderSelect(orderId);
   };
 
+  const handleSearchOrdered = (order: any) => {
+    handleSearchOrder(order);
+  };
+
+
+
   const handleBackToList = () => {
     window.history.pushState({ view: "orders-list" }, "", "/");
     handleReset();
@@ -79,27 +87,12 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       return <EmptyState />;
     }
 
-    if (selectedOrderId) {
-      const selectedOrder = orders.find(
-        (o) => o.id.toString() === selectedOrderId
-      );
-      if (selectedOrder) {
-        return (
-          <div className="flex justify-center">
-            <OrderDetails
-              order={selectedOrder}
-              onReset={handleBackToList}
-              onComplete={() => handleOrderComplete(selectedOrderId)}
-            />
-          </div>
-        );
-      }
-      handleReset();
-      return null;
-    }
+    const selectedOrder = selectedOrderId
+      ? orders.find((o) => o.id.toString() === selectedOrderId)
+      : null;
 
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <ProcessingOrdersCounter
           orders={orders}
           onGenerateSuperOrder={generateSuperOrder}
@@ -107,30 +100,46 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           completedOrdersCount={completedOrdersCount}
           isRefetching={isRefetching}
         />
-        {orders.length > 0 ? (
-          <OrdersList
-            orders={orders}
-            onSelectOrder={handleOrderSelection}
-            isCompleted={isCompleted}
-            isRefetching={isRefetching}
-          />
-        ) : (
-          !isLoading && <EmptyState />
-        )}
-
-      <AppInfoStatus/>
+        <div className="flex gap-1 mt-6">
+          <div className="w-1/4">
+            <div className="mb-2">
+              <OrderSearch onSearch={handleSearchOrdered}/>
+            </div>
+            <OrdersList
+              orders={orders}
+              onSelectOrder={handleOrderSelection}
+              isCompleted={isCompleted}
+              selectedOrderId={selectedOrderId}
+            />
+            <AppInfoStatus />
+          </div>
+          <div className="w-3/4">
+            {selectedOrder ? (
+              <OrderDetails
+                order={selectedOrder}
+                onReset={handleBackToList}
+                onComplete={() => handleOrderComplete(selectedOrderId)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
+                <div className="text-center p-8">
+                <svg className="mx-auto h-16 w-16 text-gray-400 bg-gray-200 bg-opacity-75 rounded-full p-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                  <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
+                  <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
     <>
-      <div className="flex justify-center mb-8">
-        <OrderSearch onSearch={handleOrderSelect} isLoading={false} />
-      </div>
-
       {renderContent()}
-
       {superOrderItems && (
         <SuperOrderModal items={superOrderItems} onClose={clearSuperOrder} />
       )}

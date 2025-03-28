@@ -82,7 +82,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           stiffness: 300,
           damping: 30,
         }}
-        className="w-full max-w-4xl mx-auto px-4 sm:px-6"
+        className="w-full max-w-4xl px-4 sm:px-4"
       >
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6" dir="rtl">
           <OrderHeader

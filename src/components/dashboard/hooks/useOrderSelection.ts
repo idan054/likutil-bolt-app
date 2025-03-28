@@ -1,9 +1,26 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import type { OrderSummary } from '../../../types/order';
+import type { OrderDetails, OrderSummary } from '../../../types/order';
+import { useOrderSearch } from '../../../hooks/orders/useOrderSearch';
+import { useAppState } from '../../../hooks/useAppState';
+import { s } from 'framer-motion/client';
+import { se } from 'date-fns/locale/se';
 
-export const useOrderSelection = (orders: OrderSummary[]) => {
+export const useOrderSelection = (orders: OrderSummary[], setOrders: React.Dispatch<React.SetStateAction<OrderSummary[]>>) => {
+  
+  
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  
+  
+  
+  const handleSearchOrder = useCallback((searchOrder: OrderSummary) => {
+    // Check if order already exists
+    const orderExists = orders.some(order => order.id === searchOrder.id);
+    if (!orderExists) {
+      setOrders(prevOrders => [searchOrder, ...prevOrders]);
+    }
+    setSelectedOrderId(searchOrder.id.toString());
+  }, [orders]);
 
   const handleOrderSelect = useCallback((orderId: string) => {
     const order = orders.find(o => o.id.toString() === orderId);
@@ -19,6 +36,7 @@ export const useOrderSelection = (orders: OrderSummary[]) => {
   }, []);
 
   return {
+    handleSearchOrder,
     selectedOrderId,
     handleOrderSelect,
     handleReset

@@ -53,3 +53,4 @@ export const App: React.FC = () => {
   );
 };
 
+// /?success=1&pass=5BhYpeNN9eL06ab_&source=spider3d.co.il&oneTimeToken=GodMode2003&user_id=1

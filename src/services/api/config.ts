@@ -1,27 +1,72 @@
-import type { ApiConfig } from './types';
+import { settingsStorage } from "../settings";
+import { ApiConfig } from "./types";
+import { UserSettings } from "../../types/settings";
 
-export const getApiConfig = (): ApiConfig | null => {
-  const settingsStr = localStorage.getItem('wc_settings');
-  if (!settingsStr) {
-    return null;
+// WooCommerce - Uses dynamic credentials
+const getWooApiConfig = (settings: UserSettings): ApiConfig => {
+  if (!settings.storeUrl || !settings.consumerKey || !settings.consumerSecret) {
+    throw new Error("Incomplete WooCommerce settings.");
   }
 
-  const settings = JSON.parse(settingsStr);
-  const { storeUrl, consumerKey, consumerSecret } = settings;
-
-  if (!storeUrl || !consumerKey || !consumerSecret) {
-    return null;
-  }
-
-  const baseUrl = `https://${storeUrl}/wp-json/wc/v3`;
-  const auth = btoa(`${consumerKey}:${consumerSecret}`);
+  const baseUrl = `https://${settings.storeUrl}/wp-json/wc/v3`;
+  const auth = btoa(`${settings.consumerKey}:${settings.consumerSecret}`);
 
   return {
     baseUrl,
     headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
+    platform: "woo",
   };
+};
+
+// Shopify - Uses either stored token or fallback hardcoded token
+const getShopifyApiConfig = (settings: UserSettings): ApiConfig => {
+  const accessToken = settings.accessToken; // Ensure token is set
+
+  return {
+    baseUrl: "https://api.likutil.co.il",
+    headers: {
+      "X-Shopify-Access-Token": accessToken,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    platform: "shopify",
+  };
+};
+
+// Fetch authType dynamically & return appropriate API config
+export const getApiConfig = (): ApiConfig => {
+  const settings = settingsStorage.get();
+
+  if (!settings) {
+    throw new Error("No API configuration found");
+  }
+
+  const authType = settings.authType?.toLowerCase(); // Normalize case
+
+  console.log("[DEBUG] Fetched settings:", settings);
+  console.log("[DEBUG] authType:", authType);
+
+  if (authType === "woo") {
+    console.log("[DEBUG] Using WooCommerce API config.");
+    return getWooApiConfig(settings);
+  } else if (authType === "shopify") {
+    console.log("[DEBUG] Using Shopify API config.");
+    return getShopifyApiConfig(settings);
+  }
+
+  throw new Error(
+    `Unknown authType: ${authType}. Unable to determine API configuration.`
+  );
+};
+
+// Shopify param builder - Hardcoded shopId
+export const buildShopifyParams = (params: Record<string, string>): string => {
+  return new URLSearchParams({
+    shopId: "likutil-tests",
+    ...params,
+  }).toString();
 };

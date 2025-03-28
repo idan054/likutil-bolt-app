@@ -7,14 +7,16 @@ interface OrdersListProps {
   orders: OrderSummary[];
   onSelectOrder: (orderId: string) => void;
   isCompleted: (orderId: string) => boolean;
+  selectedOrderId?: string;
 }
 
 export const OrdersList: React.FC<OrdersListProps> = ({ 
   orders, 
   onSelectOrder,
-  isCompleted 
+  isCompleted,
+  selectedOrderId
 }) => (
-  <div className="space-y-4">
+  <div className="divide-y divide-gray-200">
     <AnimatePresence>
       {orders.map((order, index) => (
         <motion.div
@@ -32,6 +34,7 @@ export const OrdersList: React.FC<OrdersListProps> = ({
             order={order} 
             onSelect={onSelectOrder}
             isCompleted={isCompleted(order.id.toString())}
+            selectedOrderId={selectedOrderId}
           />
         </motion.div>
       ))}

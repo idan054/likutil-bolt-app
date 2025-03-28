@@ -4,13 +4,24 @@ import { ApiError } from '../../services/api/types';
 import type { OrderDetails } from '../../types/order';
 import { searchOrderById } from '../../services/orders/orders.service';
 import { useGetFirebaseMetadata } from '../useGetFirebaseMetadata';
+import { useAppState } from '../useAppState';
 
 export const useOrderSearch = () => {
+  const { orders,  } = useAppState();
+
+
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const { options } = useGetFirebaseMetadata();
 
+
   const searchOrder = async (orderId: string) => {
+    const orderExists = orders.find(order => order.id.toString() === orderId);
+    if(orderExists){
+      setOrder(orderExists); 
+      return orderExists;
+    }
+
     if (!orderId.trim()) return;
 
     // Check if settings exist
@@ -29,9 +40,11 @@ export const useOrderSearch = () => {
         parent_path: config.original_path?.parent_path
       }));
       const result = await searchOrderById(orderId, metadataConfigs);
+      
+      setOrder(result); 
+    
 
-
-      setOrder(result);
+      return result;
     } catch (error) {
       console.error('[orders.search] Failed to find order:', error);
       

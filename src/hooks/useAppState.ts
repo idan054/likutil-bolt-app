@@ -5,6 +5,7 @@ import { useProcessingOrders } from "./useProcessingOrders";
 import { toast } from "react-hot-toast";
 import { UserSettings } from "../types/settings";
 import { useSettings } from "./useSettings";
+import { OrderSummary, OrderDetails } from "../types/order";
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);
@@ -16,6 +17,7 @@ export const useAppState = () => {
 
   const {
     orders,
+    setOrders,
     isLoading: isLoadingOrders,
     isRefetching,
     refetch: refetchOrders,
@@ -60,13 +62,19 @@ export const useAppState = () => {
     [updateSettings, refetchOrders]
   );
 
+  const cleanOrders = useCallback(() => {
+  setOrders([orders[0]])
+  }, [orders]);
+
   return {
     isInitialized,
     hasSettings: !!settings,
     isLoading: loading || isLoadingSettings || isLoadingOrders,
     isRefetching,
     orders,
+    setOrders,
     refetchOrders,
     handleSettingsSave,
+    cleanOrders,
   };
 };
