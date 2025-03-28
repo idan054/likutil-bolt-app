@@ -96,6 +96,7 @@ export const useSettings = () => {
   };
 
   return {
+    user,
     settings,
     isLoading,
     updateSettings,

@@ -11,6 +11,8 @@ import { useSettings } from '../../../hooks/useSettings';
 import { settingsStorage } from '../../../services/settings/storage';
 import { UserSettings } from "../../../types/settings";
 import { BASE_URL } from "../../../services/auth/woo-auth";
+import { useAuth } from '../../../hooks/useAuth'; // Adjust the path as needed
+import { updateBusinessPhone } from '../../../services/settings/update.service';
 
 
 
@@ -24,8 +26,10 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
   orderId,
   customerPhone,
 }) => {
+  // Add auth hook to get userId
+
   const { notes, isLoading, addNote } = useOrderNotes(orderId);  
-  const { settings } = useSettings();
+  const { settings, user } = useSettings();
 
   const {
     isWhatsAppNote,
@@ -139,6 +143,22 @@ ${settings?.storeUrl}
     }
   };
 
+  const handleBusinessPhoneChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPhone = e.target.value;
+    setBusinessPhone(newPhone);
+    
+    // Update in Firestore if we have a userId
+    if (user?.uid) {
+      try {
+        await updateBusinessPhone(user.uid, newPhone);
+      } catch (error) {
+        console.error('Failed to update business phone:', error);
+        // Optionally show an error toast
+        toast.error('Failed to save business phone');
+      }
+    }
+  };
+
   return (
     <div className="border-t pt-6">
       <div
@@ -211,10 +231,11 @@ ${settings?.storeUrl}
               
               {isWhatsAppReplyEnabled && (
                 <div className="flex items-center gap-2">
+   
                   <input
                     type="tel"
                     value={businessPhone}
-                    onChange={(e) => setBusinessPhone(e.target.value)}
+                    onChange={handleBusinessPhoneChange}
                     placeholder="מס׳ וואטסאפ עסקי "
                     className={`w-44 h-8 px-3 text-sm border-b text-right focus:border-b-gray-500 focus:ring-0 focus:outline-none`}
                     dir="rtl"

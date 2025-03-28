@@ -10,3 +10,11 @@ export const updateUserSettings = async (
   const docRef = doc(db, 'users', userId);
   await updateDoc(docRef, { settings });
 };
+
+export const updateBusinessPhone = async (
+  userId: string,
+  businessPhone: string
+): Promise<void> => {
+  const docRef = doc(db, 'users', userId);
+  await updateDoc(docRef, { businessPhone });
+};
