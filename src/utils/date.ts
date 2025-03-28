@@ -34,5 +34,5 @@ export const formatDateWithTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
   const formattedDate = formatDate(dateString);
   const timeAgo = formatTimeAgo(date);
-  return `${formattedDate} (${timeAgo})`;
+  return `${timeAgo} | ${formattedDate}`;
 };

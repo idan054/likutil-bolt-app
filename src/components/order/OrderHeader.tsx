@@ -35,13 +35,23 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
   return (
     <div className="border-b pb-4 mb-4">
       <div className="flex justify-between items-center mb-2">
+
+        <div  className="md:hidden">
         <button
           onClick={onReset}
           className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
         >
-          <ArrowRight size={20} />
+          <ArrowRight size={20}/>
           <span>חזור להזמנות</span>
         </button>
+        </div>
+ 
+        <h2 className="text-2xl hidden md:block">
+          <span className="font-bold">{translations.orderNumber} #{id}</span>
+          {billingDetails?.first_name && <span className="font-normal"> {billingDetails.first_name} {billingDetails.last_name}</span>}
+        </h2>
+
+
         <div className="flex items-center gap-2">
           <RoleBadge 
             role={customer?.role} 
@@ -55,18 +65,16 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
 
 
       </div>
-<h2 className="text-2xl">
+
+      <h2 className="text-2xl md:hidden">
   <span className="font-bold">{translations.orderNumber} #{id}</span>
-  {billingDetails?.first_name && <span className="font-normal"> {billingDetails.first_name} {billingDetails.last_name}</span>}
+   {billingDetails?.first_name && <span className="font-normal"> {billingDetails.first_name} {billingDetails.last_name}</span>}
 </h2>
 
-      <p className="text-gray-600 mt-1">
+
+      <p className="text-gray-500 -mt-1">
         {translations.orderedOn} {formatDateWithTimeAgo(dateCreated)}
       </p>
-    
-
-
-
       
     </div>
   );
