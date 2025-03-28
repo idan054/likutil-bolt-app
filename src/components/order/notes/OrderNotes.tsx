@@ -38,8 +38,6 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     setCustomerNote,
     isExpanded,
     setExpanded,
-    isWhatsAppReplyEnabled,
-    setWhatsAppReplyEnabled,
     businessPhone,
     setBusinessPhone,
   } = useMessagingStore();
@@ -52,6 +50,23 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  const [isWhatsAppReplyEnabled, setWhatsAppReplyEnabled] = useState<boolean>(false);
+
+  // Save boolean to cache
+  const togglWhatsAppReplyEnabled = () => {
+    const newValue = !isWhatsAppReplyEnabled;
+    localStorage.setItem('isWhatsAppReplyEnabled', JSON.stringify(newValue));
+    setWhatsAppReplyEnabled(newValue);
+  };
+
+  // Retrieve boolean from cache on init
+  useEffect(() => {
+    const cachedValue = localStorage.getItem('isWhatsAppReplyEnabled');
+    if (cachedValue !== null) {
+      setWhatsAppReplyEnabled(JSON.parse(cachedValue));
+    }
+  }, []);
 
   async function generateWhatsAppLink() {
     const whatsappReply = `
@@ -229,7 +244,7 @@ ${settings?.storeUrl}
                 <input
                   type="checkbox"
                   checked={isWhatsAppReplyEnabled}
-                  onChange={() => setWhatsAppReplyEnabled(!isWhatsAppReplyEnabled)}
+                  onChange={() => togglWhatsAppReplyEnabled()}
                   className="w-4 h-8 text-blue-500 border-blue-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-600">אפשר ללקוח להשיב</span>
@@ -243,7 +258,7 @@ ${settings?.storeUrl}
                     value={businessPhone}
                     onChange={handleBusinessPhoneChange}
                     placeholder="מס׳ וואטסאפ עסקי "
-                    className={`w-44 h-8 px-3 text-sm border-b text-right focus:border-b-gray-500 focus:ring-0 focus:outline-none`}
+                    className={`w-36 h-8 px-3 text-sm border-b text-right focus:border-b-gray-500 focus:ring-0 focus:outline-none`}
                     dir="rtl"
                     required
                   />
