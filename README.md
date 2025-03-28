@@ -51,10 +51,15 @@ Just use this link:
 Use the **Bolt to GitHub** Chrome Extension for a seamless push process.
 
 ### ⚙️ Configuration
-To display all delivery companies in the Order Details carousel:
+Show All Delivery Companies:
 1. Open `companies.ts` file
 2. Locate line 10
 3. Uncomment `return companies;` flag
+
+Add User Fields:
+1. Open `settings.service.ts` file
+2. Locate line 22
+3. Add it on the userData & `UserSettings` interface
 
 For more configuration options, see the [Configuration Guide](./docs/configuration.md).
 

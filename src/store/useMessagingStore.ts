@@ -17,11 +17,12 @@ interface MessagingState {
 }
 
 export const useMessagingStore = create<MessagingState>((set) => ({
+
   isWhatsAppNote: false,
   isCustomerNote: false,
+  businessPhone: "",
   isExpanded: false,
   isWhatsAppReplyEnabled: false,
-  businessPhone: "",
   setWhatsAppNote: (value) => set({ isWhatsAppNote: value, isExpanded: true }),
   setCustomerNote: (value) => set({ isCustomerNote: value, isExpanded: true }),
   setExpanded: (value) => set({ isExpanded: value }),
@@ -61,6 +62,5 @@ export const useMessagingStore = create<MessagingState>((set) => ({
       isCustomerNote: false,
       isExpanded: false,
       isWhatsAppReplyEnabled: false,
-      businessPhone: "",
     }),
 }));

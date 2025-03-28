@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { MessageSquarePlus, ChevronDown } from "lucide-react";
 import { NotesList } from "./NotesList";
@@ -43,6 +43,12 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     businessPhone,
     setBusinessPhone,
   } = useMessagingStore();
+
+  useEffect(() => {
+    setBusinessPhone(settings?.businessPhone || '');
+  }, []); 
+
+
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);

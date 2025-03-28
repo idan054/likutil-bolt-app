@@ -29,7 +29,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
   customerId,
   onReset
 }) => {
-  const { customer, isLoading } = useCustomerDetails(order.id);
+  const { customer, isLoading } = useCustomerDetails(order.customer_id);
   const billingDetails = order.billing
 
   return (

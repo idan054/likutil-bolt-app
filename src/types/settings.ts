@@ -3,6 +3,7 @@ export type Platform = "woo" | "shopify";
 export interface UserSettings {
   favicon: string | undefined;
   storeUrl: string;
+  businessPhone: string | undefined;
   accessToken: string | undefined;
   consumerKey: string | undefined;
   consumerSecret: string | undefined;

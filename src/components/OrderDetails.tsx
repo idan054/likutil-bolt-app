@@ -86,6 +86,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
       >
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6" dir="rtl">
           <OrderHeader
+            key={order.id}
             order={order}
             id={order.id}
             status={order.status}
@@ -117,6 +118,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
           <div className="mt-8">
             <OrderNotes
+              key={order.id}
               orderId={order.id.toString()}
               customerPhone={!order.shipping?.phone || order.shipping.phone === '' ? order.billing?.phone : order.shipping.phone}
             />

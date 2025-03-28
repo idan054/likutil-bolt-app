@@ -22,6 +22,7 @@ export const getUserSettings = async (
       const settings: UserSettings = {
         storeUrl: userData.storeUrl,
         consumerKey: userData?.consumerKey,
+        businessPhone: userData?.businessPhone,
         accessToken: userData?.accessToken,
         consumerSecret: userData?.consumerSecret,
         lastUpdated: userData?.lastLogin || userData?.createdAt,
