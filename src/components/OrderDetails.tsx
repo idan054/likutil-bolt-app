@@ -133,6 +133,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
+                paymentMethod={order.payment_method_title}
                 isCompleting={isCompleting}
                 onComplete={handleComplete}
                 onSendAnyway={() => setShowLocalPickup(false)}

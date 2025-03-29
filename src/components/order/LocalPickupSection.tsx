@@ -1,13 +1,17 @@
 import React from 'react';
 import { CheckCircle, Loader2, Printer, Truck } from 'lucide-react';
+import { OrderSummary } from './OrderSummary';
+import { PaymentMethodDisplay } from './PaymentMethodDisplay';
 
 interface LocalPickupSectionProps {
+  paymentMethod: string;
   isCompleting: boolean;
   onComplete: () => Promise<void>;
   onSendAnyway: () => void;
 }
 
 export const LocalPickupSection: React.FC<LocalPickupSectionProps> = ({
+  paymentMethod,
   isCompleting,
   onComplete,
   onSendAnyway,
@@ -18,6 +22,11 @@ export const LocalPickupSection: React.FC<LocalPickupSectionProps> = ({
         <h3 className="text-xl font-semibold">
           איסוף עצמי
         </h3>
+
+        <PaymentMethodDisplay
+        paymentMethod={paymentMethod}
+        showHighlightedPaymentOnly={true} />
+          
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
