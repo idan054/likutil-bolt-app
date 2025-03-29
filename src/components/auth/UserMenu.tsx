@@ -18,6 +18,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeU
       <div className="flex items-center">
         <a 
           href={`https://${storeUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="group flex items-center hover:opacity-80 transition-all duration-300"
         >
           <div className="h-10 rounded-full border-2 border-gray-200 flex items-center justify-center overflow-hidden ml-1 hover:border-blue-500 transition-all duration-300 transform hover:scale-110">

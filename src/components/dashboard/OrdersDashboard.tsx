@@ -106,25 +106,26 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
 
   const handleSelectedStatus = (status: string | null) => {
     setSelectedStatus(status);
+    
+    toast.promise(
+      getFilteredOrders(status),
+      {
+        loading: `מעדכן רשימת הזמנות ${status ?? ''}...`,
+
+        success: (data) => {
+          setOrders(data);
+          return `${data.length} הזמנות אחרונות נוספו בהצלחה`;
+        },
+        error: 'Failed to refresh orders'
+      }
+    );
+
+    
     handleBackToList();
 
-    const filteredOrders = selectedStatus
-    ? orders.filter(order => order.status === selectedStatus)
-    : orders;
+  
 
-    if(filteredOrders.length === 0) {
-      toast.promise(
-        getFilteredOrders(status),
-        {
-          loading: `טוען הזמנות ${status ?? ''}...`,
-          success: (data) => {
-            setOrders(data);
-            return `${data.length} הזמנות אחרונות נוספו בהצלחה`;
-          },
-          error: 'Failed to refresh orders'
-        }
-      );
-    }
+    
 };
 
 
