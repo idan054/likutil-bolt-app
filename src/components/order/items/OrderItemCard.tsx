@@ -47,6 +47,10 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
   const visibleMetaData = localMetaData?.filter(meta => !hiddenMetaKeys.includes(meta.key));
 
 
+  React.useEffect(() => {
+    setLocalMetaData(item.meta_data);
+  }, [item.meta_data]);
+
   const {
     options: metadataOptions,
     isLoading,
@@ -120,16 +124,52 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
 
       {Array.isArray(localMetaData) && localMetaData.length > 0 && 
        localMetaData.some(meta => !hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
-        <div className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
+        <div key={item.id} className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
           {localMetaData.map((meta, index) => (
             (!hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
-              <div key={index} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors relative">
+              <div  className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors relative">
         
 
                 <div className={`flex items-center gap-2 flex-1 ${hiddenMetaKeys.includes(meta.key) ? 'opacity-50' : ''}`}>
                   <span className="font-medium text-m text-gray-900 mt-1">{`${meta.key}`}</span>
                   <span className="text-gray-400">•</span>
-                  <span className="text-m text-gray-600 mt-1">{`${meta.value}`}</span>
+                  <span className="text-m text-gray-600 mt-1">
+                    {(() => {
+                      // Check if the value contains a URL pattern
+                      const urlRegex = /(https?:\/\/[^\s]+)/g;
+                      const text = `${meta.value}`;
+                      if (urlRegex.test(text)) {
+                        // Split text by URLs and map each part
+                        return text.split(urlRegex).map((part, i) => {
+                          if (urlRegex.test(part)) {
+                            // Extract filename from URL for display text
+                            let displayText;
+                            try {
+                              const url = new URL(part);
+                              const filename = part.split('/').pop() || '';
+                              displayText = `מעבר אל ${filename}`;
+                            } catch {
+                              displayText = 'מעבר לקישור';
+                            }
+                            return (
+                              <a 
+                                key={i}
+                                href={part}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                              >
+                                {displayText}
+                              </a>
+                            );
+                          }
+                          return part;
+                        });
+                      }
+                      
+                      return text;
+                    })()}
+                  </span>
                 </div>
 
                 <button 
