@@ -11,7 +11,7 @@ interface OrderListItemProps {
   order: OrderSummary;
   onSelect: (orderId: string) => void;
   isCompleted: boolean;
-  selectedOrderId?: string;
+  selectedOrderId: string | null;
 }
 
 export const OrderListItem: React.FC<OrderListItemProps> = ({ 
@@ -31,7 +31,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   return (
     <div 
       onClick={() => onSelect(order.id.toString())}
-      className={`bg-white rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-l-4 border-green-500' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : ''}`}
+      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-l-4 border-green-500' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'}`}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">

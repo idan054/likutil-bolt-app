@@ -7,7 +7,7 @@ interface OrdersListProps {
   orders: OrderSummary[];
   onSelectOrder: (orderId: string) => void;
   isCompleted: (orderId: string) => boolean;
-  selectedOrderId?: string;
+  selectedOrderId: string | null;
 }
 
 export const OrdersList: React.FC<OrdersListProps> = ({ 
