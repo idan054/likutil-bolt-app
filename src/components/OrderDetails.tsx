@@ -14,8 +14,7 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { CheckCircle, Loader2, Printer, Truck } from "lucide-react";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
-import type { OrderDetails as OrderDetailType } from '../types/order';
-
+import type { OrderDetails as OrderDetailType } from "../types/order";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -59,8 +58,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   } = useDeliveryCreation({
     order,
     provider: selectedDeliveryProvider!,
-    onSuccess: () => {}, 
+    onSuccess: () => {},
   });
+
+  useEffect(() => {
+    setSelectedDeliveryProvider(null); // Reset provider when order changes
+  }, [order.id]);
 
   useEffect(() => {
     resetMessaging();
@@ -69,8 +72,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
       setShowLocalPickup(true);
     }
   }, [isLocalPickup, resetMessaging]);
-
-
 
   return (
     <AnimatePresence mode="wait">
@@ -98,8 +99,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           />
           <CustomerNote note={order.customer_note} />
 
-      
-          
           <OrderItems items={order.line_items} />
 
           <OrderSummary
@@ -108,29 +107,22 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             total={order.total}
           />
 
-    
-
-          <CustomerSection 
-          billing={order.billing}
-          shipping={order.shipping}
-          
-          />
-     
+          <CustomerSection billing={order.billing} shipping={order.shipping} />
 
           <div className="mt-8">
             <OrderNotes
               key={order.id}
               orderId={order.id.toString()}
-              customerPhone={!order.shipping?.phone || order.shipping.phone === '' ? order.billing?.phone : order.shipping.phone}
+              customerPhone={
+                !order.shipping?.phone || order.shipping.phone === ""
+                  ? order.billing?.phone
+                  : order.shipping.phone
+              }
             />
           </div>
 
-          
-
-
           <div className="mt-4 border-t pt-6">
-
-          <ShippingMethod shippingLines={order.shipping_lines} />
+            <ShippingMethod shippingLines={order.shipping_lines} />
 
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
@@ -162,8 +154,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           onCancel={() => setShowLocalPickupAlert(false)}
           orderId={order.id.toString()}
         /> */}
-
-
       </motion.div>
     </AnimatePresence>
   );
