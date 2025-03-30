@@ -18,6 +18,7 @@ import { getFilteredOrders } from "../../services/orders/orders.service";
 import { filter } from "framer-motion/client";
 // import { OrderDetails } from '../../types/order';
 import { AnimatePresence, motion } from "framer-motion";
+import { useDeliveryCreation } from "../../hooks/useDeliveryCreation";
 
 
 interface OrdersDashboardProps {
@@ -38,6 +39,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   useEffect(() => {
     localStorage.setItem('selectedOrderStatus', JSON.stringify(selectedStatus));
   }, [selectedStatus]);
+
+
 
 
   const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
@@ -89,6 +92,15 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   const handleOrderComplete = (orderId: string) => {
     markAsCompleted(orderId);
   };
+
+  const {
+    clearDeliveryResponse,
+  } = useDeliveryCreation({
+    order: undefined,
+    provider: '',
+    onSuccess: () => {}, 
+  });
+
 
   const handleOrderSelection = (orderId: string) => {
       if(orderId === selectedOrderId) {
@@ -236,7 +248,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
         />
       </svg>
-      <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי ההזמנה</h3>
+      <h3 className="mt-2 text-xl font-semibold text-gray-900">כאן יופיע פרטי הזמנה</h3>
       <p className="mt-1 text-sm text-gray-500">בחר הזמנה מהרשימה כדי לצפות בפרטים</p>
     </motion.div>
   )}

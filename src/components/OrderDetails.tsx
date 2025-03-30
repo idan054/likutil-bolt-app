@@ -46,6 +46,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   });
 
   const handleComplete = async () => {
+    console.log("handleComplete called");
     await completeOrder();
     clearDeliveryResponse();
   };

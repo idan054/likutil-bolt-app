@@ -12,7 +12,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 
 interface UseDeliveryCreationProps {
-  order: OrderDetails;
+  order?: OrderDetails;
   provider: string;
   onSuccess: () => void;
 }
@@ -88,6 +88,7 @@ export const useDeliveryCreation = ({
   };
 
   const clearDeliveryResponse = () => {
+    console.log('clearDeliveryResponse')
     setDeliveryResponse(null);
   };
 

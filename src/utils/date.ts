@@ -112,3 +112,13 @@ export const formatDateWithTimeAgo = (dateString: string): string => {
 
   return `${timeAgo} | ${formattedDate}`;
 };
+
+export const createDeliveryFormatDate = (dateString: string): string => {
+  const date = tryParseDate(dateString);
+  if (!date) return dateString;
+
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+};

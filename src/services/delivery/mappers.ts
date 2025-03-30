@@ -1,13 +1,6 @@
 import type { OrderDetails } from '../../types/order';
+import { createDeliveryFormatDate } from '../../utils/date';
 import type { DeliveryTaskRequest } from './types';
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${year}-${month}-${day}`;
-};
 
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
@@ -16,7 +9,7 @@ export const mapOrderToDeliveryTask = (
   pack_num: packNum,
   id: order.id.toString(),
   number: order.id.toString(),
-  date_created: formatDate(order.date_created),
+  date_created: createDeliveryFormatDate(order.date_created),
   customer_note: order.customer_note || "",
   shipping: {
     first_name: order.shipping.first_name,
