@@ -61,7 +61,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
 
 
   return (
-    <div className="mb-6">
+    <div key={order.id} className="mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-right">
           {companies.length == 1 ? translations.deliveryOptions.open : translations.deliveryOptions.title}

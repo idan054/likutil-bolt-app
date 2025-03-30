@@ -46,7 +46,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className="mt-4 bg-white rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm"
     >
-      <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+      <div key={order.id} className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
         <CompanyLogo src={integration.logoUrl} name={integration.name} />
         
         <div className="flex-1 space-y-4">

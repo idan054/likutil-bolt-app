@@ -26,5 +26,5 @@ export const DeliveryCompanyInfo: React.FC<DeliveryCompanyInfoProps> = ({
     return <NonConnectedCompany integration={integration} />;
   }
 
-  return <ConnectedCompany order={order} integration={integration} {...props} />;
+  return <ConnectedCompany key={order.id} order={order} integration={integration} {...props} />;
 };

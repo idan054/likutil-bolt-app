@@ -33,6 +33,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
       onClick={() => onSelect(order.id.toString())}
       className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-l-4 border-green-500' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'}`}
     >
+
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -47,6 +48,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
           {/* <span>{formatTimeAgo(order.date_created)} • {order.status}</span> */}
         </div>
       </div>
+
+      
     </div>
   );
 };
