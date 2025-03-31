@@ -95,7 +95,7 @@ export const LoginPage: React.FC = () => {
             <MonitorSmartphone size={24} className="text-blue-600" />
           </div>
 
-          {/* <ShopifyAuthButton /> */}
+          <ShopifyAuthButton />
           <WooAuthButton />
           <div className="flex items-center gap-2 justify-center text-gray-500 text-sm bg-gray-50 py-2 px-4 rounded-lg">
             <ShieldCheck size={16} className="text-green-500" />
