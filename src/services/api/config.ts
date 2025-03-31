@@ -65,8 +65,20 @@ export const getApiConfig = (): ApiConfig => {
 
 // Shopify param builder - Hardcoded shopId
 export const buildShopifyParams = (params: Record<string, string>): string => {
+  let shopId: string | undefined;
+
+  try {
+    const wcSettings = JSON.parse(localStorage.getItem("wc_settings") || "{}");
+
+    if (wcSettings?.storeUrl) {
+      shopId = new URL(`https://${wcSettings.storeUrl}`).hostname.split(".")[0];
+    }
+  } catch (error) {
+    console.error("Error parsing wc_settings from localStorage:", error);
+  }
+
   return new URLSearchParams({
-    shopId: "likutil-tests",
+    ...(shopId ? { shopId } : {}), // Only include shopId if it's defined
     ...params,
   }).toString();
 };

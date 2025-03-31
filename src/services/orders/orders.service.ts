@@ -230,8 +230,6 @@ const mapOrder = (
     };
   }
 
-
-
   // WooCommerce mapping (unchanged)
   const billing = {
     first_name: "",
@@ -287,12 +285,10 @@ const mapOrder = (
     shipping.phone = order.shipping.phone || "";
   }
 
-
-// Convert to Date object
-const gmtDate = new Date(order.date_created_gmt);
-const timezoneOffset = new Date().getTimezoneOffset();
-const localDate = new Date(gmtDate.getTime() - timezoneOffset * 60000);
-
+  // Convert to Date object
+  const gmtDate = new Date(order.date_created_gmt);
+  const timezoneOffset = new Date().getTimezoneOffset();
+  const localDate = new Date(gmtDate.getTime() - timezoneOffset * 60000);
 
   return {
     id: order.id,
@@ -300,7 +296,7 @@ const localDate = new Date(gmtDate.getTime() - timezoneOffset * 60000);
     total: order.total || "0",
     customer_id: order.customer_id || null,
     // date_created: order.date_created,
-    date_created: localDate.toLocaleString() , // Convert to local time
+    date_created: localDate.toLocaleString(), // Convert to local time
     billing,
     shipping,
     customer_note: order.customer_note || "",
@@ -457,7 +453,6 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
   });
 };
 
-
 /**
  * Gets orders by status
  */
@@ -467,32 +462,42 @@ export const getFilteredOrders = async (
 ): Promise<OrderSummary[]> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = `orders_${platform}_${status || 'all'}`;
+  const cacheKey = `orders_${platform}_${status || "all"}`;
 
   console.log(
     `[orders.service] Fetching processing orders for platform: ${platform}`
   );
   console.log("Metadata configs:", metadataConfigs);
 
-  if(status === 'init') status = JSON.parse(localStorage.getItem('selectedOrderStatus') ?? '');
+  if (status === "init")
+    status = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "");
   console.log("Cache status:", status);
-
 
   return dedupedApiRequest(cacheKey, async () => {
     // Platform-specific parameters
     const params = new URLSearchParams({
-      [platform === "shopify" ? "limit" : "per_page"]: ITEMS_PER_PAGE.toString(),
+      [platform === "shopify" ? "limit" : "per_page"]:
+        ITEMS_PER_PAGE.toString(),
       orderby: "date",
       order: "desc",
     });
 
-    if (status && status !== 'null') {
+    if (status && status !== "null") {
       params.append("status", status);
     }
 
     // Special case for Shopify
     if (platform === "shopify") {
-      params.set("shopId", "likutil-tests"); // This might need to be configurable
+      const wcSettings = JSON.parse(localStorage.getItem("wc_settings"));
+
+      if (wcSettings && wcSettings.storeUrl) {
+        const shopId = new URL(`https://${wcSettings.storeUrl}`).hostname.split(
+          "."
+        )[0];
+        params.set("shopId", shopId); // Dynamically setting shopId
+      } else {
+        console.warn("wc_settings not found or storeUrl is missing.");
+      }
     }
 
     const response = await apiClient<any>({
@@ -516,7 +521,9 @@ export const getFilteredOrders = async (
     }
 
     console.log(
-      `[orders.service] Retrieved ${orders.length} orders for status: ${status || 'all'}`
+      `[orders.service] Retrieved ${orders.length} orders for status: ${
+        status || "all"
+      }`
     );
 
     return metadataConfigs?.length
