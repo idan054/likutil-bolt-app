@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { APP_VERSION } from '../../App';
+import { BASE_URL } from '../../services/auth/woo-auth';
 
 interface AppInfoStatusProps {
   apiEndpoint?: string;
@@ -8,7 +9,7 @@ interface AppInfoStatusProps {
 
 export const AppInfoStatus: React.FC<AppInfoStatusProps> = ({ 
   
-  apiEndpoint = 'https://api.likutil.co.il'
+  apiEndpoint = BASE_URL
 }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -37,7 +38,7 @@ export const AppInfoStatus: React.FC<AppInfoStatusProps> = ({
     <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mt-4">
       <div className="flex items-center gap-1">
         <a 
-          href="https://api.likutil.co.il"
+          href={BASE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 hover:text-blue-500 transition-colors"
@@ -47,7 +48,7 @@ export const AppInfoStatus: React.FC<AppInfoStatusProps> = ({
           ) : (
             <XCircle className="w-3 h-3 text-red-500" />
           )}
-          <span>{isOnline ? 'Online' : 'Offline'}</span>
+          <span>{isOnline ? 'Online' : 'Offline'} {BASE_URL.includes('test') ? '(Tests)' : ''}</span>
         </a>
       </div>
       <span>•</span>

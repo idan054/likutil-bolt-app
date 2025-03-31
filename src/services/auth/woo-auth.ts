@@ -24,8 +24,7 @@ import { QR_MODE_PASS } from '../../components/auth/WooAuthButton';
 
 
 
-// export const BASE_URL = (process.env.NODE_ENV === 'development') ? 'https://0.0.0.0:8000' : 'https://api.likutil.co.il';
-export const BASE_URL = 'https://api.likutil.co.il';
+export const BASE_URL = (process.env.NODE_ENV === 'development' || window.location.hostname === 'my-tests.likutil.co.il') ? 'https://test-api.likutil.co.il' : 'https://api.likutil.co.il';
 
 // interface WooAuthCallbackResponse {
 //   consumer_key: string;

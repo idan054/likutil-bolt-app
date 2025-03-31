@@ -26,12 +26,12 @@ npm run dev
 ### 🌐 Deploy to Netlify
 #### `my-tests.likutil.co.il`
 ```sh
-npx vite build && netlify deploy --prod --dir=dist --site=73927777-9725-4090-99b5-441982851b2a
+npx vite build && netlify deploy --prod --dir=dist --site=73927777-9725-4090-99b5-441982851b2a  && # Testing Deploy! my-tests.likutil.co.il
 ```
 
 #### `my.likutil.co.il`
 ```sh
-npx vite build && netlify deploy --prod --dir=dist --site=a2dcfff4-8c46-4d25-a395-246c27964806
+npx vite build && netlify deploy --prod --dir=dist --site=a2dcfff4-8c46-4d25-a395-246c27964806 && # Prod Deploy! my.likutil.co.il
 ```
 
 

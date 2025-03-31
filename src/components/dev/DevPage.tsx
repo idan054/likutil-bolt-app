@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { APP_VERSION } from '../../App';
+import { BASE_URL } from '../../services/auth/woo-auth';
 
 export const DevPage: React.FC = () => {
   const [serverStatus, setServerStatus] = useState<'loading' | 'online' | 'offline'>('loading');
@@ -7,7 +8,7 @@ export const DevPage: React.FC = () => {
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        const response = await fetch('https://api.likutil.co.il');
+        const response = await fetch(BASE_URL);
         setServerStatus(response.status === 200 ? 'online' : 'offline');
       } catch (error) {
         setServerStatus('offline');
