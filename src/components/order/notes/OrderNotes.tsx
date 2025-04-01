@@ -13,6 +13,7 @@ import { UserSettings } from "../../../types/settings";
 import { BASE_URL } from "../../../services/auth/woo-auth";
 import { useAuth } from '../../../hooks/useAuth'; // Adjust the path as needed
 import { updateBusinessPhone } from '../../../services/settings/update.service';
+import { WhatsAppPreview } from "./WhatsAppPreview";
 
 
 
@@ -273,6 +274,16 @@ ${settings?.storeUrl}
 
 
           <div className="max-h-[400px] overflow-y-auto pr-1">
+          {isWhatsAppNote && (
+            <div className="mb-4">
+              <WhatsAppPreview
+                orderId={orderId}
+                message={newNote.trim() || 'הכנס הודעת ווטסאפ ללקוח...'}
+                storeUrl={settings?.storeUrl}
+                isWhatsAppReplyEnabled={isWhatsAppReplyEnabled}
+              />
+            </div>
+          )}
             <NotesList notes={notes} isLoading={isLoading} />
           </div>
         </div>

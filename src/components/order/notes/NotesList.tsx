@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Mail } from 'lucide-react';
+import { MessageSquare, Mail, MessageCircle } from 'lucide-react';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { formatDate } from '../../../utils/date';
 import { translations } from '../../../config/translations';
@@ -35,8 +35,14 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
             <div className="flex items-center gap-2">
               {note.customer_note ? (
                 <>
-                  <MessageSquare size={16} className="text-blue-600" />
-                  <span className="text-sm text-gray-500">ללקוח</span>
+                  <Mail size={16} className="text-red-700" />
+                  <span className="-mr-1 text-sm text-gray-500">מייל</span>
+                  {note.note?.includes('ההודעה נשלחה דרך Mail & WhatsApp') && (
+                    <>
+                      <MessageCircle size={16} className="text-green-600" />
+                      <span className="-mr-1 text-sm text-gray-500">ווטסאפ</span>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -46,7 +52,11 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
               )}
             </div>
           </div>
-          <p className="text-gray-800 text-right whitespace-pre-wrap">{note.note}</p>
+          <p className="text-gray-800 text-right whitespace-pre-wrap">
+            {note?.note
+              ?.replace(/״/g, '')
+              ?.replace(/📱 ההודעה נשלחה דרך Mail & WhatsApp:\s*/g, '')}
+          </p>
         </div>
       ))}
     </div>
