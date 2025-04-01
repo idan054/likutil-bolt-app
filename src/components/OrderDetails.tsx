@@ -27,6 +27,9 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   onReset,
   onComplete,
 }) => {
+  
+
+
   const { reset: resetMessaging } = useMessagingStore();
   const [showLocalPickupAlert, setShowLocalPickupAlert] = useState(false);
   const [showLocalPickup, setShowLocalPickup] = useState<boolean>(true);
@@ -35,6 +38,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   >(null);
 
   const isLocalPickup = order.shipping_lines[0]?.method_id === "local_pickup";
+
+  
 
   const { isCompleting, completeOrder } = useOrderCompletion({
     orderId: order.id,
@@ -62,6 +67,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   });
 
   useEffect(() => {
+    
     setSelectedDeliveryProvider(null); // Reset provider when order changes
   }, [order.id]);
 
@@ -74,6 +80,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   }, [isLocalPickup, resetMessaging]);
 
   return (
+    
     <AnimatePresence mode="wait">
       <motion.div
         initial={{ opacity: 0, x: 50 }}

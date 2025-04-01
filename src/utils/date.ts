@@ -1,68 +1,112 @@
-import { formatDistanceToNow, parse } from 'date-fns';
+import { 
+  parse, 
+  parseISO, 
+  isValid, 
+  formatDistanceToNow 
+} from 'date-fns';
 import { he } from 'date-fns/locale';
 
+const DEBUG = false; // Set to false to silence logs
+
 const parseFormats = [
-  // Common European and International formats
+  // ✅ European formats (day first)
   'dd/MM/yyyy, HH:mm:ss',
-  'd/M/yyyy, H:m:s',
   'dd.MM.yyyy, HH:mm:ss',
-  'd.M.yyyy, H:m:s',
   'dd/MM/yyyy',
-  'd/M/yyyy',
   'dd.MM.yyyy',
+  'd/M/yyyy, H:m:s',
+  'd.M.yyyy, H:m:s',
+  'd/M/yyyy',
   'd.M.yyyy',
 
-  // ISO and US formats
+  // 🕐 European formats with AM/PM
+  'dd/MM/yyyy, h:m:s a',
+  'dd/MM/yyyy h:m:s a',
+  'd/M/yyyy, h:m:s a',
+  'd/M/yyyy h:m:s a',
+
+  // 🌍 ISO formats
+  "yyyy-MM-dd'T'HH:mm:ssXXX",
+  "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+  "yyyy-MM-dd'T'HH:mm:ss'Z'",
+  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
   'yyyy-MM-dd HH:mm:ss',
   'yyyy/MM/dd HH:mm:ss',
   'yyyy.MM.dd HH:mm:ss',
   'yyyy-MM-dd',
   'yyyy/MM/dd',
   'yyyy.MM.dd',
+
+  // 🕐 ISO formats with AM/PM
+  'yyyy-MM-dd, h:m:s a',
+  'yyyy/MM/dd, h:m:s a',
+  'yyyy.MM.dd, h:m:s a',
+
+  // 🇺🇸 US formats (month first, fallback)
   'MM/dd/yyyy, HH:mm:ss',
-  'M/d/yyyy, H:m:s',
   'MM-dd-yyyy HH:mm:ss',
-  'M-d-yyyy H:m:s',
   'MM/dd/yyyy',
-  'M/d/yyyy',
   'MM-dd-yyyy',
+  'M/d/yyyy, H:m:s',
+  'M-d-yyyy H:m:s',
+  'M/d/yyyy',
   'M-d-yyyy',
 
-  // Time zone variations
-  "yyyy-MM-dd'T'HH:mm:ssXXX",
-  "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
-  "yyyy-MM-dd'T'HH:mm:ss'Z'",
-  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-
-  // Formats with AM/PM
-  'dd/MM/yyyy, h:m:s a',
-  'd/M/yyyy, h:m:s a',
+  // 🕐 US formats with AM/PM
   'MM/dd/yyyy, h:m:s a',
-  'M/d/yyyy, h:m:s a',
-  'yyyy/MM/dd, h:m:s a',
-  'yyyy-MM-dd, h:m:s a',
-  'yyyy.MM.dd, h:m:s a',
-  'dd/MM/yyyy h:m:s a',
-  'd/M/yyyy h:m:s a',
   'MM/dd/yyyy h:m:s a',
+  'M/d/yyyy, h:m:s a',
   'M/d/yyyy h:m:s a',
 ];
 
 const tryParseDate = (dateString: string): Date | null => {
-  for (const format of parseFormats) {
-    try {
-      const parsedDate = parse(dateString, format, new Date());
-      if (!isNaN(parsedDate.getTime())) {
-        return parsedDate;
-      }
-    } catch (error) {
-      continue;
+  if (!dateString || typeof dateString !== 'string') return null;
+
+  if(DEBUG) console.log('\n🔍 Trying to parse:', dateString);
+
+  try {
+    const parsedISO = parseISO(dateString);
+    const isoValid = isValid(parsedISO);
+
+    if(isoValid && DEBUG){
+
+      console.log('[parseISO]');
+      console.log('- original:', dateString);
+      console.log('- iso:', parsedISO.toISOString());
+      console.log('- isValid ISO:', isoValid);
     }
+      
+    if (isoValid) return parsedISO;
+  } catch (_) {}
+
+  for (const formatStr of parseFormats) {
+    try {
+      const parsed = parse(dateString, formatStr, new Date());
+      const valid = isValid(parsed);
+
+      if (valid && DEBUG) {
+        console.log(`[format: ${formatStr}]`);
+        console.log('- original:', dateString);
+        console.log('- iso:', parsed.toISOString());
+        console.log('- isValid parseFormats:', valid);
+        return parsed;
+      }
+    } catch (_) {}
   }
 
-  const fallbackDate = new Date(dateString);
-  return !isNaN(fallbackDate.getTime()) ? fallbackDate : null;
+  const fallback = new Date(dateString);
+  const fallbackValid = isValid(fallback);
+
+  if(fallbackValid && DEBUG){
+    console.log('[fallback: new Date()]');
+    console.log('- original:', dateString);
+    console.log('- iso:', fallback.toISOString());
+    console.log('- isValid fallback:', fallbackValid);
+  }
+
+  return fallbackValid ? fallback : null;
 };
+
 
 export const formatDate = (dateString: string): string => {
   const date = tryParseDate(dateString);
@@ -93,7 +137,7 @@ export const formatShortDate = (dateString: string): string => {
 export const formatTimeAgo = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? tryParseDate(date) : date;
 
-  if (!dateObj || isNaN(dateObj.getTime())) {
+  if (!dateObj || !isValid(dateObj)) {
     return typeof date === 'string' ? date : date.toString();
   }
 
