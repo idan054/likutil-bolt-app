@@ -54,6 +54,31 @@ const getFieldsByProgramType = (type: DeliveryProgramType): ConfigFormField[] =>
           // supportText: 'הסיסמה לחשבון RUN שלך'
         }
       ];
+      case DeliveryProgramType.UPS:
+        return [
+          {
+            id: 'clientId',
+            label: 'מס׳ לקוח',
+            placeholder: 'מס׳ לקוח שלך ב',
+            type: 'text',
+            // supportText: 'שם המשתמש לחשבון RUN שלך'
+          },
+          {
+            id: 'username',
+            label: 'אימייל',
+            placeholder: 'האימייל שלך ב ',
+            type: 'text',
+            // supportText: 'שם המשתמש לחשבון RUN שלך'
+          },
+          {
+            id: 'password',
+            label: 'סיסמה',
+            placeholder: 'הסיסמה שלך ב ',
+            type: 'password',
+            // supportText: 'הסיסמה לחשבון RUN שלך'
+          }
+  
+        ];
     case DeliveryProgramType.LION_WHEEL:
       return [
         {
@@ -68,8 +93,8 @@ const getFieldsByProgramType = (type: DeliveryProgramType): ConfigFormField[] =>
       return [
         {
           id: 'key',
-          label: 'מפתח התחברות',
-          placeholder: 'הזן את מפתח ההתחברות שלך',
+          label: 'מפתח ברירת מחדש',
+          placeholder: 'עדכן את מפתח ההתחברות שלך',
           type: 'text',
           supportText: ''
         }
@@ -97,6 +122,11 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
         initialData.username = activeIntegration?.username || '';
         initialData.password = activeIntegration?.password || '';
         break;
+        case DeliveryProgramType.UPS:
+          initialData.username = activeIntegration?.username || '';
+          initialData.password = activeIntegration?.password || '';
+          initialData.clientId = activeIntegration?.clientId || '';
+          break;
       case DeliveryProgramType.LION_WHEEL:
         initialData.token = activeIntegration?.token || '';
         break;
@@ -125,6 +155,12 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
             username: currentActiveIntegration?.username || '',
             password: currentActiveIntegration?.password || ''
           };
+          case DeliveryProgramType.UPS:
+            return {
+              username: currentActiveIntegration?.username || '',
+              password: currentActiveIntegration?.password || '',
+              clientId: currentActiveIntegration?.clientId || ''
+            };
         case DeliveryProgramType.LION_WHEEL:
           return {
             token: currentActiveIntegration?.token || ''
@@ -239,23 +275,32 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
       </AnimatePresence>
 
       <div className="flex gap-3 pt-4">
-        <button
-          type="button"
-          onClick={handleTest}
-          disabled={isLoading || isTesting || fields.some(field => !formData[field.id]?.trim())}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-        >
-          <Key size={20} />
-          <span>בדיקת חיבור</span>
-        </button>
+     
 
         <button
           type="submit"
           disabled={isLoading || fields.some(field => !formData[field.id]?.trim())}
           className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
+          <span className="text-1xl font-bold">1.</span>
+          <span>שמור פרטים</span>
           <Save size={20} />
-          <span>שמור חיבור</span>
+        </button>
+
+
+        <button
+          type="button"
+          onClick={handleTest}
+          disabled={isLoading || isTesting || fields.some(field => !formData[field.id]?.trim())}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+        >
+          <div className="flex items-center gap-2">
+
+            <span className="text-1xl font-bold">2.</span>
+
+            <span>בדוק חיבור</span>
+          </div>
+          <Key size={20} />
         </button>
       </div>
 

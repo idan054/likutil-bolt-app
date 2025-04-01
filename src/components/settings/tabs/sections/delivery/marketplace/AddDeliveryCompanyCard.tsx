@@ -6,6 +6,7 @@ import type { DeliveryField, DeliveryIntegration } from '../../../../../../types
 
 export enum DeliveryProgramType {
     BALDAR = 'baldar',
+    UPS = 'ups',
     RUN = 'run',
     LION_WHEEL = 'lionWheel',
     GET_PACKAGE = 'getPackage',

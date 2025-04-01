@@ -150,6 +150,23 @@ export const useDeliveryIntegrations = () => {
       try {
    
         switch (integration?.programType) {
+          case DeliveryProgramType.UPS:
+            connection = {
+              provider: id,
+              token: '',
+              clientId: data.clientId,
+              username: data.username,
+              password: data.password,
+              lastTested: new Date().toISOString(),
+
+              isConnected: true,
+              name: integration.name,
+              description:  integration.description,
+              logoUrl:   integration.logoUrl,
+              programType: integration.programType,
+              controlPanelLink: integration.controlPanelLink,
+            };
+            break
           case DeliveryProgramType.BALDAR:
             connection = {
               provider: id,
