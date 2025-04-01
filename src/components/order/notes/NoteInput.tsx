@@ -1,5 +1,5 @@
 import React from "react";
-import { Send, Save, ChevronDown } from "lucide-react";
+import { Send, Save, ChevronDown, BookmarkPlus, BookMarked, Bookmark } from "lucide-react";
 import { noteTypeColors } from "./NoteTypeSelector";
 import { translations } from "../../../config/translations";
 import { AutoResizeTextArea } from "../../ui/AutoResizeTextArea";
@@ -64,20 +64,23 @@ export const NoteInput: React.FC<NoteInputProps> = ({
   return (
     <div className="space-y-3">
     
-      {/* {messages.length > 0 && ( */}
+      
         <button
           onClick={onToggleTemplates}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
         >
-          <ChevronDown
+          {/* <ChevronDown
             className={`transform transition-transform duration-200 ${
               showTemplates ? "rotate-180" : ""
-            }`}
+            } -ml-1`}
             size={16}
-          />
+          /> */}
+          <Bookmark className={`transform transition-transform duration-200 ${
+              showTemplates ? "-rotate-90" : ""
+            } -ml-1`} size={16} />
           <span>תבניות שמורות ({messages.length})</span>
         </button>
-       {/* )} */}
+
 
 
 
@@ -110,7 +113,8 @@ export const NoteInput: React.FC<NoteInputProps> = ({
             className="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
             title="שמור כתבנית"
           >
-            <Save size={20} />
+            {/* <Save size={20} /> */}
+            <BookmarkPlus size={20} />
           </button>
 
           <button
