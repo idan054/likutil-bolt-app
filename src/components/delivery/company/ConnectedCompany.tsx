@@ -16,7 +16,7 @@ interface ConnectedCompanyProps {
   integration: DeliveryIntegration;
   apiKey?: string;
   isCreating: boolean;
-  onCreateDelivery: (packNum: string) => void;
+  onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
@@ -33,12 +33,16 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   isCompleting,
 }) => {
   const [packageCount, setPackageCount] = React.useState<number>(1);
-
+  
   // This would come from your settings or context in a real app
   const businessAddress = {
     address: order.shipping.address_1,
     city: order.shipping.city,
   };
+  
+  const shippingTitle = order.shipping_lines[0].method_title;
+  const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה');
+  const [deliveryType, setDeliveryType] = React.useState<'client' | 'pickup'>(isPickupDelivery ? 'pickup' : 'client');
 
   return (
     <motion.div 
@@ -63,6 +67,9 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           <DeliveryAddress 
             address={businessAddress.address}
             city={businessAddress.city}
+            deliveryType={deliveryType}
+            onDeliveryTypeChange={setDeliveryType}
+            programType={integration.programType.toLowerCase() as "baldar" | "ups" | "run" | "lionWheel" | "getPackage" | "unknown"}
           />
           
           <ConnectionStatus 
@@ -75,9 +82,10 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             deliveryResponse={deliveryResponse}
             isCreating={isCreating}
             isCompleting={isCompleting}
-            onCreateDelivery={() => onCreateDelivery(packageCount.toString())}
+            onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString())}
             onComplete={onComplete}
-            packNum={packageCount.toString()}  // Add this line
+            packNum={packageCount.toString()} 
+            deliveryType={deliveryType.toString()} 
           />
           
           <CompanyLinks 

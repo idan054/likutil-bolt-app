@@ -9,6 +9,7 @@ interface CreateDeliveryParams {
   provider: string;
   keys: string;
   packNum?: string;
+  deliveryType?: string;
 }
 
 export const createDelivery = async ({
@@ -16,16 +17,18 @@ export const createDelivery = async ({
   order,
   provider,
   keys,
-  packNum = "1"
+  packNum = "1",
+  deliveryType = "client"
 }: CreateDeliveryParams): Promise<DeliveryTaskResponse> => {
   console.log('[delivery.service] Creating delivery:', { 
     orderId: order!.id, 
     userId, 
     provider,
-    packNum
+    packNum,
+    deliveryType
   });
 
-  const request = mapOrderToDeliveryTask(order!, packNum);
+  const request = mapOrderToDeliveryTask(order!, packNum, deliveryType);
   
   return createDeliveryTask(request, {
     userId,

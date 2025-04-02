@@ -4,9 +4,11 @@ import type { DeliveryTaskRequest } from './types';
 
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
-  packNum: string = "1" // Default to 1 package
+  packNum: string = "1", // Default to 1 package
+  deliveryType: string = "client" 
 ): DeliveryTaskRequest => ({
   pack_num: packNum,
+  delivery_type: deliveryType,
   id: order.id.toString(),
   number: order.id.toString(),
   date_created: createDeliveryFormatDate(order.date_created),

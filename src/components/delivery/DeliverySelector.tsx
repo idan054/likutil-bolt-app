@@ -20,11 +20,11 @@ interface DeliverySelectorProps {
   customerId: number | null;
   isLocalPickup?: boolean;
   isCreating: boolean;
-  onCreateDelivery: (packNum: string) => void;
+  onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
-  orderId?: string; // Add orderId prop
+  orderId?: string; 
 }
 
 export const DeliverySelector: React.FC<DeliverySelectorProps> = ({

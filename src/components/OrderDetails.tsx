@@ -146,7 +146,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 customerId={order.customer_id}
                 isLocalPickup={isLocalPickup}
                 isCreating={isCreating}
-                onCreateDelivery={(packNum) => createDelivery(packNum)}
+                onCreateDelivery={(packNum, deliveryType) => createDelivery(packNum, deliveryType)}
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}
                 isCompleting={isCompleting}

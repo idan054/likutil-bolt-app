@@ -36,7 +36,7 @@ export const useDeliveryCreation = ({
     clearDeliveryResponse();
   }, [order?.id]);
 
-  const createDeliveryTask = async (packNum: string = "1") => {
+  const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
     console.log("START createDeliveryTask()");
     console.log(provider);
 
@@ -76,6 +76,7 @@ export const useDeliveryCreation = ({
         provider,
         keys,
         packNum,
+        deliveryType
       });
 
       setDeliveryResponse(result);
