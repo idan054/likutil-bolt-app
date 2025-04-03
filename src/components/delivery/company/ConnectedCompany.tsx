@@ -40,8 +40,8 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
     city: order.shipping.city,
   };
   
-  const shippingTitle = order.shipping_lines[0].method_title;
-  const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה');
+  const shippingTitle = order.shipping_lines?.length ? order.shipping_lines[0].method_title : '';
+  const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה') || shippingTitle.includes('epost');
   const [deliveryType, setDeliveryType] = React.useState<'client' | 'pickup'>(isPickupDelivery ? 'pickup' : 'client');
 
   return (
@@ -69,7 +69,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             city={businessAddress.city}
             deliveryType={deliveryType}
             onDeliveryTypeChange={setDeliveryType}
-            programType={integration.programType.toLowerCase() as "baldar" | "ups" | "run" | "lionWheel" | "getPackage" | "unknown"}
+            programType={integration.provider.toLowerCase()}
           />
           
           <ConnectionStatus 

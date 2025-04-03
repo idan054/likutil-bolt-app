@@ -20,47 +20,64 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onComplete,
   packNum,  
   deliveryType,  
-}) => (
-  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-    {!deliveryResponse ? (
-      <button
-        onClick={() => onCreateDelivery(packNum, deliveryType)}
-        disabled={isCreating}
-        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isCreating ? (
-          <Loader2 className="animate-spin" size={20} />
-        ) : (
-          // <Package size={20} />
-          <Rocket size={20} />
-        )}
-        {/* <span>פתח הזמנה</span> */}
-        <span>שגר משלוח בטיל!</span>
-      </button>
-    ) : (
-      <>
-        <a
-          href={deliveryResponse.print_label}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Printer size={20} />
-          <span>הדפסת מדבקה</span>
-        </a>
+}) => {
+  const handlePrintLabel = (printLabel: string) => {
+    if (printLabel.startsWith('http')) {
+      window.open(printLabel, '_blank', 'noopener,noreferrer');
+    } else {
+      const binary = atob(printLabel);
+      const array = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        array[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([array], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Clean up the URL object after a short delay to ensure the PDF has loaded
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+    }
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+      {!deliveryResponse ? (
         <button
-          onClick={onComplete}
-          disabled={isCompleting}
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          onClick={() => onCreateDelivery(packNum, deliveryType)}
+          disabled={isCreating}
+          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isCompleting ? (
+          {isCreating ? (
             <Loader2 className="animate-spin" size={20} />
           ) : (
-            <CheckCircle size={20} />
+            // <Package size={20} />
+            <Rocket size={20} />
           )}
-          <span>סיום</span>
+          {/* <span>פתח הזמנה</span> */}
+          <span>שגר משלוח בטיל!</span>
         </button>
-      </>
-    )}
-  </div>
-);
+      ) : (
+        <>
+          <button
+            onClick={() => handlePrintLabel(deliveryResponse.print_label)}
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Printer size={20} />
+            <span>הדפסת מדבקה</span>
+          </button>
+          <button
+            onClick={onComplete}
+            disabled={isCompleting}
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {isCompleting ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <CheckCircle size={20} />
+            )}
+            <span>סיום</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
+};

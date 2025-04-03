@@ -56,14 +56,16 @@ export const useDeliveryCreation = ({
       toast.error("מפתח API חסר");
       return;
     }
-
+    
     let keys = getKeysByProgramType(selectedIntegration);
     let userId = user?.uid ?? "";
-
+    
     console.log(provider, " KEYS ", keys);
-
-    if (!keys || keys === "") {
-      toast.error("מפתח API חסר");
+    
+    // Will skip look for keys if UPS
+    const isUpsDelivery = selectedIntegration.programType === DeliveryProgramType.UPS;
+    if (!isUpsDelivery && (!keys || keys === "")) {
+      toast.error(`${selectedIntegration.name} - מפתח API חסר`);
       return;
     }
 
