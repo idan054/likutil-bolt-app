@@ -12,7 +12,7 @@ import { DevPage } from './components/dev/DevPage';
 
 
 
-export const APP_VERSION = '02.04.25 | Version 1.2.1';
+export const APP_VERSION = '03.04.25 | Version 1.2.1';
 
 // FROM MAC
 export const App: React.FC = () => {

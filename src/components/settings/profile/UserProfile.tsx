@@ -9,9 +9,35 @@ import { useAuth } from '../../../hooks/useAuth';
 import { generateReturnUrl, generateWooAuthUrl } from '../../auth/WooAuthButton';
 import { useSettings } from '../../../hooks/useSettings';
 
+const clearCacheExceptStores = () => {
+  const shopifyUrl = localStorage.getItem('shopify_store_url');
+  const wooUrl = localStorage.getItem('woo_store_url');
+  
+  // Clear all localStorage
+  localStorage.clear();
+  
+  // Restore store URLs
+  if (shopifyUrl) localStorage.setItem('shopify_store_url', shopifyUrl);
+  if (wooUrl) localStorage.setItem('woo_store_url', wooUrl);
+  
+  // Clear all sessionStorage
+  sessionStorage.clear();
+  
+  // Clear all cookies except essential ones
+  document.cookie.split(';').forEach(cookie => {
+    const [name] = cookie.split('=');
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+  });
+};
+
 export const UserProfile: React.FC = () => {
   const [user] = useAuthState(auth);
   const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    clearCacheExceptStores();
+    await logout();
+  };
   
   const currentUser = user;
   
@@ -79,7 +105,7 @@ export const UserProfile: React.FC = () => {
 
       {/* Logout Button - Smaller on mobile */}
       <button
-        onClick={logout}
+        onClick={handleLogout}
         className="mt-2 sm:mt-4 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm sm:text-base"
       >
         <LogOut size={16} className="sm:w-5 sm:h-5" />
