@@ -47,14 +47,14 @@ export const getApiConfig = (): ApiConfig => {
 
   const authType = settings.authType?.toLowerCase(); // Normalize case
 
-  console.log("[DEBUG] Fetched settings:", settings);
-  console.log("[DEBUG] authType:", authType);
+  // console.log("[DEBUG] Fetched settings:", settings);
+  // console.log("[DEBUG] authType:", authType);
 
   if (authType === "woo") {
-    console.log("[DEBUG] Using WooCommerce API config.");
+    // console.log("[DEBUG] Using WooCommerce API config.");
     return getWooApiConfig(settings);
   } else if (authType === "shopify") {
-    console.log("[DEBUG] Using Shopify API config.");
+    // console.log("[DEBUG] Using Shopify API config.");
     return getShopifyApiConfig(settings);
   }
 

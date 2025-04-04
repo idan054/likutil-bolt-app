@@ -34,7 +34,7 @@ export const useGetFirebaseMetadata = (): UseGetFirebaseMetadataReturn => {
           setOptions(docSnap.data().options || []);
         }
       } catch (error) {
-        console.error('[useGetAiMetadata] Failed to load path configs:', error);
+        console.error('[useGetAiMetadata] Cant to load path configs:', error);
       } finally {
         setIsLoading(false);
       }

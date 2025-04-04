@@ -10,8 +10,8 @@ export const getUserSettings = async (
     const docRef = doc(db, "users", userId);
     const docSnap = await getDoc(docRef);
 
-    console.log("userId", userId);
-    console.log("docSnap", docSnap.data());
+    // console.log("userId", userId);
+    // console.log("docSnap", docSnap.data());
 
     if (docSnap.exists()) {
       const userData = docSnap.data();
@@ -31,7 +31,7 @@ export const getUserSettings = async (
       };
 
       // Save to local storage for API client
-      console.log("settings", settings);
+      // console.log("settings", settings);
 
       // ANY IDEA Y THIS NOT WORKS?
       settingsStorage.set(settings);

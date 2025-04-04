@@ -71,8 +71,8 @@ export const useDeliveryIntegrations = () => {
 
       
       
-      console.log('settings?.connections', settings?.connections)
-      console.log('companies.length', companies.length)
+      // console.log('settings?.connections', settings?.connections)
+      // console.log('companies.length', companies.length)
       
       if (settings?.connections && companies.length > 0) {
 

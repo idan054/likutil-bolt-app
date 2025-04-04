@@ -12,6 +12,7 @@ import {
 import { sanitizeUrl } from '../../utils/url';
 import { generateStorePassword } from '../../utils/auth/password';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth';
 
 export const QR_MODE_PASS = 'GodMode2003';
 
@@ -50,35 +51,46 @@ export const WooAuthButton: React.FC = () => {
     return cachedUrl || '';
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { logout } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const wooAutoLogin = async () => {
       console.log('START wooAutoLogin')
       const urlParams = new URLSearchParams(window.location.search);
+      const oneTimeToken = urlParams.get('oneTimeToken');
       const success = urlParams.get('success');
       const source = urlParams.get('source');
       const pass = urlParams.get('pass');
-      const oneTimeToken = urlParams.get('oneTimeToken');
 
 
       if (success && source && oneTimeToken && pass) {
         // Auto Firebase Login Logic Here
         
+        
         console.log('Auto Login with Source:', source, 'Using oneTimeToken', oneTimeToken, 'and pass ', pass);
         
         try {
-          
-        
           // Auto Login Based Query Params
-          const existingUser = await tryGetUserData(source, oneTimeToken);
-          console.log('existingUser', existingUser)
+          try {
+            // Sign in first to get Firestore access
+            await signInFirebaseUser(source);
+            
+            // Now we can validate the token
+            const existingUser = await tryGetUserData(source, oneTimeToken);
+            console.log('existingUser', existingUser)
         
-          
-          // Will login ONLY if the query PARAM is same as the Server oneTimeToken!
-          await signInFirebaseUser(source);
-          await resetUserOneTimeToken(existingUser?.userId ??'')
-
+            if (existingUser) {
+              // Token is valid, reset it
+              await resetUserOneTimeToken(existingUser.userId);
+            } else {
+              // Invalid token - sign out
+              await logout();
+              console.error('Invalid one-time token or user not found');
+            }
+          } catch (error) {
+            console.error('Error during auto login:', error);
+          }
         } catch (error) {
           console.error('Error during auto login:', error);
         }
@@ -115,18 +127,13 @@ const openWooAuthPopup = (cleanUrl: string) => {
       const cleanUrl = sanitizeUrl(storeUrl);
       localStorage.setItem('woo_store_url', cleanUrl);
 
-      // Check if user exists
-      const existingUser = await checkExistingUser(cleanUrl);
-      console.log('existingUser');
-      console.log(existingUser.exists);
-
-      if (existingUser.exists) {
-        toast.loading('מתחבר למשתמש קיים...', { id: toastId });
-        console.log('Sign in existing user');
-      } else {        
+      try {
+         await createFirebaseUser(cleanUrl);
         toast.loading('יוצר משתמש חדש...', { id: toastId });
         console.log('Create new user');
-        await createFirebaseUser(storeUrl);
+      } catch (error) {
+    
+        toast.loading('מתחבר למשתמש קיים...', { id: toastId });
       }
       openWooAuthPopup(cleanUrl);
       

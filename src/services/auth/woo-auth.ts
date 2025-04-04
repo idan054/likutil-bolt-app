@@ -168,7 +168,6 @@ export const tryGetUserData = async (storeUrl: string, oneTimeToken: string) => 
       };
       console.log('result', result)
       return result
-
       
     }
 
@@ -234,10 +233,9 @@ export const signInFirebaseUser = async (storeUrl: string) => {
   }
 };
 
-
 export const resetUserOneTimeToken = async (userId: string): Promise<void> => {
-console.log('resetUserOneTimeToken')
-console.log('userId', userId)
+// console.log('resetUserOneTimeToken')
+// console.log('userId', userId)
 
   try {
     const userRef = doc(db, 'users', userId);

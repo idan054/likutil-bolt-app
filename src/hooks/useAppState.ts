@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import { UserSettings } from "../types/settings";
 import { useSettings } from "./useSettings";
 import { OrderSummary, OrderDetails } from "../types/order";
+import { resetUserOneTimeToken } from "../services/auth/woo-auth";
 
 export const useAppState = () => {
   const [user, loading] = useAuthState(auth);
@@ -33,8 +34,13 @@ export const useAppState = () => {
         // Only fetch once during initialization
         refetchOrders();
         initialFetchRef.current = true;
+      
+
+        resetUserOneTimeToken(user.uid);
       }
       setIsInitialized(true);
+
+ 
     }
   }, [user, loading, settings]); // Keep refetchOrders out to prevent loops
 

@@ -93,7 +93,7 @@ export const useDeliveryCreation = ({
   };
 
   const clearDeliveryResponse = () => {
-    console.log("clearDeliveryResponse");
+    // console.log("clearDeliveryResponse");
     setDeliveryResponse(null);
   };
 

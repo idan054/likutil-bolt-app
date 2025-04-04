@@ -30,13 +30,13 @@ export const apiClient = async <T>({
   };
 
   // 🔥 Debugging log (optional)
-  console.log("[DEBUG] API Request:", {
-    url,
-    method,
-    headers: requestHeaders,
-    body: body || "No body",
-    platform,
-  });
+  // console.log("[DEBUG] API Request:", {
+  //   url,
+  //   method,
+  //   headers: requestHeaders,
+  //   body: body || "No body",
+  //   platform,
+  // });
 
   try {
     const response = await fetch(url, {
@@ -51,11 +51,11 @@ export const apiClient = async <T>({
     const responseText = await response.text();
 
     // 🔥 Log raw response (optional)
-    console.log("[DEBUG] Raw API Response:", {
-      status: response.status,
-      statusText: response.statusText,
-      responseText,
-    });
+    // console.log("[DEBUG] Raw API Response:", {
+    //   status: response.status,
+    //   statusText: response.statusText,
+    //   responseText,
+    // });
 
     let parsedData;
     try {

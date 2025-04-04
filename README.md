@@ -15,6 +15,11 @@ To test quick login Shopify, add the following query parameters to the URL:
 ?success=1&shopify=1&source=likutil-tests.myshopify.com&oneTimeToken=GodMode2003&pass=g1PxSbO5E2n83vYe
 ```
 
+### Debug Change Users
+ To change users super quick in Debug, Run the following on FireFoo App
+[Debug Mode Gist](https://gist.github.com/idan054/5d0048f43f1a93289c362d473a111e42)
+
+
 ## 📦 Deployment
 
 ### 🏃 Run Locally

@@ -48,13 +48,13 @@ const dedupedApiRequest = <T>(
   const cachedData = dataCache.get(key);
   const now = Date.now();
   if (cachedData && now - cachedData.timestamp < cacheDuration) {
-    console.log(`[orders.service] Using cached data for ${key}`);
+    // console.log(`[orders.service] Using cached data for ${key}`);
     return Promise.resolve(cachedData.data);
   }
 
   // Check if there's an in-flight request
   if (requestCache.has(key)) {
-    console.log(`[orders.service] Using in-flight request for ${key}`);
+    // console.log(`[orders.service] Using in-flight request for ${key}`);
     return requestCache.get(key) as Promise<T>;
   }
 
@@ -470,7 +470,7 @@ export const getFilteredOrders = async (
   console.log("Metadata configs:", metadataConfigs);
 
   if (status === "init")
-    status = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "");
+    status = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "null");
   console.log("Cache status:", status);
 
   return dedupedApiRequest(cacheKey, async () => {

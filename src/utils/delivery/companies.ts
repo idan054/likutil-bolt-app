@@ -14,9 +14,9 @@ export const filterCompaniesByIds = (
   }
 
   let filteredCompanies = companies.filter(company => allowedIds.includes(company.provider));
-  console.log('filteredCompanies');
-  console.log(filteredCompanies.length);
-  console.log(filteredCompanies);
+  // console.log('filteredCompanies');
+  // console.log(filteredCompanies.length);
+  // console.log(filteredCompanies);
 
 
   return filteredCompanies;
