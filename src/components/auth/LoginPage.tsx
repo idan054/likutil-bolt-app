@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { WooAuthButton } from "./WooAuthButton";
 import {
   ShieldCheck,
@@ -16,10 +16,15 @@ import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { ShopifyAuthButton } from "./ShopifyAuthButton";
 import { ServerOfflineIndicator } from "../ui/OfflineIndicator";
+import { analytics, AnalyticsEvent } from "../../services/analytics";
 
 const CLOUD_BG = "/assets/images/clouds-bg-1.jpg";
 
 export const LoginPage: React.FC = () => {
+  useEffect(() => {
+    analytics.track(AnalyticsEvent.PAGE_VIEW, { page: 'login' });
+  }, []);
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4 relative"

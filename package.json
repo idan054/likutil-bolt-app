@@ -18,6 +18,7 @@
     "framer-motion": "^11.0.3",
     "jsonpath-plus": "^10.3.0",
     "lucide-react": "^0.344.0",
+    "mixpanel-browser": "^2.63.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-firebase-hooks": "^5.1.1",

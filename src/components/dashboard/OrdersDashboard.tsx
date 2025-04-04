@@ -20,6 +20,8 @@ import { filter } from "framer-motion/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDeliveryCreation } from "../../hooks/useDeliveryCreation";
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
+import { analytics, AnalyticsEvent } from "../../services/analytics";
+import { se } from "date-fns/locale";
 
 
 interface OrdersDashboardProps {
@@ -28,7 +30,7 @@ interface OrdersDashboardProps {
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
   const { orders, isLoading, isRefetching, setOrders } = useAppState();
-  const { orderStatuses } = useSettings();
+  const { orderStatuses , user, settings} = useSettings();
   
   // Initialize selectedStatus from localStorage
   const [selectedStatus, setSelectedStatus] = useState<string | null>(() => {
@@ -64,6 +66,28 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [handleReset]);
+
+  // Track page view and identify user when component mounts
+ useEffect(() => {
+  if (settings && user) {
+
+    // THIS WILL PAS EVERYTHING!! include Tokens, passwords & consumer secrets!
+    // analytics.identify('A', {
+    //   ...(settings as Record<string, any>),
+    //   ...(user.toJSON() as Record<string, any>)
+    // });
+
+    analytics.identify(user.email ?? user.uid, ({
+      storeUrl: settings.storeUrl,
+      authType: settings.authType,
+      favicon: settings.favicon,
+      businessPhone: settings.businessPhone,
+      email: user.email,
+      uid: user.uid,
+    }) as Record<string, any>);
+  }
+
+}, []); // Add user to dependency array
 
   const [isMobileDetailsVisible, setIsMobileDetailsVisible] = useState(false);
 
