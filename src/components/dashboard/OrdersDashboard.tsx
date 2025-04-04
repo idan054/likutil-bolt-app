@@ -19,6 +19,7 @@ import { filter } from "framer-motion/client";
 // import { OrderDetails } from '../../types/order';
 import { AnimatePresence, motion } from "framer-motion";
 import { useDeliveryCreation } from "../../hooks/useDeliveryCreation";
+import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 
 
 interface OrdersDashboardProps {
@@ -273,6 +274,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       {superOrderItems && (
         <SuperOrderModal items={superOrderItems} onClose={clearSuperOrder} />
       )}
+
+    <FloatingTipMessage storageKey="keyboard_shortcuts_tip_dismissed" />
     </>
   );
 };

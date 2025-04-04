@@ -40,7 +40,7 @@ export const useGetFirebaseMetadata = (): UseGetFirebaseMetadataReturn => {
       }
     };
 
-    loadFbMetadata();
+    // loadFbMetadata();
   }, [user]);
 
   const saveFbOptions = async (newOptions: MetadataOption[]) => {

@@ -12,6 +12,7 @@ import {
   MonitorSmartphone,
   Camera,
 } from "lucide-react";
+import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { ShopifyAuthButton } from "./ShopifyAuthButton";
 
@@ -101,15 +102,27 @@ export const LoginPage: React.FC = () => {
           </div>  */}
         </div>
 
-        <div className="space-y-6">
-          {/* Mobile Remote Login Message */}
-          <div className="md:hidden flex items-center gap-3 justify-center text-blue-600 font-semibold text-base bg-white py-4 px-6 rounded-lg border-2 border-blue-500 mt-4">
-            <span>מומלץ להכנס מהמחשב ולסרוק את הברקוד QR!</span>
-            <MonitorSmartphone size={24} className="text-blue-600" />
-          </div>
+        <div className="space-y-3">
+
 
           {/* <ShopifyAuthButton /> */}
           <WooAuthButton />
+
+
+          {/* Mobile Remote Login Message */}
+          <div className="md:hidden flex items-center gap-4 text-blue-600 font-semibold text-base bg-white py-3 px-6 rounded-lg border-2 border-blue-500 mt-4">
+            <MonitorSmartphone size={30} className="text-blue-600 shrink-0" />
+            <div className="flex flex-col gap-1">
+              <div>
+                <span>טיפ להתחברות מהירה!</span>
+              </div>
+              <div className="text-sm text-gray-600">
+                <span>פשוט התחברו מהמחשב וסרקו את הברקוד QR</span>
+              </div>
+            </div>
+          </div>
+          
+
           <div className="flex items-center gap-2 justify-center text-gray-500 text-sm bg-gray-50 py-2 px-4 rounded-lg">
             <ShieldCheck size={16} className="text-green-500" />
             <span>כניסה מאובטחת ומוגנת</span>
@@ -120,6 +133,7 @@ export const LoginPage: React.FC = () => {
           <AppInfoStatus />
         </div>
       </div>
+      
     </div>
   );
 };
