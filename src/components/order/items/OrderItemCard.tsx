@@ -25,6 +25,8 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
   buttonPosition = { top: -10, left: 2 },
   dir = 'rtl'
 }) => {
+
+
   const { settings } = useSettings();
   const productUrl = getProductUrl(settings?.storeUrl, item.product_data?.permalink);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
@@ -78,7 +80,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
       >
 
         <div className="flex items-center gap-4 flex-1">
-          <ProductImage src={item.image?.src} alt={item.name} />
+          <ProductImage src={item.image?.src ?? item.image} alt={item.name} />
 
 
           <button

@@ -82,6 +82,9 @@ const dedupedApiRequest = <T>(
  * Maps line item data from different platforms to a common format
  */
 const mapLineItem = (item: any, platform: string): LineItem => {
+  
+
+
   if (platform === "shopify") {
     const totalTax = item.tax_lines
       ? item.tax_lines
@@ -101,6 +104,7 @@ const mapLineItem = (item: any, platform: string): LineItem => {
       ? {
           id: item.product_id,
           name: item.title || item.name || "",
+          image: item.image || item.image || "",
           permalink: "",
           sku: item.sku || "",
           price: parseFloat(item.price || "0"),
@@ -109,29 +113,28 @@ const mapLineItem = (item: any, platform: string): LineItem => {
         }
       : undefined;
 
-    return {
-      id: item.id,
-      name: item.title || item.name || "",
-      sku: item.sku || "",
-      quantity: item.quantity,
-      price: parseFloat(item.price || "0"),
-      total: (parseFloat(item.price || "0") * item.quantity).toFixed(2),
-      product_id: item.product_id || 0,
-      variation_id: item.variant_id || undefined,
-      tax_class: item.tax_lines?.[0]?.title || "",
-      subtotal: item.price || "0",
-      subtotal_tax: totalTax,
-      total_tax: totalTax,
-      image: item.image
-        ? {
-            src: item.image.src || "",
-            alt: item.image.alt || "",
-          }
-        : undefined,
-      product_data: productData,
-      meta_data: metaData,
-    };
-  }
+      let shopify_item = {
+        id: item.id,
+        name: item.title || item.name || "",
+        sku: item.sku || "",
+        quantity: item.quantity,
+        price: parseFloat(item.price || "0"),
+        total: (parseFloat(item.price || "0") * item.quantity).toFixed(2),
+        product_id: item.product_id || 0,
+        variation_id: item.variant_id || undefined,
+        tax_class: item.tax_lines?.[0]?.title || "",
+        subtotal: item.price || "0",
+        subtotal_tax: totalTax,
+        total_tax: totalTax,
+        image: item.image,
+        product_data: productData,
+        meta_data: metaData,
+      };
+      
+      // console.log("SHOPIFY ITEM:", shopify_item);
+      return shopify_item
+    }
+  
 
   // WooCommerce mapping (unchanged)
   return {
@@ -199,6 +202,7 @@ const mapOrder = (
           method_id: sl.code || "shopify",
           method_title: sl.title || "Shopify Shipping",
           total: sl.price || "0",
+  
         }))
       : [];
 
@@ -208,9 +212,10 @@ const mapOrder = (
         (s) => s
       ) || "processing";
 
+
     // Build base order
     return {
-      id: order.id,
+      id: order.order_number,
       status: status,
       total: order.total_price || order.total || "0",
       customer_id: order.customer?.id || null,
@@ -229,7 +234,8 @@ const mapOrder = (
       tags: order.tags ? order.tags.split(", ") : [],
     };
   }
-
+// --------------------------------------------------
+// --------------------------------------------------
   // WooCommerce mapping (unchanged)
   const billing = {
     first_name: "",
@@ -513,6 +519,8 @@ export const getFilteredOrders = async (
       orders = response.orders.map(
         (order: any) => mapOrder(order, platform) as OrderSummary
       );
+      
+
     } else if (Array.isArray(response)) {
       // WooCommerce returns an array
       orders = response.map(
