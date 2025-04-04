@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthWrapper } from './components/auth/AuthWrapper';
 import { OrdersDashboard } from './components/dashboard/OrdersDashboard';
 import { Header } from './components/layout/Header';
-import { OfflineIndicator } from './components/ui/OfflineIndicator';
+import { OfflineIndicator, ServerOfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
@@ -39,6 +39,7 @@ export const App: React.FC = () => {
             <AuthWrapper>
               <div className="min-h-screen bg-gray-100" dir="rtl">
                 <Toaster position="top-left" />
+                <ServerOfflineIndicator />
                 <OfflineIndicator />
                 <div className="container mx-auto px-4 py-8">
                   <Header />

@@ -15,6 +15,7 @@ import {
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { ShopifyAuthButton } from "./ShopifyAuthButton";
+import { ServerOfflineIndicator } from "../ui/OfflineIndicator";
 
 const CLOUD_BG = "/assets/images/clouds-bg-1.jpg";
 
@@ -132,6 +133,7 @@ export const LoginPage: React.FC = () => {
         <div className="mt-8 border-t pt-6">
           <AppInfoStatus />
         </div>
+          <ServerOfflineIndicator />
       </div>
       
     </div>

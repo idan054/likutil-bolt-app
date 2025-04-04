@@ -10,27 +10,38 @@ interface FloatingTipMessageProps {
   storageKey: string;
 }
 
-export const FloatingTipMessage: React.FC<FloatingTipMessageProps> = ({ storageKey}) => {
+export const FloatingTipMessage: React.FC<FloatingTipMessageProps> = ({ storageKey }) => {
   const [user] = useAuthState(auth);
-
   const [isVisible, setIsVisible] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { settings } = useSettings();
   const storeUrl = settings?.storeUrl || '';
 
   useEffect(() => {
     const isDismissed = localStorage.getItem(storageKey) === 'true';
     setIsVisible(!isDismissed);
+    // Add small delay to trigger mount animation
+    setTimeout(() => setIsMounted(true), 100);
   }, [storageKey]);
 
   const handleDismiss = () => {
-    localStorage.setItem(storageKey, 'true');
-    setIsVisible(false);
+    setIsExiting(true);
+    setTimeout(() => {
+      localStorage.setItem(storageKey, 'true');
+      setIsVisible(false);
+    }, 800); // Increased from 400 to 800ms
   };
 
   if (!isVisible || !user) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 animate-fade-in" dir="rtl">
+    <div 
+      className={`fixed bottom-4 left-4 z-50 transition-all duration-700 ease-out
+        ${isMounted ? 'translate-y-0 opacity-100' : 'translate-y-[100px] opacity-0'}
+        ${isExiting ? 'translate-y-[300px] opacity-0' : ''}`}
+      dir="rtl"
+    >
       <div className="flex items-center flex-row-reverse justify-between bg-blue-50 py-6 px-8 rounded-[28px] shadow-xl w-[540px] border border-blue-100/50">
         <div className="relative">
           <div className="absolute inset-[-12px] border-2 border-blue-200/60 rounded-2xl" />
