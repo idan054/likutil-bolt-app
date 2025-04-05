@@ -38,6 +38,7 @@ export interface LineItem {
 export interface OrderSummary {
   customer_id: number | null;
   id: number;
+  order_number: number;
   status: string;
   total: string;
   line_items: LineItem[];

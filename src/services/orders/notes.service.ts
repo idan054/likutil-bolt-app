@@ -38,12 +38,13 @@ export const getOrderNotes = async (orderId: string): Promise<OrderNote[]> => {
   if (authType === "shopify") {
     if ("events" in response) {
       return (response.events || [])
-        .filter((event: ShopifyNoteEvent) => event.description)
+        .filter((event: ShopifyNoteEvent) => event.body)
         .map((event: ShopifyNoteEvent) => ({
           id: event.id,
           date_created: event.created_at,
-          note: event.description,
-          customer_note: event.verb === "note_created",
+          // note: event.description,
+          note: event.body,
+          customer_note: event.verb === "follow_up",
           author: event.author,
         }));
     }

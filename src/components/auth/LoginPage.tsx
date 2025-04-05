@@ -111,7 +111,7 @@ export const LoginPage: React.FC = () => {
         <div className="space-y-3">
 
 
-          {/* <ShopifyAuthButton /> */}
+          <ShopifyAuthButton />
           <WooAuthButton />
 
 

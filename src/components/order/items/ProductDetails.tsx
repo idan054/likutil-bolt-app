@@ -27,7 +27,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
     <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
       {/* <span>כמות: {quantity}</span> */}
-      <span>מק״ט: {sku || 'N/A'}</span>
+      {sku && <span>מק״ט: {sku || 'N/A'}</span>}
 
       
       {typeof stockQuantity === 'number' && (

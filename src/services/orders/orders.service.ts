@@ -103,19 +103,20 @@ const mapLineItem = (item: any, platform: string): LineItem => {
     const productData = item.product_id
       ? {
           id: item.product_id,
-          name: item.title || item.name || "",
+          name: item.name || item.title || "",
           image: item.image || item.image || "",
           permalink: "",
           sku: item.sku || "",
           price: parseFloat(item.price || "0"),
           vendor: item.vendor || "", // Added vendor
-          stock_quantity: undefined,
+          stock_quantity: item.stock_available,
+          // stock_quantity: item.stock_available >= 0 ? item.stock_available : undefined,
         }
       : undefined;
 
       let shopify_item = {
         id: item.id,
-        name: item.title || item.name || "",
+        name: item.name || item.title || "",
         sku: item.sku || "",
         quantity: item.quantity,
         price: parseFloat(item.price || "0"),
@@ -215,7 +216,8 @@ const mapOrder = (
 
     // Build base order
     return {
-      id: order.order_number,
+      id: order.id,
+      order_number: order.order_number,
       status: status,
       total: order.total_price || order.total || "0",
       customer_id: order.customer?.id || null,

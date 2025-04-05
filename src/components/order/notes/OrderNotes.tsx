@@ -19,11 +19,13 @@ import { WhatsAppPreview } from "./WhatsAppPreview";
 
 interface OrderNotesProps {
   orderId: string;
+  order_number?: string;
   customerPhone?: string;
   order?: any;
 }
 
 export const OrderNotes: React.FC<OrderNotesProps> = ({
+  order_number,
   orderId,
   customerPhone,
 }) => {
@@ -71,7 +73,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
 
   async function generateWhatsAppLink() {
     const whatsappReply = `
-  שלום, קיבלתי עדכון לגבי הזמנה #${orderId}
+  שלום, קיבלתי עדכון לגבי הזמנה #${order_number ?? orderId}
   
   ${newNote.trim()}
   `.trim().replace(/\n\s+/g, '\n');
@@ -112,7 +114,7 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
 const whatsappMessage = `
   📝 שלום, התקבל עדכון מ
 ${settings?.storeUrl}
-🛍️ להזמנה #${orderId}
+🛍️ להזמנה #${order_number ?? orderId}
 
   ${newNote.trim()}
 
@@ -277,7 +279,7 @@ ${settings?.storeUrl}
           {isWhatsAppNote && (
             <div className="mb-4">
               <WhatsAppPreview
-                orderId={orderId}
+                orderId={order_number ?? orderId}
                 message={newNote.trim() || 'הכנס הודעת ווטסאפ ללקוח...'}
                 storeUrl={settings?.storeUrl}
                 isWhatsAppReplyEnabled={isWhatsAppReplyEnabled}

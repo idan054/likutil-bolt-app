@@ -98,6 +98,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             key={order.id}
             order={order}
             id={order.id}
+            order_number={order.order_number}
             status={order.status}
             dateCreated={order.date_created}
             isLocalPickup={isLocalPickup}
@@ -120,6 +121,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             <OrderNotes
               key={order.id}
               orderId={order.id.toString()}
+              order_number={order.order_number.toString()}
               customerPhone={
                 !order.shipping?.phone || order.shipping.phone === ""
                   ? order.billing?.phone

@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.5.3",
+    "@types/dompurify": "^3.0.5",
     "@yudiel/react-qr-scanner": "^2.2.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^3.0.6",
+    "dompurify": "^3.2.5",
     "firebase": "^10.8.0",
     "framer-motion": "^11.0.3",
     "jsonpath-plus": "^10.3.0",

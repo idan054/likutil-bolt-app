@@ -46,7 +46,7 @@ export const ShopifyAuthButton: React.FC = () => {
     // Should be genereted on Server (:
     const password = generateStorePassword(cleanUrl);
     
-    return `https://${shopifyId}.myshopify.com/admin/oauth/authorize?client_id=b8ab9b43d4b7011b511ef8b83ee9c97a&scope=read_products,read_orders&redirect_uri=${BASE_URL}/shopify-auth&state=${cleanUrl}/${oneTimeToken}/${phone}/${isDevMode}/${password}`;
+    return `https://${shopifyId}.myshopify.com/admin/oauth/authorize?client_id=b8ab9b43d4b7011b511ef8b83ee9c97a&scope=read_orders,read_fulfillments,read_assigned_fulfillment_orders,read_customers,read_products,read_inventory,read_locations,read_shipping&redirect_uri=${BASE_URL}/shopify-auth&state=${cleanUrl}/${oneTimeToken}/${phone}/${isDevMode}/${password}`;
   };
 
   const openShopifyAuthPopup = async (cleanUrl: string) => {
@@ -72,20 +72,17 @@ export const ShopifyAuthButton: React.FC = () => {
       const cleanUrl = sanitizeUrl(storeUrl);
       localStorage.setItem('woo_store_url', cleanUrl);
 
-      // Check if user exists
-      const existingUser = await checkExistingUser(cleanUrl);
-      console.log('existingUser');
-      console.log(existingUser.exists);
 
-      if (existingUser.exists) {
-        toast.loading('מתחבר למשתמש קיים...', { id: toastId });
-        console.log('Sign in existing user');
-      } else {        
-        toast.loading('יוצר משתמש חדש...', { id: toastId });
-        console.log('Create new user');
-        await createFirebaseUser(storeUrl);
-      }
-      openShopifyAuthPopup(cleanUrl);
+      try {
+        await createFirebaseUser(cleanUrl);
+       toast.loading('יוצר משתמש חדש...', { id: toastId });
+       console.log('Create new user');
+     } catch (error) {
+   
+       toast.loading('מתחבר למשתמש קיים...', { id: toastId });
+     }
+     openShopifyAuthPopup(cleanUrl);
+
       
     } catch (error) {
       console.error('[WooAuthButton] Auth failed:', error);

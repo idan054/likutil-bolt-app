@@ -37,7 +37,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold text-blue-900">#{order.id}</span>
+            <span className="text-base font-bold text-blue-900">#{order.order_number ?? order.id}</span>
             <span className="text-base text-gray-900">{order.billing.first_name} {order.billing.last_name}</span>
           </div>
           {isCompleted && <CheckCircle size={14} className="text-green-500" />}

@@ -13,6 +13,7 @@ import type { OrderDetails as OrderDetailType } from '../../types/order';
 interface OrderHeaderProps {
   order: OrderDetailType;
   id: number;
+  order_number: number;
   status: string;
   dateCreated: string;
   isLocalPickup?: boolean;
@@ -23,6 +24,7 @@ interface OrderHeaderProps {
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ 
   order,
   id, 
+  order_number, 
   status, 
   dateCreated,
   isLocalPickup,
@@ -47,7 +49,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
         </div>
  
         <h2 className="text-2xl hidden md:block">
-          <span className="font-bold">{translations.orderNumber} #{id}</span>
+          <span className="font-bold">{translations.orderNumber} #{order_number ?? id}</span>
           {billingDetails?.first_name && <span className="font-normal"> {billingDetails.first_name} {billingDetails.last_name}</span>}
         </h2>
 

@@ -4,6 +4,7 @@ import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { formatDate } from '../../../utils/date';
 import { translations } from '../../../config/translations';
 import type { OrderNote } from '../../../types/order';
+import DOMPurify from 'dompurify';
 
 interface NotesListProps {
   notes: OrderNote[];
@@ -23,11 +24,13 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
 
   return (
     <div className="space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-      {notes.map((note) => (
-        <div 
-          key={note.id} 
-          className="p-4 rounded-lg bg-gray-50"
-        >
+      {notes
+        .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
+        .map((note) => (
+          <div 
+            key={note.id} 
+            className="p-4 rounded-lg bg-gray-50"
+          >
           <div className="flex justify-between items-start mb-2">
             <span className="text-sm text-gray-500">
               {formatDate(note.date_created)}
@@ -52,11 +55,25 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
               )}
             </div>
           </div>
-          <p className="text-gray-800 text-right whitespace-pre-wrap">
-            {note?.note
-              ?.replace(/״/g, '')
-              ?.replace(/📱 ההודעה נשלחה דרך Mail & WhatsApp:\s*/g, '')}
-          </p>
+          {/<[a-z][\s\S]*>/i.test(note?.note || '') ? (
+            <div 
+              className="text-gray-800 text-right"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(
+                  (note?.note || '')
+                    .replace(/״/g, '')
+                    .replace(/📱 ההודעה נשלחה דרך Mail & WhatsApp:\s*/g, ''),
+                  { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a'], ALLOWED_ATTR: ['href'] }
+                )
+              }} 
+            />
+          ) : (
+            <p className="text-gray-800 text-right whitespace-pre-wrap">
+              {note?.note
+                ?.replace(/״/g, '')
+                ?.replace(/📱 ההודעה נשלחה דרך Mail & WhatsApp:\s*/g, '')}
+            </p>
+          )}
         </div>
       ))}
     </div>
