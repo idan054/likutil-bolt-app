@@ -36,7 +36,7 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
               {formatDate(note.date_created)}
             </span>
             <div className="flex items-center gap-2">
-              {note.customer_note ? (
+              {note.customer_note || note.note?.includes('נשלח ללקוח') ? (
                 <>
                   <Mail size={16} className="text-red-700" />
                   <span className="-mr-1 text-sm text-gray-500">מייל</span>
@@ -71,6 +71,7 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
             <p className="text-gray-800 text-right whitespace-pre-wrap">
               {note?.note
                 ?.replace(/״/g, '')
+                ?.replace("נשלח ללקוח: ", '')
                 ?.replace(/📱 ההודעה נשלחה דרך Mail & WhatsApp:\s*/g, '')}
             </p>
           )}

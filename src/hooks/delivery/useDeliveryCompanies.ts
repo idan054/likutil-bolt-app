@@ -37,16 +37,21 @@ export const useDeliveryCompanies = () => {
 
         const userDoc = await getDoc(doc(db, 'users', userId));
         const userData = userDoc.data();
+
+        console.log('userDdewdata');
+        console.log(userData);
+
+      
         
-        if (!userData?.showOnlyCompanies) {
-          setAvailableCompanies([]);
-          return;
-        }
+        // if (!userData?.showOnlyCompanies) {
+        //   setAvailableCompanies([]);
+        //   return;
+        // }
 
         const companies = await loadDeliveryCompanies();
         const filteredCompanies = filterCompaniesByIds(
           companies,
-          userData.showOnlyCompanies
+          userData?.showOnlyCompanies
         );
         setAvailableCompanies(filteredCompanies);
       } catch (error) {

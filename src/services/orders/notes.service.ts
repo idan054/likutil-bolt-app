@@ -1,14 +1,16 @@
 import { apiClient } from "../api/client";
-import type { OrderNote, CreateNoteRequest } from "../../types/order";
+import type { OrderNote, CreateNoteRequest, OrderDetails } from "../../types/order";
+import { useSettings } from "../../hooks/useSettings";
+import { UserSettings } from "../../types/settings";
 
-const getShopId = (storeUrl: string): string => {
-  try {
-    return storeUrl.split(".")[0];
-  } catch {
-    console.error("Invalid Shopify store URL format", storeUrl);
-    throw new Error("Invalid Shopify store configuration");
-  }
-};
+// const getShopId = (storeUrl: string): string => {
+//   try {
+//     return storeUrl.split(".")[0];
+//   } catch {
+//     console.error("Invalid Shopify store URL format", storeUrl);
+//     throw new Error("Invalid Shopify store configuration");
+//   }
+// };
 
 interface ShopifyNoteEvent {
   id: number;
@@ -19,23 +21,21 @@ interface ShopifyNoteEvent {
   author: string;
 }
 
-export const getOrderNotes = async (orderId: string): Promise<OrderNote[]> => {
-  const settingsRaw = localStorage.getItem("wc_settings");
-  if (!settingsRaw) throw new Error("Missing store configuration");
+export const getOrderNotes = async (settings: UserSettings | null, orderId: string): Promise<OrderNote[]> => {
+  // const settingsRaw = localStorage.getItem("wc_settings");
+  
 
-  const settings = JSON.parse(settingsRaw);
-  const { authType, storeUrl } = settings;
 
   const path =
-    authType === "shopify"
-      ? `/shopify_order_notes?shopId=${getShopId(storeUrl)}&orderId=${orderId}`
+  settings?.authType === "shopify"
+      ? `/shopify_order_notes?shopId=${settings.myShopifyUrl}&orderId=${orderId}`
       : `/orders/${orderId}/notes`;
 
   const response = await apiClient<
     { events?: ShopifyNoteEvent[] } | OrderNote[]
   >({ method: "GET", path });
 
-  if (authType === "shopify") {
+  if (settings?.authType === "shopify") {
     if ("events" in response) {
       return (response.events || [])
         .filter((event: ShopifyNoteEvent) => event.body)
@@ -55,20 +55,33 @@ export const getOrderNotes = async (orderId: string): Promise<OrderNote[]> => {
 
 export const createOrderNote = async (
   orderId: string,
-  { note, customer_note }: CreateNoteRequest
+  { note, customer_note }: CreateNoteRequest,
+  order: OrderDetails,
 ): Promise<OrderNote> => {
   const settingsRaw = localStorage.getItem("wc_settings");
   if (!settingsRaw) throw new Error("Missing store configuration");
 
   const settings = JSON.parse(settingsRaw);
 
+
   if (settings.authType === "shopify") {
     return apiClient<OrderNote>({
-      method: "POST",
-      path: `/shopify_order_notes/${orderId}`,
-      body: { note, customer_note },
+      method: "PUT",
+      path: `/add_shopify_order_note`,
+       body: {
+         'order_number': order.order_number,
+         "shopId": settings.myShopifyUrl,
+         'store_url': settings?.store_url ?? settings?.storeUrl,
+         "orderId": orderId,
+         "note": note,
+
+         "customer_note": customer_note,
+         'to_email': order.billing?.email,
+      },
     });
   }
+
+
 
   return apiClient<OrderNote>({
     method: "POST",

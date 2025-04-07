@@ -14,24 +14,26 @@ import { BASE_URL } from "../../../services/auth/woo-auth";
 import { useAuth } from '../../../hooks/useAuth'; // Adjust the path as needed
 import { updateBusinessPhone } from '../../../services/settings/update.service';
 import { WhatsAppPreview } from "./WhatsAppPreview";
+import { OrderDetails } from "../../../types/order";
 
 
 
 interface OrderNotesProps {
+  order?: OrderDetails;
   orderId: string;
   order_number?: string;
   customerPhone?: string;
-  order?: any;
 }
 
 export const OrderNotes: React.FC<OrderNotesProps> = ({
+  order,
   order_number,
   orderId,
   customerPhone,
 }) => {
   // Add auth hook to get userId
 
-  const { notes, isLoading, addNote } = useOrderNotes(orderId);  
+  const { notes, isLoading, addNote } = useOrderNotes(orderId, order);  
   const { settings, user } = useSettings();
 
   const {
@@ -142,7 +144,8 @@ ${settings?.storeUrl}
         if (response.ok) {
           toast.success(translations.orderNotes.whatsappSuccess);
           setNewNote("");
-          // Add WhatsApp message as a note
+
+          // ALSO Add WhatsApp message as a note
           await addNote({
             note: `📱 ההודעה נשלחה דרך Mail & WhatsApp: \n\n ״${whatsappMessage}״`,
             customer_note: true,

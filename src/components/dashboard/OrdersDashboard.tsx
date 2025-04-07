@@ -81,6 +81,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       storeUrl: settings.storeUrl,
       authType: settings.authType,
       favicon: settings.favicon,
+      myShopifyUrl: settings.myShopifyUrl,
       businessPhone: settings.businessPhone,
       email: user.email,
       uid: user.uid,

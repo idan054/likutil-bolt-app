@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Edit } from 'lucide-react';
+import { Check, Edit, X } from 'lucide-react';
 import type { DeliveryIntegration } from '../../../../../../types/delivery';
 
 interface IntegrationCardProps {
@@ -38,6 +38,9 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
         </div>
       )}
 
+
+      
+
       {(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && onEdit && (
         <button
           onClick={handleEdit}
@@ -46,6 +49,14 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           <Edit size={16} />
         </button>
       )}
+
+
+{/* <button
+          onClick={handleEdit}
+          className="absolute top-2 left-2 p-1.5 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-colors"
+        >
+          <X size={16} />
+        </button> */}
 
       <div className="flex flex-col items-center text-center">
         <img

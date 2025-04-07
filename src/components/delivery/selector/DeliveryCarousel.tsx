@@ -5,7 +5,7 @@ import { RequestCompanyCard } from '../../settings/tabs/sections/delivery/market
 import { WhatsAppContactButton } from '../contact/WhatsAppContactButton';
 import { useDeliveryCompanies } from '../../../hooks/delivery/useDeliveryCompanies';
 import { useHorizontalScroll } from '../../../hooks/ui/useHorizontalScroll';
-import { sortCompaniesByConnection } from '../../../utils/delivery/companies';
+import { getConnectedCompanies, sortCompaniesByConnection } from '../../../utils/delivery/companies';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SettingsModal } from '../../settings/SettingsModal';
 import { useSettings } from '../../../hooks/useSettings';
@@ -70,7 +70,8 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
     return null;
   }
 
-  const sortedCompanies = sortCompaniesByConnection(companies, connectedProviders);
+  // const sortedCompanies = sortCompaniesByConnection(companies, connectedProviders);
+  const sortedCompanies = getConnectedCompanies(companies, connectedProviders);
 
   return (
     <div className="relative group">

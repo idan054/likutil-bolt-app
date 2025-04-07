@@ -6,7 +6,7 @@ export const filterCompaniesByIds = (
 ): DeliveryIntegration[] => {
 
 
-  // return companies; // AKA Show All - Filter Diasbled
+  return companies; // AKA Show All - Filter Diasbled
 
   // Collection "users" -> "showOnlyCompanies" field is an array of company IDs
   if (!Array.isArray(allowedIds) || allowedIds.length === 0) {
@@ -14,12 +14,12 @@ export const filterCompaniesByIds = (
   }
 
   let filteredCompanies = companies.filter(company => allowedIds.includes(company.provider));
-  // console.log('filteredCompanies');
-  // console.log(filteredCompanies.length);
-  // console.log(filteredCompanies);
+  console.log('filteredCompanies');
+  console.log(filteredCompanies.length);
+  console.log(filteredCompanies);
 
 
-  return filteredCompanies;
+  return companies;
 };
 
 export const sortCompaniesByConnection = (
@@ -33,4 +33,11 @@ export const sortCompaniesByConnection = (
     if (!aConnected && bConnected) return 1;
     return 0;
   });
+};
+
+export const getConnectedCompanies = (
+  companies: DeliveryIntegration[],
+  connectedIds: Set<string>
+): DeliveryIntegration[] => {
+  return companies.filter(company => connectedIds.has(company.provider));
 };

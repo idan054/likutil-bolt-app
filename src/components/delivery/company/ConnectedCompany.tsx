@@ -41,7 +41,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   };
   
   const shippingTitle = order.shipping_lines?.length ? order.shipping_lines[0].method_title : '';
-  const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה') || shippingTitle.includes('epost');
+  const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה') || shippingTitle.includes('epost') || shippingTitle.includes('נקודת איסוף') || shippingTitle.includes('נקודות איסוף');
   const [deliveryType, setDeliveryType] = React.useState<'client' | 'pickup'>(isPickupDelivery ? 'pickup' : 'client');
 
   return (

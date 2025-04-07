@@ -9,6 +9,9 @@ interface UserMenuProps {
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeUrl }) => {
+
+  
+  
   return (
     <div className="flex items-center gap-0 justify-between w-full">
       {/* Logo moved to the left */}
@@ -16,6 +19,28 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeU
       
       {/* Menu items moved to the right */}
       <div className="flex items-center">
+
+
+{process.env.NODE_ENV === 'development' &&
+
+      <div className="w-9.5 h-9.5 rounded-full border-2 border-gray-200 flex items-center justify-center overflow-hidden ml-2 hover:border-blue-500 transition-all duration-300 transform hover:scale-110">
+        
+            <a
+
+// 
+rel="noopener noreferrer"
+className="inline-flex items-center px-4 py-2 hover:text-blue-500 text-gray-500 rounded-lg transition-colors shadow-sm gap-2"
+>
+
+              Debug ID: {user.uid}
+
+            </a>
+        </div>
+
+              }
+
+
+
         <a 
           href={`https://${storeUrl}`}
           target="_blank"
@@ -40,6 +65,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeU
         className="group flex items-center hover:opacity-80 transition-all duration-300"
       >
         <div className="w-9.5 h-9.5 rounded-full border-2 border-gray-200 flex items-center justify-center overflow-hidden mr-1 hover:border-blue-500 transition-all duration-300 transform hover:scale-110">
+
+
+
         <a
 
         // 
@@ -58,10 +86,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onOpenSettings, storeU
   </svg>
 
 
-
-    
-    
   </a>
+
+
       </div>
     </a>
 

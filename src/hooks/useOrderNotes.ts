@@ -4,22 +4,27 @@ import {
   createOrderNote,
 } from "../services/orders/notes.service";
 import { showErrorToast } from "../utils/error";
-import type { OrderNote, CreateNoteRequest } from "../types/order";
+import type { OrderNote, CreateNoteRequest, OrderDetails } from "../types/order";
+import { useSettings } from "./useSettings";
 
-export const useOrderNotes = (orderId: string) => {
+export const useOrderNotes = (orderId: string, order: OrderDetails) => {
   const [notes, setNotes] = useState<OrderNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { settings} = useSettings();
+
 
   const fetchNotes = useCallback(async () => {
     // Don't try to fetch notes if settings are not available
-    const settings = localStorage.getItem("wc_settings");
+    // const settings = localStorage.getItem("wc_settings");
+
+    
     if (!settings) {
       setIsLoading(false);
       return;
     }
 
     try {
-      const data = await getOrderNotes(orderId);
+      const data = await getOrderNotes(settings, orderId);
       setNotes(data);
       console.log("Notes format: ", data);
     } catch (error) {
@@ -49,13 +54,13 @@ export const useOrderNotes = (orderId: string) => {
     setNotes((prevNotes) => [optimisticNote, ...prevNotes]);
 
     try {
-      const createdNote = await createOrderNote(orderId, noteRequest);
+      const createdNote = await createOrderNote(orderId, noteRequest, order);
 
-      setNotes((prevNotes) =>
-        prevNotes.map((note) =>
-          note.id === optimisticNote.id ? createdNote : note
-        )
-      );
+      // setNotes((prevNotes) =>
+      //   prevNotes.map((note) =>
+      //     note.id === optimisticNote.id ? createdNote : note
+      //   )
+      // );
 
       return true;
     } catch (error) {

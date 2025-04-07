@@ -121,7 +121,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             <OrderNotes
               key={order.id}
               orderId={order.id.toString()}
-              order_number={order.order_number.toString()}
+              order_number={`${order.order_number}`}
+              order={order}
               customerPhone={
                 !order.shipping?.phone || order.shipping.phone === ""
                   ? order.billing?.phone

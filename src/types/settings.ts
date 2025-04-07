@@ -3,6 +3,7 @@ export type Platform = "woo" | "shopify";
 export interface UserSettings {
   favicon: string | undefined;
   storeUrl: string;
+  myShopifyUrl?: string;
   businessPhone: string | undefined;
   accessToken: string | undefined;
   consumerKey: string | undefined;
@@ -16,6 +17,7 @@ export interface UserSettings {
 export interface SettingsFormData {
   favicon: string | undefined;
   storeUrl: string;
+  myShopifyUrl?: string;
   accessToken: string | undefined;
   consumerKey: string | undefined;
   consumerSecret: string | undefined;
