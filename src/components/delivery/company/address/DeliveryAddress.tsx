@@ -11,7 +11,7 @@ interface DeliveryAddressProps {
 
 export const DeliveryAddress: React.FC<DeliveryAddressProps> = ({ address, city, deliveryType, onDeliveryTypeChange, programType }) => (
   <div className="space-y-6">
-    {programType !== 'ups' && programType !== 'hfd' ? (
+    {programType !== 'ups' && programType !== 'hfd' && programType !== 'ydm' ? (
       <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg text-gray-700 border border-gray-200">
         <div className="bg-blue-100 p-2 rounded-full">
           <MapPin className="text-blue-600" size={20} />

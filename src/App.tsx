@@ -10,8 +10,6 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
 
-
-
 export const APP_VERSION = '06.04.25 | Version 1.2.1';
 
 // FROM MAC

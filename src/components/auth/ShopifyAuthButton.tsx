@@ -162,3 +162,8 @@ export const ShopifyAuthButton: React.FC = () => {
     </div>
   );
 };
+
+// Next steps                                                          │
+// │    • Run `cd bobtests`                                            │
+// │    • For extensions, run `shopify app generate extension`         │
+// │    • To see your app, run `shopify app dev`      
