@@ -16,7 +16,7 @@ interface NonConnectedCompanyProps {
 
 export const NonConnectedCompany: React.FC<NonConnectedCompanyProps> = ({
   integration,
-  initialShowConfig = false,
+  initialShowConfig = true,
 }) => {
   const [showConfig, setShowConfig] = useState(initialShowConfig);
 
@@ -55,14 +55,14 @@ export const NonConnectedCompany: React.FC<NonConnectedCompanyProps> = ({
           <ConfigForm 
             integration={integration}
           />
-          {!integration.isConnected && (
+          {/* {!integration.isConnected && (
             <button
               onClick={() => setShowConfig(false)}
               className="text-blue-600 hover:text-blue-700 hover:underline text-sm"
             >
               לחץ לחזור
             </button>
-          )}
+          )} */}
         </div>
       ) : (
         <div className="space-y-4">

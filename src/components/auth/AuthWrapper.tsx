@@ -4,6 +4,7 @@ import { auth } from '../../config/firebase';
 import { LoginPage } from './LoginPage';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useSettings } from '../../hooks/useSettings';
+import { LoginPageV2 } from './LoginPageV2';
 
 
 interface AuthWrapperProps {
@@ -11,21 +12,14 @@ interface AuthWrapperProps {
 }
 
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  const [user] = useAuthState(auth);
+  const [user, loading] = useAuthState(auth);
   const { settings, isLoading: isLoadingSettings } = useSettings();
   
-
-  
-
-  // Only show settings modal for authenticated users without settings
-  // useEffect(() => {
-  //   const currentUser =  user;
-  //   const shouldShowSettings = currentUser && !isLoadingSettings && !settings;
-  //   setShowSettings(shouldShowSettings ?? false);
-  // }, [user, settings, isLoadingSettings,]);
+  // Skip auth check during user creation
+  const isCreatingUser = sessionStorage.getItem('creating_user') === 'true';
 
   // Handle initial auth loading
-  if (!user) {
+  if (!user || isCreatingUser) {
     return <LoginPage />;
   }
 

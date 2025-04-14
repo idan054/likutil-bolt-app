@@ -17,6 +17,9 @@ import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { ShopifyAuthButton } from "./ShopifyAuthButton";
 import { ServerOfflineIndicator } from "../ui/OfflineIndicator";
 import { analytics, AnalyticsEvent } from "../../services/analytics";
+import { useState, useRef } from "react";
+import { Phone } from "lucide-react";
+import { PhoneAuthButton } from "./PhoneAuthButton";
 
 const CLOUD_BG = "/assets/images/clouds-bg-1.jpg";
 
@@ -24,6 +27,8 @@ export const LoginPage: React.FC = () => {
   useEffect(() => {
     analytics.track(AnalyticsEvent.PAGE_VIEW, { page: 'login' });
   }, []);
+
+
 
   return (
     <div
@@ -112,8 +117,8 @@ export const LoginPage: React.FC = () => {
 
 
           <ShopifyAuthButton />
-          <WooAuthButton />
 
+          <WooAuthButton />
 
           {/* Mobile Remote Login Message */}
           <div className="md:hidden flex items-center gap-4 text-blue-600 font-semibold text-base bg-white py-3 px-6 rounded-lg border-2 border-blue-500 mt-4">

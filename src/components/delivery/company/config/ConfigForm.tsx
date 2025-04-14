@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Loader2, CheckCircle2, Save, XCircle } from 'lucide-react';
+import { Key, Loader2, CheckCircle2, Save, XCircle, Eye, EyeOff } from 'lucide-react';
 import { useDeliveryIntegrations } from '../../../../hooks/settings/useDeliveryIntegrations';
 import type { DeliveryIntegration } from '../../../../types/delivery';
 import { DeliveryProgramType } from '../../../settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
@@ -102,9 +102,10 @@ const getFieldsByProgramType = (type: DeliveryProgramType): ConfigFormField[] =>
   }
 };
 
-export const ConfigForm: React.FC<ConfigFormProps> = ({ 
-  integration,
-}) => {
+export const ConfigForm: React.FC<ConfigFormProps> = ({ integration }) => {
+  // Add this state for password visibility
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  
   const { activeIntegrations } = useDeliveryIntegrations();
 
   const activeIntegration = activeIntegrations.find(
@@ -211,22 +212,37 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-4">
+      <div className="space-y-0">
         {fields.map((field, index) => (
           <div key={index}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="relative">
+   <label className="block text-sm font-medium text-gray-700 mb-1 mt-3">
               {field.label}
             </label>
-            <input
-              type={field.type}
-              // Replace the value prop in the input component
-              value={formData[field.id] || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
-              className="w-full px-4 py-3 border rounded-lg text-sm"
-              placeholder={`${field.placeholder}${integration.name}`}
-              required
-              disabled={isLoading}
-            />
+
+              <input
+                type={field.type === 'password' && showPasswords[field.id] ? 'text' : field.type}
+                value={formData[field.id] || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                className="w-full px-4 py-3 border rounded-lg text-sm"
+                placeholder={`${field.placeholder}${integration.name}`}
+                required
+                disabled={isLoading}
+              />
+
+
+              {field.type === 'password' && (
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords(prev => ({ ...prev, [field.id]: !prev[field.id] }))}
+                  className="absolute left-3 bottom-1 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPasswords[field.id] ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              )}
+
+              
+            </div>
             {field.supportText && (
               <p className="mt-1 text-sm text-gray-500">
                 {field.supportText}
@@ -275,6 +291,32 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
       </AnimatePresence>
 
       <div className="flex gap-3 pt-4">
+
+        {/* <WooCommerceHelpBox />   */}
+
+              {/* <WooCommerceHelpBox /> */}
+
+
+              {/* Perfect Whatsapp Button */}
+{/* <a
+  href="https://wa.me/+972557113987"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 transition-colors shadow-sm"
+  title="תמיכה בוואטסאפ"
+>
+  <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clipPath="url(#clip0_5_9)">
+      <path d="M16.0481 13.1147L16.0398 13.1835C14.0241 12.1788 13.8133 12.045 13.5529 12.4355C13.3723 12.7059 12.8462 13.3192 12.6876 13.5007C12.5272 13.6794 12.3677 13.6932 12.0954 13.5694C11.8204 13.4319 10.9377 13.1432 9.89267 12.2082C9.07867 11.4794 8.53234 10.5857 8.371 10.3107C8.10242 9.84683 8.66434 9.78083 9.17584 8.81283C9.2675 8.62033 9.22075 8.46908 9.15292 8.33249C9.08417 8.19499 8.53692 6.84749 8.30775 6.31033C8.08775 5.77499 7.86134 5.84283 7.69175 5.84283C7.16375 5.79699 6.77784 5.80433 6.43775 6.15816C4.95825 7.78433 5.33134 9.46183 6.59725 11.2457C9.08509 14.5017 10.4106 15.1012 12.8343 15.9335C13.4888 16.1416 14.0855 16.1122 14.5576 16.0444C15.0838 15.961 16.1773 15.3835 16.4056 14.7372C16.6393 14.091 16.6393 13.5547 16.5706 13.431C16.5028 13.3072 16.3231 13.2385 16.0481 13.1147Z" fill="white"/>
+      <path d="M18.81 3.16139C11.7618 -3.65219 0.0971667 1.28956 0.0925833 10.9017C0.0925833 12.8231 0.595833 14.6967 1.55467 16.3513L0 21.9998L5.80708 20.4855C13.0533 24.3996 21.9963 19.2021 22 10.9072C22 7.99589 20.8633 5.25598 18.7962 3.19714L18.81 3.16139ZM20.1685 10.877C20.163 17.8739 12.4822 22.2436 6.4075 18.6723L6.0775 18.4761L2.64 19.3699L3.56125 16.0286L3.34217 15.6849C-0.438167 9.66698 3.905 1.80198 11.066 1.80198C12.2619 1.79897 13.4464 2.03318 14.5512 2.49106C15.6559 2.94894 16.6588 3.62138 17.5019 4.46948C18.3496 5.30692 19.022 6.30483 19.4798 7.40496C19.9377 8.50508 20.1718 9.68539 20.1685 10.877Z" fill="white"/>
+    </g>
+    <defs>
+      <clipPath id="clip0_5_9">
+        <rect width="22" height="22" fill="white"/>
+      </clipPath>
+    </defs>
+  </svg>
+</a> */}
      
 
         <button
@@ -292,55 +334,17 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({
           type="button"
           onClick={handleTest}
           disabled={isLoading || isTesting || fields.some(field => !formData[field.id]?.trim())}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 outline outline-1 outline-blue-200"
         >
           <div className="flex items-center gap-2">
-
             <span className="text-1xl font-bold">2.</span>
-
             <span>בדוק חיבור</span>
           </div>
           <Key size={20} />
         </button>
       </div>
 
-      {/* <WooCommerceHelpBox /> */}
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 shadow-sm">
 
-
-<div className="flex items-center justify-between">
-  <div className="flex-1">
-    <h3 className="text-lg font-medium text-blue-900">צריך עזרה?</h3>
-    <p className="text-blue-700 mt-1">הצוות שלנו כאן לעזור בכל שאלה</p>
-  </div>
-  <a
-    href="https://wa.me/+972557113987" // Replace with your actual WhatsApp number
-    target="_blank"
-    rel="noopener noreferrer"
-    className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm gap-2"
-  >
-    
-
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_5_9)">
-<path d="M16.0481 13.1147L16.0398 13.1835C14.0241 12.1788 13.8133 12.045 13.5529 12.4355C13.3723 12.7059 12.8462 13.3192 12.6876 13.5007C12.5272 13.6794 12.3677 13.6932 12.0954 13.5694C11.8204 13.4319 10.9377 13.1432 9.89267 12.2082C9.07867 11.4794 8.53234 10.5857 8.371 10.3107C8.10242 9.84683 8.66434 9.78083 9.17584 8.81283C9.2675 8.62033 9.22075 8.46908 9.15292 8.33249C9.08417 8.19499 8.53692 6.84749 8.30775 6.31033C8.08775 5.77499 7.86134 5.84283 7.69175 5.84283C7.16375 5.79699 6.77784 5.80433 6.43775 6.15816C4.95825 7.78433 5.33134 9.46183 6.59725 11.2457C9.08509 14.5017 10.4106 15.1012 12.8343 15.9335C13.4888 16.1416 14.0855 16.1122 14.5576 16.0444C15.0838 15.961 16.1773 15.3835 16.4056 14.7372C16.6393 14.091 16.6393 13.5547 16.5706 13.431C16.5028 13.3072 16.3231 13.2385 16.0481 13.1147Z" fill="white"/>
-<path d="M18.81 3.16139C11.7618 -3.65219 0.0971667 1.28956 0.0925833 10.9017C0.0925833 12.8231 0.595833 14.6967 1.55467 16.3513L0 21.9998L5.80708 20.4855C13.0533 24.3996 21.9963 19.2021 22 10.9072C22 7.99589 20.8633 5.25598 18.7962 3.19714L18.81 3.16139ZM20.1685 10.877C20.163 17.8739 12.4822 22.2436 6.4075 18.6723L6.0775 18.4761L2.64 19.3699L3.56125 16.0286L3.34217 15.6849C-0.438167 9.66698 3.905 1.80198 11.066 1.80198C12.2619 1.79897 13.4464 2.03318 14.5512 2.49106C15.6559 2.94894 16.6588 3.62138 17.5019 4.46948C18.3496 5.30692 19.022 6.30483 19.4798 7.40496C19.9377 8.50508 20.1718 9.68539 20.1685 10.877Z" fill="white"/>
-</g>
-<defs>
-<clipPath id="clip0_5_9">
-<rect width="22" height="22" fill="white"/>
-</clipPath>
-</defs>
-</svg>
-
-
-    
-    לתמיכה בוואטסאפ
-  </a>
-</div>
-
-
-</div>
     </form>
   );
 };

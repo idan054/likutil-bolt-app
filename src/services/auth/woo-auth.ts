@@ -184,6 +184,9 @@ export const createFirebaseUser = async (storeUrl: string) => {
   const password = generateStorePassword(cleanUrl);
 
   try {
+    // Set flag before creating user
+    sessionStorage.setItem('creating_user', 'true');
+
     // Create Firebase user
     const userCredential = await createUserWithEmailAndPassword(
       auth,
@@ -199,6 +202,10 @@ export const createFirebaseUser = async (storeUrl: string) => {
       email,
     });
 
+    // Sign out and clean up
+    // await auth.signOut();
+    sessionStorage.removeItem('creating_user');
+
     return {
       firebaseId: user.uid,
       cleanUrl,
@@ -206,6 +213,8 @@ export const createFirebaseUser = async (storeUrl: string) => {
       password,
     };
   } catch (error) {
+    // Clean up on error
+    sessionStorage.removeItem('creating_user');
     console.error('[woo-auth] Failed to create user:', error);
     throw error;
   }
@@ -246,6 +255,22 @@ export const resetUserOneTimeToken = async (userId: string): Promise<void> => {
     
   } catch (error) {
     console.error('[woo-auth] Failed to reset one-time token:', error);
+    throw error;
+  }
+};
+
+export const updateUserPhone = async (userId: string, phone: string, authType: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    await setDoc(userRef, {
+      authType: authType,
+      register_phone: phone,
+      uid: userId
+    }, { merge: true });
+    
+  } catch (error) {
+    console.error('[woo-auth] Failed to update user phone:', error);
     throw error;
   }
 };

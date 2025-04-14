@@ -25,6 +25,27 @@ interface OrderNotesProps {
   customerPhone?: string;
 }
 
+// Add this new function before the OrderNotes component
+export async function sendWhatsAppMessage(toPhone: string, message: string) {
+  const response = await fetch(`${BASE_URL}/api/send-whatsapp`, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message,
+      phone: toPhone.replace(/\D/g, "").replace(/^0/, '972')
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send WhatsApp message');
+  }
+
+  return response;
+}
+
 export const OrderNotes: React.FC<OrderNotesProps> = ({
   order,
   order_number,
@@ -109,52 +130,32 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     
     try {
       if (isWhatsAppNote && customerPhone) {
-
-
         const waReplyLink = await generateWhatsAppLink();
+        const whatsappMessage = `
+          📝 שלום, התקבל עדכון מ
+          ${settings?.storeUrl}
+          🛍️ להזמנה #${order_number ?? orderId}
 
-const whatsappMessage = `
-  📝 שלום, התקבל עדכון מ
-${settings?.storeUrl}
-🛍️ להזמנה #${order_number ?? orderId}
+          ${newNote.trim()}
 
-  ${newNote.trim()}
+          ───
+          ${isWhatsAppReplyEnabled 
+            ? `👇  לחץ כדי להשיב להודעה: 
+            ${waReplyLink}` 
+            : "🤖 לא ניתן להשיב להודעה זו"
+          }
+        `.trim();
 
-  ───
-  ${isWhatsAppReplyEnabled 
-    ? `👇  לחץ כדי להשיב להודעה: 
-    ${waReplyLink}` 
-    : "🤖 לא ניתן להשיב להודעה זו"
-  }
-`.trim();
+        await sendWhatsAppMessage(customerPhone, whatsappMessage);
+        
+        toast.success(translations.orderNotes.whatsappSuccess);
+        setNewNote("");
 
-        const response = await fetch(`${BASE_URL}/api/send-whatsapp`, {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: 
-            whatsappMessage,
-            phone: customerPhone.replace(/\D/g, "").replace(/^0/, '972')
-          })
+        // ALSO Add WhatsApp message as a note
+        await addNote({
+          note: `📱 ההודעה נשלחה דרך Mail & WhatsApp: \n\n ״${whatsappMessage}״`,
+          customer_note: true,
         });
-
-        if (response.ok) {
-          toast.success(translations.orderNotes.whatsappSuccess);
-          setNewNote("");
-
-          // ALSO Add WhatsApp message as a note
-          await addNote({
-            note: `📱 ההודעה נשלחה דרך Mail & WhatsApp: \n\n ״${whatsappMessage}״`,
-            customer_note: true,
-          });
-
-
-        } else {
-          throw new Error('Failed to send WhatsApp message');
-        }
       } else {
         await addNote({
           note: newNote.trim(),
