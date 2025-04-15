@@ -19,6 +19,7 @@ import { getUserData } from '../../services/user/user.service';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../config/firebase';
 import { sendWhatsAppMessage } from '../order/notes/OrderNotes';
+import { analytics, AnalyticsEvent } from '../../services/analytics';
 
 export const QR_MODE_PASS = 'GodMode2003';
 
@@ -188,7 +189,12 @@ const openWooAuthPopup = (cleanUrl: string) => {
   if (!showUrlInput) {
     return (
       <button
-        onClick={() => setShowUrlInput(true)}
+        onClick={() => {
+          setShowUrlInput(true);
+          if (process.env.NODE_ENV !== 'development') {
+            analytics.track(AnalyticsEvent.BUTTON_CLICK, { button: 'Login with Woo' });
+          }
+        }}
         className="group relative w-full flex items-center justify-center gap-3 px-8 py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 mb-0 mt-4"
       >
         <span className="font-bold mb-1">התחבר עם</span>

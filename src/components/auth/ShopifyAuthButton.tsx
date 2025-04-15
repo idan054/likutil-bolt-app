@@ -6,6 +6,7 @@ import { u } from 'framer-motion/client';
 import { BASE_URL, checkExistingUser, createFirebaseUser } from '../../services/auth/woo-auth';
 import toast from 'react-hot-toast';
 import { generateStorePassword } from '../../utils/auth/password';
+import { analytics, AnalyticsEvent } from '../../services/analytics';
 
 export const ShopifyAuthButton: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -96,7 +97,12 @@ export const ShopifyAuthButton: React.FC = () => {
   if (!showUrlInput) {
     return (
       <button
-        onClick={() => setShowUrlInput(true)}
+      onClick={() => {
+        setShowUrlInput(true);
+        if (process.env.NODE_ENV !== 'development') {
+          analytics.track(AnalyticsEvent.BUTTON_CLICK, { button: 'Login with Shopify' });
+        }
+      }}
         className="group relative w-full flex items-center justify-center gap-3 px-8 py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 mb-0 mt-4"
       >
         <span className="font-bold mb-1">התחבר עם</span>
