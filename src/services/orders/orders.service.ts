@@ -499,9 +499,10 @@ export const getFilteredOrders = async (
       const wcSettings = JSON.parse(localStorage.getItem("wc_settings"));
 
       if (wcSettings && wcSettings.storeUrl) {
-        const shopId = new URL(`https://${wcSettings.storeUrl}`).hostname.split(
+        const shopId = new URL(`https://${wcSettings.myShopifyUrl}`).hostname.split(
           "."
         )[0];
+        
         params.set("shopId", shopId); // Dynamically setting shopId
       } else {
         console.warn("wc_settings not found or storeUrl is missing.");
@@ -620,12 +621,20 @@ export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
           "Failed to fetch Shopify statuses, using fallback",
           error
         );
-        return [
-          { slug: "processing", name: "Processing" },
-          { slug: "fulfilled", name: "Fulfilled" },
-          { slug: "paid", name: "Paid" },
-          { slug: "cancelled", name: "Cancelled" },
-        ];
+        const shopifyStatuses: OrderStatus[] = [
+        // { slug: 'fulfilled', name: 'הושלם' },
+        // { slug: 'paid', name: 'ממתין לתשלום' },
+
+        { slug: 'pending', name: 'בטיפול' },
+        { slug: 'fulfilled', name: 'הושלם' },
+        // { slug: 'pending', name: 'ממתין לתשלום' },
+        // { slug: 'on-hold', name: 'ממתין' },
+        // { slug: 'cancelled', name: 'בוטל' },
+        // { slug: 'refunded', name: 'הוחזר' },
+        // { slug: 'failed', name: 'נכשל' },
+        // { slug: 'draft', name: 'טיוטה' },
+      ];
+      return shopifyStatuses
       }
     },
     STATUSES_CACHE_DURATION // Cache statuses longer

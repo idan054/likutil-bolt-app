@@ -23,6 +23,8 @@ interface ShopifyNoteEvent {
 
 export const getOrderNotes = async (settings: UserSettings | null, orderId: string): Promise<OrderNote[]> => {
   // const settingsRaw = localStorage.getItem("wc_settings");
+
+  
   
 
 

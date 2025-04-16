@@ -134,13 +134,13 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
         const whatsappMessage = `
           📝 שלום, התקבל עדכון מ
           ${settings?.storeUrl}
-          🛍️ להזמנה #${order_number ?? orderId}
+          🛍️ להזמנה #${settings?.authType == 'woo'? orderId: order_number }
 
-          ${newNote.trim()}
+${newNote.trim()}
 
           ───
           ${isWhatsAppReplyEnabled 
-            ? `👇  לחץ כדי להשיב להודעה: 
+            ? `*👇  לחץ כדי להשיב להודעה:* 
             ${waReplyLink}` 
             : "🤖 לא ניתן להשיב להודעה זו"
           }

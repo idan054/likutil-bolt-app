@@ -6,6 +6,7 @@ import { TruncatedText } from '../ui/TruncatedText';
 import { RoleBadge } from '../ui/RoleBadge';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { OrderSummary } from '../../types/order';
+import { StatusBadge } from '../ui/StatusBadge';
 
 interface OrderListItemProps {
   order: OrderSummary;
@@ -31,10 +32,19 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   return (
     <div 
       onClick={() => onSelect(order.id.toString())}
-      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-l-4 border-green-500' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'}`}
+      //  ||  order.status == 'fulfilled'
+      //  order.status == 'pending' ? 'bg-white' : 'bg-white/30'
+      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted? 'border-r-4 border-green-500/80' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' :  'bg-white' }`}
     >
 
       <div className="flex flex-col gap-1">
+      <div className="absolute top-2 left-2">
+      
+
+      {/*  USE FOR DEBUG!!!! */}
+        {/* <StatusBadge status={`${order.status}`} orderId={order.order_number.toString()} /> */}
+
+      </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-blue-900">#{order.order_number ?? order.id}</span>
@@ -45,11 +55,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
         <div className="flex items-center gap-1 text-sm text-gray-500">
           <Clock size={12} />
           <span>{formatTimeAgo(order.date_created)}</span>
-          {/* <span>{formatTimeAgo(order.date_created)} • {order.status}</span> */}
         </div>
       </div>
-
-      
     </div>
   );
 };

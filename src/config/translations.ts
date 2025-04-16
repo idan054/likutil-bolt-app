@@ -29,10 +29,11 @@ export const translations = {
   orderStatus: {
     processing: 'בטיפול',
     completed: 'הושלם',
+    fulfilled: 'הושלם',
     cancelled: 'בוטל',
     refunded: 'זוכה',
     failed: 'נכשל',
-    pending: 'ממתין',
+    pending: 'בטיפול',
     'on-hold': 'בהמתנה',
   },
   

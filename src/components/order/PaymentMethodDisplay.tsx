@@ -11,6 +11,7 @@ export const PaymentMethodDisplay: React.FC<PaymentMethodDisplayProps> = ({
   showHighlightedPaymentOnly = false 
 }) => {
   const isHighlightedPayment = paymentMethod.includes('מזומן') || 
+    paymentMethod.includes('תשלום בטלפון') || 
     paymentMethod.includes('העברה') || 
     paymentMethod.includes('בנקאית');
 

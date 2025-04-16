@@ -45,6 +45,7 @@ export const useSettings = () => {
 
       if (userSettings) {
         setSettings(userSettings);
+        
         settingsStorage.set(userSettings);
         
         // Fetch order statuses only if we don't have them cached
