@@ -10,6 +10,7 @@ interface ProcessingOrdersCounterProps {
   onGenerateSuperOrder: (orders: OrderSummary[]) => void;
   isGenerating?: boolean;
   completedOrdersCount: number;
+  selectedStatus: string | null;
 }
 
 export const ProcessingOrdersCounter: React.FC<
@@ -19,6 +20,7 @@ export const ProcessingOrdersCounter: React.FC<
   onGenerateSuperOrder,
   isGenerating = false,
   completedOrdersCount,
+  selectedStatus,
 }) => {
   const [isSuperOrderEnabled, setIsSuperOrderEnabled] = useState(false);
   const pendingOrdersCount = orders.length - completedOrdersCount;
@@ -40,7 +42,8 @@ export const ProcessingOrdersCounter: React.FC<
     >
       {/* Desktop Layout */}
       <div className="hidden sm:flex items-center justify-between">
-        <OrdersHeader count={pendingOrdersCount} icon={Package} />
+        <OrdersHeader count={pendingOrdersCount} icon={Package} selectedStatus={selectedStatus}
+ />
         <div className="flex items-center gap-4">
           <SuperOrderButton
             count={pendingOrdersCount}

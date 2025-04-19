@@ -1,6 +1,7 @@
 import { settingsStorage } from "../settings";
 import { ApiConfig } from "./types";
 import { UserSettings } from "../../types/settings";
+import { BASE_URL } from "../auth/woo-auth";
 
 // WooCommerce - Uses dynamic credentials
 const getWooApiConfig = (settings: UserSettings): ApiConfig => {
@@ -27,7 +28,7 @@ const getShopifyApiConfig = (settings: UserSettings): ApiConfig => {
   const accessToken = settings.accessToken; // Ensure token is set
 
   return {
-    baseUrl: "https://api.likutil.co.il",
+    baseUrl: BASE_URL,
     headers: {
       "X-Shopify-Access-Token": accessToken,
       "Content-Type": "application/json",

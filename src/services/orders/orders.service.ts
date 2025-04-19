@@ -7,6 +7,7 @@ import type {
 } from "../../types/order";
 import { JSONPath } from "jsonpath-plus";
 import { getApiConfig } from "../api/config";
+import { OrderDetails } from "../../components/OrderDetails";
 
 // Cache configuration
 const ITEMS_PER_PAGE = 15;
@@ -208,10 +209,16 @@ const mapOrder = (
       : [];
 
     // Status handling
-    const status =
+    let status =
       [order.fulfillment_status, order.financial_status, order.status].find(
         (s) => s
       ) || "processing";
+
+      // The items that retrive set on SERVER
+      // Endpoint /shopify_orders?status=
+      if (status !== "fulfilled") {
+        status = "pending";
+      }
 
 
     // Build base order
@@ -451,6 +458,8 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
     `[orders.service] Getting order by ID: ${orderId} for platform: ${platform}`
   );
 
+  
+
   return dedupedApiRequest(cacheKey, async () => {
     const response = await apiClient<any>({
       method: "GET",
@@ -466,7 +475,8 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
  */
 export const getFilteredOrders = async (
   status: string | null,
-  metadataConfigs?: MetadataConfig[]
+  metadataConfigs?: MetadataConfig[],
+  order_number?: string | null,
 ): Promise<OrderSummary[]> => {
   const config = getApiConfig();
   const platform = config.platform;
@@ -494,6 +504,10 @@ export const getFilteredOrders = async (
       params.append("status", status);
     }
 
+    if (order_number && order_number !== "null") {
+      params.append("order_name", order_number);
+    }
+
     // Special case for Shopify
     if (platform === "shopify") {
       const wcSettings = JSON.parse(localStorage.getItem("wc_settings"));
@@ -508,6 +522,8 @@ export const getFilteredOrders = async (
         console.warn("wc_settings not found or storeUrl is missing.");
       }
     }
+
+
 
     const response = await apiClient<any>({
       method: "GET",
@@ -558,9 +574,19 @@ export const searchOrderById = async (
     `[orders.search.service] Searching for order ID: ${orderId} on platform: ${platform}`
   );
 
+  
   return dedupedApiRequest(cacheKey, async () => {
     try {
-      const order = await getOrderById(orderId);
+          let order;
+          
+          if (platform === "shopify") {
+          console.log(`B`);
+            order = (await getFilteredOrders('null',undefined, orderId) as OrderDetails[])[0];
+          } else {
+              
+              order = await getOrderById(orderId);
+            }
+            
       return processOrderMetadata(order, metadataConfigs || [], platform);
     } catch (error) {
       console.error(

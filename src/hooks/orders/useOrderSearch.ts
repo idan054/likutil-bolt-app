@@ -5,18 +5,24 @@ import type { OrderDetails } from '../../types/order';
 import { searchOrderById } from '../../services/orders/orders.service';
 import { useGetFirebaseMetadata } from '../useGetFirebaseMetadata';
 import { useAppState } from '../useAppState';
+import { useSettings } from '../useSettings';
 
 export const useOrderSearch = () => {
   const { orders,  } = useAppState();
-
-
+  const { settings: userSettings } = useSettings();
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const { options } = useGetFirebaseMetadata();
 
 
   const searchOrder = async (orderId: string) => {
-    const orderExists = orders.find(order => order.id.toString() === orderId);
+    orderId = orderId.trim().replace('#', '');
+    let isShopify = userSettings?.authType;
+
+    console.log('Available order IDs:', orders.map(order => order.id).join(', '));
+    console.log('Available order IDs:', orders.map(order => order.order_number).join(', '));
+
+    const orderExists = orders.find(order => (isShopify ? order.order_number.toString() : order.id.toString()) === orderId);
     if(orderExists){
       setOrder(orderExists); 
       return orderExists;

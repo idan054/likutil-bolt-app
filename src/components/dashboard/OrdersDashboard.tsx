@@ -192,6 +192,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           isGenerating={isGeneratingSuperOrder}
           completedOrdersCount={completedOrdersCount}
           isRefetching={isRefetching}
+          selectedStatus={selectedStatus}
+
         />
         <div className="flex flex-col md:flex-row gap-1 mt-6">
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>

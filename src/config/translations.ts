@@ -1,7 +1,7 @@
 export const translations = {
   title: 'מערכת ניהול הזמנות',
   subtitle: 'חפש הזמנה לפי מספר',
-  searchPlaceholder: 'הזן מספר הזמנה...',
+  // searchPlaceholder: 'הזן מספר הזמנה...',
   orderNumber: 'הזמנה ',
   orderedOn: 'הוזמן ',
   customerDetails: 'פרטי לקוח',
@@ -25,6 +25,8 @@ export const translations = {
     administrator: 'מנהל',
     shop_manager: 'מנהל חנות',
   },
+
+
   
   orderStatus: {
     processing: 'בטיפול',
