@@ -10,7 +10,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { DevPage } from './components/dev/DevPage';
 
 
-export const APP_VERSION = '06.04.25 | Version 1.2.1';
+export const APP_VERSION = '19.04.25 | Version 1.2.2';
 
 // FROM MAC
 export const App: React.FC = () => {

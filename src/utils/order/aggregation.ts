@@ -11,20 +11,21 @@ export const aggregateOrderItems = (orders: OrderSummary[]): SuperOrderItem[] =>
 
       if (existing) {
         existing.quantity += item.quantity;
-        if (!existing.orderIds.includes(order.id)) {
-          existing.orderIds.push(order.id);
+        if (!existing.orderIds.includes(order.order_number ?? order.id)) {
+          existing.orderIds.push(order.order_number ?? order.id);
         }
       } else {
         // Extract slug from permalink
         const slug = item.permalink?.split('/').filter(Boolean).pop() || '';
+        console.log('item:', item);
         
         itemsMap.set(key, {
           id: key,
           sku: item.sku || '',
           name: item.name,
           quantity: item.quantity,
-          image: item.image?.src || '',
-          orderIds: [order.id],
+          image: item.image?.src || item?.image,
+          orderIds: [order.order_number ?? order.id],
           slug: slug,
           productId: item.product_id,
         });
