@@ -10,8 +10,8 @@ export const getUserSettings = async (
     const docRef = doc(db, "users", userId);
     const docSnap = await getDoc(docRef);
 
-    // console.log("userId", userId);
-    // console.log("docSnap", docSnap.data());
+    console.log("userId", userId);
+    console.log("docSnap", docSnap.data());
 
     if (docSnap.exists()) {
       const userData = docSnap.data();
@@ -20,11 +20,11 @@ export const getUserSettings = async (
 
       // Create settings object from user data
       const settings: UserSettings = {
-        storeUrl: userData.storeUrl,
-        consumerKey: userData?.consumerKey,
+        storeUrl: userData?.storeUrl,
         businessPhone: userData?.businessPhone,
         accessToken: userData?.accessToken,
-        consumerSecret: userData?.consumerSecret,
+        consumerKey: userData?.authType == 'woo' ? userData?.consumerKey  : "X",
+        consumerSecret: userData?.authType == 'woo' ? userData?.consumerSecret  : "X",
         lastUpdated: userData?.lastLogin || userData?.createdAt,
         authType: userData?.authType,
         favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`,
@@ -32,7 +32,7 @@ export const getUserSettings = async (
       };
 
       // Save to local storage for API client
-      // console.log("settings", settings);
+      console.log("Save settings... ", settings);
 
       // ANY IDEA Y THIS NOT WORKS?
       settingsStorage.set(settings);

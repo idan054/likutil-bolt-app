@@ -40,7 +40,7 @@ export const useSettings = () => {
 
     try {
       const userSettings = await getUserSettings(userId);
-      // console.log('[useSettings.ts] userSettings:', userSettings)
+      console.log('[useSettings.ts] userSettings:', userSettings)
     
 
       if (userSettings) {

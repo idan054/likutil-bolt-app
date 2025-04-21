@@ -16,7 +16,16 @@ export const apiClient = async <T>({
   }
 
   const { baseUrl, headers, platform } = config;
-  const url = `${baseUrl}${path}`; // Append path without modification
+
+  // 👇 Build final URL (use proxy only if it's a WooCommerce API path)
+const targetUrl = `${baseUrl}${path}`;
+const isWooRequest =
+  platform === "woo" && targetUrl.includes("/wp-json/wc/");
+
+const url = isWooRequest
+  ? `https://api.likutil.co.il/proxy?url=${encodeURIComponent(targetUrl)}`
+  // ? targetUrl
+  : targetUrl;
 
   // Setup headers dynamically for Shopify & WooCommerce
   const requestHeaders = {
@@ -30,13 +39,13 @@ export const apiClient = async <T>({
   };
 
   // 🔥 Debugging log (optional)
-  // console.log("[DEBUG] API Request:", {
-  //   url,
-  //   method,
-  //   headers: requestHeaders,
-  //   body: body || "No body",
-  //   platform,
-  // });
+  console.log("[DEBUG] API Request:", {
+    url,
+    method,
+    headers: requestHeaders,
+    body: body || "No body",
+    platform,
+  });
 
   try {
     const response = await fetch(url, {

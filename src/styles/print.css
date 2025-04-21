@@ -1,0 +1,44 @@
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all other elements when printing */
+  body > *:not(.print\:block) {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Maintain colors and backgrounds in print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure text remains black for better readability */
+  .text-gray-500,
+  .text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  /* Maintain border visibility */
+  .border {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Ensure blue accent color prints well */
+  .text-blue-600 {
+    color: #2563eb !important;
+  }
+}

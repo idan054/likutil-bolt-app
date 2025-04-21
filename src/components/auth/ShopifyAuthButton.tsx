@@ -12,7 +12,11 @@ export const ShopifyAuthButton: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [storeUrl, setStoreUrl] = useState(() => {
     const cachedUrl = localStorage.getItem('shopify_store_url');
-    return cachedUrl || '';
+    
+    const queryParams = new URLSearchParams(window.location.search);
+    const shop = queryParams.get('shop');
+
+    return shop || cachedUrl || '';
   });
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +51,9 @@ export const ShopifyAuthButton: React.FC = () => {
     // Should be genereted on Server (:
     const password = generateStorePassword(cleanUrl);
     
-    return `https://${shopifyId}.myshopify.com/admin/oauth/authorize?client_id=b8ab9b43d4b7011b511ef8b83ee9c97a&scope=read_orders,write_orders,read_fulfillments,read_assigned_fulfillment_orders,read_customers,read_products,read_inventory,read_locations,read_shipping&redirect_uri=${BASE_URL}/shopify-auth&state=${cleanUrl}/${oneTimeToken}/${phone}/${isDevMode}/${password}`;
+    let authUrl = `https://${shopifyId}.myshopify.com/admin/oauth/authorize?client_id=b8ab9b43d4b7011b511ef8b83ee9c97a&scope=read_orders,write_orders,read_fulfillments,read_assigned_fulfillment_orders,read_customers,read_products,read_inventory,read_locations,read_shipping&redirect_uri=${BASE_URL}/shopify-auth&state=${cleanUrl}/${oneTimeToken}/${phone}/${isDevMode}/${password}`
+    console.log('authUrl', authUrl)
+    return authUrl;
   };
 
   const openShopifyAuthPopup = async (cleanUrl: string) => {

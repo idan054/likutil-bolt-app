@@ -2,6 +2,7 @@ import { settingsStorage } from "../settings";
 import { ApiConfig } from "./types";
 import { UserSettings } from "../../types/settings";
 import { BASE_URL } from "../auth/woo-auth";
+import { useSettings } from "../../hooks/useSettings";
 
 // WooCommerce - Uses dynamic credentials
 const getWooApiConfig = (settings: UserSettings): ApiConfig => {
@@ -41,6 +42,8 @@ const getShopifyApiConfig = (settings: UserSettings): ApiConfig => {
 // Fetch authType dynamically & return appropriate API config
 export const getApiConfig = (): ApiConfig => {
   const settings = settingsStorage.get();
+  // const { settings} = useSettings();
+
 
   if (!settings) {
     throw new Error("No API configuration found");
@@ -48,14 +51,14 @@ export const getApiConfig = (): ApiConfig => {
 
   const authType = settings.authType?.toLowerCase(); // Normalize case
 
-  // console.log("[DEBUG] Fetched settings:", settings);
-  // console.log("[DEBUG] authType:", authType);
+  console.log("[DEBUG] Fetched settings:", settings);
+  console.log("[DEBUG] authType:", authType);
 
   if (authType === "woo") {
-    // console.log("[DEBUG] Using WooCommerce API config.");
+    console.log("[DEBUG] Using WooCommerce API config.");
     return getWooApiConfig(settings);
   } else if (authType === "shopify") {
-    // console.log("[DEBUG] Using Shopify API config.");
+    console.log("[DEBUG] Using Shopify API config.");
     return getShopifyApiConfig(settings);
   }
 

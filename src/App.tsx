@@ -7,10 +7,10 @@ import { Header } from './components/layout/Header';
 import { OfflineIndicator, ServerOfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
-import { DevPage } from './components/dev/DevPage';
+// import { DevPage } from './components/dev/DevPage';
 
 
-export const APP_VERSION = '19.04.25 | Version 1.2.2';
+export const APP_VERSION = '19.04.25 | Version 1.2.';
 
 // FROM MAC
 export const App: React.FC = () => {
@@ -29,7 +29,7 @@ export const App: React.FC = () => {
       <Routes>
         <Route 
           path="/dev" 
-          element={<DevPage />} 
+          // element={<DevPage />} 
         />
         <Route
           path="/*"
