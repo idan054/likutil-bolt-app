@@ -23,7 +23,7 @@ const isWooRequest =
   platform === "woo" && targetUrl.includes("/wp-json/wc/");
 
 const url = isWooRequest
-  ? `https://api.likutil.co.il/proxy?url=${encodeURIComponent(targetUrl)}`
+  ? `https://proxy.corsfix.com/?${encodeURIComponent(targetUrl)}`
   // ? targetUrl
   : targetUrl;
 

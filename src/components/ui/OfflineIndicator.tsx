@@ -26,6 +26,7 @@ export const ServerOfflineIndicator: React.FC = () => {
         const response = await fetch(BASE_URL);
         setIsOnline(response.ok);
       } catch (error) {
+        console.log('Failed to check server status: ', error);
         setIsOnline(false);
       }
       setLastChecked(new Date());
