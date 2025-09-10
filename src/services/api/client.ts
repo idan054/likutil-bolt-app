@@ -22,9 +22,11 @@ const targetUrl = `${baseUrl}${path}`;
 const isWooRequest =
   platform === "woo" && targetUrl.includes("/wp-json/wc/");
 
+
+  
 const url = isWooRequest
-  ? `https://proxy.corsfix.com/?${encodeURIComponent(targetUrl)}`
-  // ? targetUrl
+  // ? `https://proxy.corsfix.com/?${encodeURIComponent(targetUrl)}`
+  ? targetUrl
   : targetUrl;
 
   // Setup headers dynamically for Shopify & WooCommerce
