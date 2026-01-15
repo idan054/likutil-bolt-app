@@ -37,8 +37,6 @@ export const FastDeliveryRulesWidget: React.FC = () => {
     setOpen(false);
   };
 
-  if (!canOpen) return null;
-
   return (
     <>
       <button
