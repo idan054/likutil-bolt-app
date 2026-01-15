@@ -57,6 +57,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
             <DeliveryTypeBadge 
               shippingMethodTitle={order.shipping_lines?.[0]?.method_title} 
               shippingMethodId={order.shipping_lines?.[0]?.method_id}
+              shippingInstanceId={(order.shipping_lines?.[0] as any)?.instance_id}
               shippingCost={order.shipping_lines?.[0]?.total}
               deliveryType={decision?.deliveryType} 
               decisionState={decision?.decisionState} 

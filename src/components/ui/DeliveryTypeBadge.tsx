@@ -6,6 +6,7 @@ interface DeliveryTypeBadgeProps {
   // fallback (when no decision exists yet)
   shippingMethodTitle?: string | null;
   shippingMethodId?: string | null;
+  shippingInstanceId?: string | number | null; // WooCommerce instance_id - most reliable
   shippingCost?: string | number | null; // For fallback detection by price
 
   // preferred (when decision exists)
@@ -14,6 +15,9 @@ interface DeliveryTypeBadgeProps {
   checks?: DeliveryCheck[];
   className?: string;
 }
+
+// Configure your fast delivery instance IDs here
+const FAST_DELIVERY_INSTANCE_IDS = [27, "27"]; // spider3d.co.il מהיר לי
 
 const normalize = (v: string) => v.trim().toLowerCase();
 
@@ -58,17 +62,22 @@ const getIcon = (type: BadgeType) => {
 export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   shippingMethodTitle,
   shippingMethodId,
+  shippingInstanceId,
   shippingCost,
   deliveryType,
   decisionState,
   checks,
   className = "",
 }) => {
-  // Check if shipping cost indicates fast delivery (e.g., ₪45)
+  // Check if instance_id matches fast delivery (most reliable)
+  const isFastByInstanceId = shippingInstanceId != null && 
+    FAST_DELIVERY_INSTANCE_IDS.includes(Number(shippingInstanceId));
+
+  // Check if shipping cost indicates fast delivery (e.g., ₪45) - less reliable fallback
   const isFastByPrice = (() => {
     if (!shippingCost) return false;
     const cost = typeof shippingCost === 'string' ? parseFloat(shippingCost) : shippingCost;
-    return cost >= 40 && cost <= 50; // Typical fast delivery price range
+    return cost >= 40 && cost <= 50;
   })();
 
   const derivedType: BadgeType = (() => {
@@ -80,7 +89,8 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
     if (decisionState === "needs_review") return "needs_review";
     if (deliveryType) return deliveryType === "fast" ? "fast" : "regular";
     
-    // Fallbacks: title or price
+    // Fallbacks: instance_id (best), title, price (worst)
+    if (isFastByInstanceId) return "fast";
     if (shippingMethodTitle && isFastMethodTitle(shippingMethodTitle)) return "fast";
     if (isFastByPrice) return "fast";
     
