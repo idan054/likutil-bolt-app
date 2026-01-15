@@ -300,18 +300,23 @@ const mapOrder = (
     shipping.phone = order.shipping.phone || "";
   }
 
-  // Convert to Date object - SET UP ON date.ts !!!!!!
-  // const gmtDate = new Date(order.date_created_gmt);
-  // const timezoneOffset = new Date().getTimezoneOffset();
-  // const localDate = new Date(gmtDate.getTime() - timezoneOffset * 60000);
+  // Ensure GMT dates are properly marked as UTC by appending 'Z' if missing
+  // This is needed because WooCommerce returns date_created_gmt without timezone suffix
+  const ensureUtcSuffix = (dateStr: string): string => {
+    if (!dateStr) return dateStr;
+    // If it doesn't end with Z or timezone offset (+HH:mm), add Z
+    if (!/[Zz]$/.test(dateStr) && !/[+-]\d{2}:\d{2}$/.test(dateStr)) {
+      return dateStr + 'Z';
+    }
+    return dateStr;
+  };
 
   return {
     id: order.id,
     status: order.status || "processing",
     total: order.total || "0",
     customer_id: order.customer_id || null,
-    date_created: order.date_created_gmt,
-    // date_created: localDate.toLocaleString(), // Convert to local time
+    date_created: ensureUtcSuffix(order.date_created_gmt),
     billing,
     shipping,
     customer_note: order.customer_note || "",
