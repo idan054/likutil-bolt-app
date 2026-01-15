@@ -7,6 +7,8 @@ import { RoleBadge } from '../ui/RoleBadge';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { OrderSummary } from '../../types/order';
 import { StatusBadge } from '../ui/StatusBadge';
+import { DeliveryTypeBadge } from '../ui/DeliveryTypeBadge';
+import { useOrderFastDeliveryDecision } from '../../hooks/useOrderFastDeliveryDecision';
 
 interface OrderListItemProps {
   order: OrderSummary;
@@ -22,6 +24,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   selectedOrderId
 }) => {
   const { customer, isLoading, refetch } = useCustomerDetails(order.customer_id);
+  const { decision } = useOrderFastDeliveryDecision(order);
 
   useEffect(() => {
     if (!customer && !isLoading) {
@@ -50,7 +53,10 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
             <span className="text-base font-bold text-blue-900">#{order.order_number ?? order.id}</span>
             <span className="text-base text-gray-900">{order.billing.first_name} {order.billing.last_name}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <DeliveryTypeBadge shippingMethodTitle={order.shipping_lines?.[0]?.method_title} deliveryType={decision?.deliveryType} decisionState={decision?.decisionState} checks={decision?.checks} />
           {isCompleted && <CheckCircle size={14} className="text-green-500" />}
+          </div>
         </div>
         <div className="flex items-center gap-1 text-sm text-gray-500">
           <Clock size={12} />

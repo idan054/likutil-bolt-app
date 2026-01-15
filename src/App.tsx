@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthWrapper } from './components/auth/AuthWrapper';
 import { OrdersDashboard } from './components/dashboard/OrdersDashboard';
 import { Header } from './components/layout/Header';
+import { FastDeliveryRulesWidget } from './components/fastDelivery/FastDeliveryRulesWidget';
 import { OfflineIndicator, ServerOfflineIndicator } from './components/ui/OfflineIndicator';
 import { useAppState } from './hooks/useAppState';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -77,6 +78,7 @@ export const App: React.FC = () => {
                 <div className="container mx-auto px-4 py-8">
                   <Header />
                   <OrdersDashboard />
+                  <FastDeliveryRulesWidget />
                 </div>
               </div>
             </AuthWrapper>

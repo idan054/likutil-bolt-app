@@ -8,6 +8,7 @@ import { OrderSummary } from "./order/OrderSummary";
 import { CustomerSection } from "./customer/CustomerSection";
 import { DeliverySelector } from "./delivery/DeliverySelector";
 import { OrderNotes } from "./order/notes/OrderNotes";
+import { FastDeliveryDecisionCard } from "./fastDelivery/FastDeliveryDecisionCard";
 import { LocalPickupAlert } from "./ui/LocalPickupAlert";
 import { useOrderCompletion } from "../hooks/useOrderCompletion";
 import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
@@ -19,7 +20,7 @@ import type { OrderDetails as OrderDetailType } from "../types/order";
 interface OrderDetailsProps {
   order: OrderDetailType;
   onReset: () => void;
-  onComplete: () => void;
+  onComplete: (updatedOrder?: any) => void;
 }
 
 export const OrderDetails: React.FC<OrderDetailsProps> = ({
@@ -43,8 +44,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
   const { isCompleting, completeOrder } = useOrderCompletion({
     orderId: order.id,
-    onSuccess: () => {
-      onComplete();
+    onSuccess: (updatedOrder) => {
+      onComplete(updatedOrder);
       onReset();
     },
   });
@@ -105,6 +106,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             customerId={order.customer_id}
             onReset={onReset}
           />
+          <FastDeliveryDecisionCard order={order} />
+
           <CustomerNote note={order.customer_note} />
 
           <OrderItems items={order.line_items} />
