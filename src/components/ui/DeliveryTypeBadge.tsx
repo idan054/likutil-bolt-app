@@ -6,6 +6,7 @@ interface DeliveryTypeBadgeProps {
   // fallback (when no decision exists yet)
   shippingMethodTitle?: string | null;
   shippingMethodId?: string | null;
+  shippingCost?: string | number | null; // For fallback detection by price
 
   // preferred (when decision exists)
   deliveryType?: DeliveryType;
@@ -57,11 +58,19 @@ const getIcon = (type: BadgeType) => {
 export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   shippingMethodTitle,
   shippingMethodId,
+  shippingCost,
   deliveryType,
   decisionState,
   checks,
   className = "",
 }) => {
+  // Check if shipping cost indicates fast delivery (e.g., ₪45)
+  const isFastByPrice = (() => {
+    if (!shippingCost) return false;
+    const cost = typeof shippingCost === 'string' ? parseFloat(shippingCost) : shippingCost;
+    return cost >= 40 && cost <= 50; // Typical fast delivery price range
+  })();
+
   const derivedType: BadgeType = (() => {
     // Check for pickup first (from method_id or title)
     if (shippingMethodId === "local_pickup") return "pickup";
@@ -70,8 +79,12 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
     // Then check decision state
     if (decisionState === "needs_review") return "needs_review";
     if (deliveryType) return deliveryType === "fast" ? "fast" : "regular";
-    if (!shippingMethodTitle) return "regular";
-    return isFastMethodTitle(shippingMethodTitle) ? "fast" : "regular";
+    
+    // Fallbacks: title or price
+    if (shippingMethodTitle && isFastMethodTitle(shippingMethodTitle)) return "fast";
+    if (isFastByPrice) return "fast";
+    
+    return "regular";
   })();
 
   const label = (() => {
