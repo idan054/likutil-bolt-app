@@ -14,18 +14,17 @@ export const WhatsAppPreview: React.FC<WhatsAppPreviewProps> = ({
   storeUrl,
   isWhatsAppReplyEnabled,
 }) => {
-  const previewMessage = `
-📝 שלום, התקבל עדכון מ
-${storeUrl}
-🛍️ להזמנה #${orderId}
+  const previewMessage = `היי שלום לך! 👋
+
+יש לך הודעה בקשר להזמנה מספר ${orderId}
 
 ${message.trim()}
 
-───
-${isWhatsAppReplyEnabled 
-  ? '👇  לחץ כדי להשיב להודעה:'
-  : '🤖 לא ניתן להשיב להודעה זו'
-}`.trim();
+נא לא להשיב להודעה זו.
+
+במקרים דחופים,
+
+ניתן להתקשר אלינו לטלפון: 052-250-9900. 😊`;
 
   return (
     <div className="mt-2 p-0 rounded-lg w-full">
@@ -42,7 +41,7 @@ ${isWhatsAppReplyEnabled
             )}
           </div>
           <div className="text-[#667781] text-[0.6875rem] text-right mt-1">
-            {new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+            {new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}
           </div>
         </div>
       </div>

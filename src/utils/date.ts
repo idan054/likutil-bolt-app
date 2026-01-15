@@ -118,6 +118,7 @@ export const formatDate = (dateString: string): string => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Jerusalem',
   });
 };
 
@@ -125,13 +126,17 @@ export const formatShortDate = (dateString: string): string => {
   const date = tryParseDate(dateString);
   if (!date) return dateString;
 
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear().toString().slice(2);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  // Use Intl.DateTimeFormat with Israel timezone for consistent formatting
+  const formatter = new Intl.DateTimeFormat('he-IL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jerusalem',
+  });
+  
+  return formatter.format(date);
 };
 
 export const formatTimeAgo = (date: Date | string): string => {

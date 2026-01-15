@@ -25,21 +25,34 @@ interface OrderNotesProps {
   customerPhone?: string;
 }
 
-// Add this new function before the OrderNotes component
+// GreenAPI Configuration
+const GREENAPI_CONFIG = {
+  apiUrl: 'https://7105.api.greenapi.com',
+  idInstance: '7105474587',
+  apiTokenInstance: '79edee4743dc4946a148eff95b599c0d3bd14f2876714a52b3',
+};
+
+// Send WhatsApp message via GreenAPI
 export async function sendWhatsAppMessage(toPhone: string, message: string) {
-  const response = await fetch(`${BASE_URL}/api/send-whatsapp`, {
+  const phoneNumber = toPhone.replace(/\D/g, "").replace(/^0/, '972');
+  const chatId = `${phoneNumber}@c.us`;
+  
+  const url = `${GREENAPI_CONFIG.apiUrl}/waInstance${GREENAPI_CONFIG.idInstance}/sendMessage/${GREENAPI_CONFIG.apiTokenInstance}`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'accept': 'application/json',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      message,
-      phone: toPhone.replace(/\D/g, "").replace(/^0/, '972')
+      chatId,
+      message
     })
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('GreenAPI Error:', errorText);
     throw new Error('Failed to send WhatsApp message');
   }
 
@@ -131,20 +144,18 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
     try {
       if (isWhatsAppNote && customerPhone) {
         const waReplyLink = await generateWhatsAppLink();
-        const whatsappMessage = `
-          📝 שלום, התקבל עדכון מ
-          ${settings?.storeUrl}
-          🛍️ להזמנה #${settings?.authType == 'woo'? orderId: order_number }
+        const orderNumber = settings?.authType == 'woo' ? orderId : order_number;
+        const whatsappMessage = `היי שלום לך! 👋
+
+יש לך הודעה בקשר להזמנה מספר ${orderNumber}
 
 ${newNote.trim()}
 
-          ───
-          ${isWhatsAppReplyEnabled 
-            ? `*👇  לחץ כדי להשיב להודעה:* 
-            ${waReplyLink}` 
-            : "🤖 לא ניתן להשיב להודעה זו"
-          }
-        `.trim();
+נא לא להשיב להודעה זו.
+
+במקרים דחופים,
+
+ניתן להתקשר אלינו לטלפון: 052-250-9900. 😊`;
 
         await sendWhatsAppMessage(customerPhone, whatsappMessage);
         
