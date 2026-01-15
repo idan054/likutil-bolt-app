@@ -25,3 +25,8 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Broken submodules (not needed for build)
+alon-test/
+bobtests/
+bolt2/
