@@ -34,8 +34,9 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       const d = await getOrderDeliveryDecision(settings.storeUrl, Number(order.id));
       decisionCache.set(cacheKey, d);
       setDecision(d);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error('[FastDelivery] Failed to load decision:', e);
+      // Don't show toast - this is expected for new orders
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +142,8 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         });
       }
     } catch (e) {
-      toast.error("שגיאה בהחלטת מהיר לי");
+      console.error('[FastDelivery] autoDecideIfNeeded error:', e);
+      // Only log to console, don't bother user with toast for background auto-decision
     } finally {
       setIsLoading(false);
     }
