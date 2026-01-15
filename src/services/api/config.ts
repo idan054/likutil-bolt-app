@@ -4,13 +4,25 @@ import { UserSettings } from "../../types/settings";
 import { BASE_URL } from "../auth/woo-auth";
 import { useSettings } from "../../hooks/useSettings";
 
+// Helper to normalize store URL - adds www. if missing to prevent CORS redirect issues
+const normalizeStoreUrl = (url: string): string => {
+  // If it already has www., return as is
+  if (url.startsWith('www.')) {
+    return url;
+  }
+  // Add www. prefix to prevent redirect issues
+  return `www.${url}`;
+};
+
 // WooCommerce - Uses dynamic credentials
 const getWooApiConfig = (settings: UserSettings): ApiConfig => {
   if (!settings.storeUrl || !settings.consumerKey || !settings.consumerSecret) {
     throw new Error("Incomplete WooCommerce settings.");
   }
 
-  const baseUrl = `https://${settings.storeUrl}/wp-json/wc/v3`;
+  // Normalize URL to include www. to prevent CORS redirect issues
+  const normalizedUrl = normalizeStoreUrl(settings.storeUrl);
+  const baseUrl = `https://${normalizedUrl}/wp-json/wc/v3`;
   const auth = btoa(`${settings.consumerKey}:${settings.consumerSecret}`);
 
   return {
