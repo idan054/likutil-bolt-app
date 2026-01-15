@@ -12,7 +12,8 @@ export const sanitizeUrl = (url: string): string => {
   let cleanUrl = url.replace(/^https?:\/\//, '');
 
   // Remove www. prefix if present
-  cleanUrl = cleanUrl.replace(/^www\./, '');
+  // NOTE: Commented out - removing www. causes CORS redirect issues on some sites
+  // cleanUrl = cleanUrl.replace(/^www\./, '');
 
   // Remove everything after the first slash
   cleanUrl = cleanUrl.split('/')[0];
