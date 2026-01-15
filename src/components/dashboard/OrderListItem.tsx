@@ -54,7 +54,13 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
             <span className="text-base text-gray-900">{order.billing.first_name} {order.billing.last_name}</span>
           </div>
           <div className="flex items-center gap-2">
-            <DeliveryTypeBadge shippingMethodTitle={order.shipping_lines?.[0]?.method_title} deliveryType={decision?.deliveryType} decisionState={decision?.decisionState} checks={decision?.checks} />
+            <DeliveryTypeBadge 
+              shippingMethodTitle={order.shipping_lines?.[0]?.method_title} 
+              shippingMethodId={order.shipping_lines?.[0]?.method_id}
+              deliveryType={decision?.deliveryType} 
+              decisionState={decision?.decisionState} 
+              checks={decision?.checks} 
+            />
           {isCompleted && <CheckCircle size={14} className="text-green-500" />}
           </div>
         </div>
