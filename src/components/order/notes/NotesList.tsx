@@ -25,7 +25,11 @@ export const NotesList: React.FC<NotesListProps> = ({ notes, isLoading }) => {
   return (
     <div className="space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
       {notes
-        .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
+        .sort((a, b) => {
+          const tb = new Date(b.date_created).getTime();
+          const ta = new Date(a.date_created).getTime();
+          return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+        })
         .map((note) => (
           <div 
             key={note.id} 

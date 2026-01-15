@@ -15,6 +15,7 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { CheckCircle, Loader2, Printer, Truck } from "lucide-react";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
+import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 
 interface OrderDetailsProps {
@@ -40,7 +41,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
   const isLocalPickup = order.shipping_lines[0]?.method_id === "local_pickup";
 
-  
+  // Get fast delivery decision for auto-selecting mahirLi
+  const { decision } = useOrderFastDeliveryDecision(order);
 
   const { isCompleting, completeOrder } = useOrderCompletion({
     orderId: order.id,
@@ -68,9 +70,16 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   });
 
   useEffect(() => {
-    
-    setSelectedDeliveryProvider(null); // Reset provider when order changes
+    // Reset provider when order changes
+    setSelectedDeliveryProvider(null);
   }, [order.id]);
+
+  // Auto-select mahirLi when fast delivery decision is active
+  useEffect(() => {
+    if (decision?.deliveryType === 'fast' && !selectedDeliveryProvider) {
+      setSelectedDeliveryProvider('mahirLi');
+    }
+  }, [decision?.deliveryType, selectedDeliveryProvider]);
 
   useEffect(() => {
     resetMessaging();
