@@ -166,8 +166,11 @@ export const createDeliveryFormatDate = (dateString: string): string => {
   const date = tryParseDate(dateString);
   if (!date) return dateString;
 
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
+  // Use UTC methods to avoid timezone shifts
+  // The date from WooCommerce is in UTC (date_created_gmt with 'Z' suffix)
+  const day = date.getUTCDate().toString().padStart(2, '0');
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const year = date.getUTCFullYear();
   return `${year}-${month}-${day}`;
 };
+
