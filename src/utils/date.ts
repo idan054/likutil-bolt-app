@@ -163,11 +163,19 @@ export const formatDateWithTimeAgo = (dateString: string): string => {
 };
 
 export const createDeliveryFormatDate = (dateString: string): string => {
+  if (!dateString) return dateString;
+
+  // Try to match ISO date pattern (YYYY-MM-DD) directly from string
+  // This avoids ANY timezone conversion issues if the string is already formatted correctly
+  const isoMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
   const date = tryParseDate(dateString);
   if (!date) return dateString;
 
-  // Use UTC methods to avoid timezone shifts
-  // The date from WooCommerce is in UTC (date_created_gmt with 'Z' suffix)
+  // Fallback to UTC methods if regex fails
   const day = date.getUTCDate().toString().padStart(2, '0');
   const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
   const year = date.getUTCFullYear();
