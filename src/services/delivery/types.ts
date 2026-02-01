@@ -22,6 +22,11 @@ export interface DeliveryTaskRequest {
     phone: string;
     email: string;
   };
+  business: {
+    address: string;
+    city: string;
+    name: string;
+  };
 }
 
 export interface DeliveryTaskResponse {
