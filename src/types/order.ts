@@ -48,6 +48,8 @@ export interface OrderSummary {
     city: string;
   };
   date_created: string;
+  date_modified?: string;
+  date_completed?: string;
   shipping_lines: Array<{
     method_title: string;
   }>;

@@ -7,6 +7,8 @@ export const mapOrderToDeliveryTask = (
   packNum: string = "1", // Default to 1 package
   deliveryType: string = "client" 
 ): DeliveryTaskRequest => {
+  const deliveryDate =
+    order.date_completed || order.date_modified || order.date_created;
   const shippingAddress =
     order.shipping.address_1?.trim() ||
     order.shipping.address_2?.trim() ||
@@ -37,7 +39,7 @@ export const mapOrderToDeliveryTask = (
     delivery_type: deliveryType,
     id: order.id.toString(),
     number: order.id.toString(),
-    date_created: createDeliveryFormatDate(order.date_created),
+    date_created: createDeliveryFormatDate(deliveryDate),
     customer_note: order.customer_note || "",
     shipping: {
       first_name: shippingFirstName,
