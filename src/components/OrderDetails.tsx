@@ -39,14 +39,17 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     string | null
   >(null);
 
-  const shippingMethodId = order.shipping_lines[0]?.method_id?.toLowerCase() ?? "";
-  const shippingMethodTitle =
-    order.shipping_lines[0]?.method_title?.toLowerCase() ?? "";
-  const isLocalPickup =
-    shippingMethodId.includes("local_pickup") ||
-    shippingMethodTitle.includes("איסוף") ||
-    shippingMethodTitle.includes("pickup") ||
-    shippingMethodTitle.includes("local_pickup");
+  const isLocalPickup = (order.shipping_lines || []).some((line) => {
+    const methodId = line?.method_id?.toLowerCase() ?? "";
+    const methodTitle = line?.method_title?.toLowerCase() ?? "";
+    return (
+      methodId.includes("local_pickup") ||
+      methodId.includes("pickup") ||
+      methodTitle.includes("איסוף") ||
+      methodTitle.includes("pickup") ||
+      methodTitle.includes("local_pickup")
+    );
+  });
 
   // Get fast delivery decision for auto-selecting mahirLi
   const { decision } = useOrderFastDeliveryDecision(order);
