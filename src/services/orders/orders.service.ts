@@ -317,6 +317,8 @@ const mapOrder = (
     total: order.total || "0",
     customer_id: order.customer_id || null,
     date_created: ensureUtcSuffix(order.date_created_gmt),
+    date_modified: ensureUtcSuffix(order.date_modified_gmt),
+    date_completed: ensureUtcSuffix(order.date_completed_gmt),
     billing,
     shipping,
     customer_note: order.customer_note || "",
