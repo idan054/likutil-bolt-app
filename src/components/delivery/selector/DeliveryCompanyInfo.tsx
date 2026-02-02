@@ -15,6 +15,7 @@ interface DeliveryCompanyInfoProps {
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
+  onStatusChanged: () => void;
 }
 
 export const DeliveryCompanyInfo: React.FC<DeliveryCompanyInfoProps> = ({
