@@ -51,6 +51,8 @@ export interface OrderSummary {
   shipping_lines: Array<{
     method_title: string;
   }>;
+  payment_method?: string;
+  payment_method_title?: string;
 }
 
 export interface OrderDetails extends OrderSummary {

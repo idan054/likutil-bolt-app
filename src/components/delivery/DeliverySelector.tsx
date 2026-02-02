@@ -24,6 +24,7 @@ interface DeliverySelectorProps {
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
+  onStatusChanged: () => void;
   orderId?: string; 
 }
 
@@ -38,6 +39,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   deliveryResponse,
   onComplete,
   isCompleting,
+  onStatusChanged,
   orderId
 }) => {
   
@@ -91,6 +93,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
           deliveryResponse={deliveryResponse}
           onComplete={onComplete}
           isCompleting={isCompleting}
+          onStatusChanged={onStatusChanged}
         />
       )}
 

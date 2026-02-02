@@ -1,0 +1,191 @@
+import React, { useMemo, useState } from "react";
+import { ChevronDown, Loader2, XCircle } from "lucide-react";
+import { toast } from "react-hot-toast";
+import type { OrderDetails } from "../../types/order";
+import { updateOrderStatus } from "../../services/orders/orders.service";
+import { createOrderNote } from "../../services/orders/notes.service";
+import { showErrorToast } from "../../utils/error";
+import { isOtherPaymentMethod } from "../../utils/order";
+
+interface StatusOption {
+  value: string;
+  label: string;
+  note: string;
+}
+
+interface OrderStatusOverrideMenuProps {
+  order: OrderDetails;
+  isDisabled?: boolean;
+  onStatusChanged?: () => void;
+}
+
+export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = ({
+  order,
+  isDisabled = false,
+  onStatusChanged,
+}) => {
+  if (!isOtherPaymentMethod(order.payment_method_title, order.payment_method)) {
+    return null;
+  }
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<StatusOption | null>(
+    null
+  );
+  const [confirmationText, setConfirmationText] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const statusOptions = useMemo<StatusOption[]>(
+    () => [
+      {
+        value: "pending",
+        label: "בטרם שולם",
+        note:
+          "נשלח ללקוח יש לעקוב על החיוב של הלקוח הועבר לסטטוס לא שולם",
+      },
+      {
+        value: "on-hold",
+        label: "בהשהיה",
+        note: "הועבר לסטטוס בהשהיה",
+      },
+    ],
+    []
+  );
+
+  const resetModal = () => {
+    setSelectedOption(null);
+    setConfirmationText("");
+  };
+
+  const handleSelectOption = (option: StatusOption) => {
+    if (isDisabled || isUpdating) return;
+    setSelectedOption(option);
+    setIsMenuOpen(false);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedOption) return;
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await updateOrderStatus(order.id.toString(), selectedOption.value);
+      await createOrderNote(
+        order.id.toString(),
+        { note: selectedOption.note, customer_note: true },
+        order
+      );
+      toast.success(`הסטטוס עודכן ל-${selectedOption.label}`);
+      onStatusChanged?.();
+      resetModal();
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const isConfirmEnabled =
+    confirmationText.trim() === "כן" && !isUpdating && !isDisabled;
+
+  return (
+    <div className="relative inline-flex" dir="rtl">
+      <button
+        type="button"
+        onClick={() => setIsMenuOpen((prev) => !prev)}
+        disabled={isDisabled || isUpdating}
+        className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span>סטטוס אחר</span>
+        {isUpdating ? (
+          <Loader2 className="animate-spin" size={14} />
+        ) : (
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
+          />
+        )}
+      </button>
+
+      {isMenuOpen && (
+        <div className="absolute left-0 top-full z-20 mt-2 w-44 rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="flex flex-col py-1">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelectOption(option)}
+                className="w-full px-3 py-2 text-right text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedOption && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 text-right shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  שינוי סטטוס להזמנה
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  בחרת בסטטוס:{" "}
+                  <span className="font-semibold">{selectedOption.label}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={resetModal}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="סגור"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              הפעולה הזו משנה את סטטוס ההזמנה. כדי לאשר, הקלד{" "}
+              <span className="font-semibold">כן</span>.
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">
+                הקלדת אישור
+              </label>
+              <input
+                type="text"
+                value={confirmationText}
+                onChange={(event) => setConfirmationText(event.target.value)}
+                placeholder='הקלד "כן"'
+                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={resetModal}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                disabled={isUpdating}
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={!isConfirmEnabled}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isUpdating ? "מעדכן..." : "אישור שינוי סטטוס"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

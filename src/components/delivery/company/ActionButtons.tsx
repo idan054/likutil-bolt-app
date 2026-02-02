@@ -1,8 +1,11 @@
 import React from 'react';
-import { Package, Printer, Loader2, CheckCircle, Rocket } from 'lucide-react';
+import { Printer, Loader2, CheckCircle, Rocket } from 'lucide-react';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
+import type { OrderDetails } from '../../../types/order';
+import { OrderStatusOverrideMenu } from '../../order/OrderStatusOverrideMenu';
 
 interface ActionButtonsProps {
+  order: OrderDetails;
   deliveryResponse: DeliveryTaskResponse | null;
   isCreating: boolean;
   isCompleting: boolean;
@@ -10,9 +13,11 @@ interface ActionButtonsProps {
   onComplete: () => Promise<void>;
   packNum: string;
   deliveryType: string;
+  onStatusChanged: () => void;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
+  order,
   deliveryResponse,
   isCreating,
   isCompleting,
@@ -20,6 +25,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onComplete,
   packNum,  
   deliveryType,  
+  onStatusChanged,
 }) => {
   const handlePrintLabel = (printLabel: string) => {
     if (printLabel.startsWith('http')) {
@@ -64,18 +70,25 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             <Printer size={20} />
             <span>הדפסת מדבקה</span>
           </button>
-          <button
-            onClick={onComplete}
-            disabled={isCompleting}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-          >
-            {isCompleting ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              <CheckCircle size={20} />
-            )}
-            <span>סיום</span>
-          </button>
+          <div className="flex flex-1 items-center gap-2">
+            <button
+              onClick={onComplete}
+              disabled={isCompleting}
+              className="flex flex-1 items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {isCompleting ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <CheckCircle size={20} />
+              )}
+              <span>סיום</span>
+            </button>
+            <OrderStatusOverrideMenu
+              order={order}
+              isDisabled={isCompleting}
+              onStatusChanged={onStatusChanged}
+            />
+          </div>
         </>
       )}
     </div>

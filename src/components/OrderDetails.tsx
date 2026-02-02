@@ -12,11 +12,11 @@ import { FastDeliveryDecisionCard } from "./fastDelivery/FastDeliveryDecisionCar
 import { LocalPickupAlert } from "./ui/LocalPickupAlert";
 import { useOrderCompletion } from "../hooks/useOrderCompletion";
 import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
-import { CheckCircle, Loader2, Printer, Truck } from "lucide-react";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
 import type { OrderDetails as OrderDetailType } from "../types/order";
+import { isOtherPaymentProcessing } from "../utils/order";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -39,7 +39,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     string | null
   >(null);
 
-  const isLocalPickup = order.shipping_lines[0]?.method_id === "local_pickup";
+  const shippingMethodId = order.shipping_lines[0]?.method_id?.toLowerCase() ?? "";
+  const shippingMethodTitle =
+    order.shipping_lines[0]?.method_title?.toLowerCase() ?? "";
+  const isLocalPickup =
+    shippingMethodId.includes("local_pickup") ||
+    shippingMethodTitle.includes("איסוף") ||
+    shippingMethodTitle.includes("pickup") ||
+    shippingMethodTitle.includes("local_pickup");
 
   // Get fast delivery decision for auto-selecting mahirLi
   const { decision } = useOrderFastDeliveryDecision(order);
@@ -56,6 +63,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     console.log("handleComplete called");
     await completeOrder();
     clearDeliveryResponse();
+  };
+
+  const handleStatusChanged = () => {
+    clearDeliveryResponse();
+    onReset();
   };
 
   const {
@@ -89,6 +101,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     }
   }, [isLocalPickup, resetMessaging]);
 
+  const isOtherPaymentProcessingOrder = isOtherPaymentProcessing(
+    order.status,
+    order.payment_method_title,
+    order.payment_method
+  );
+
   return (
     
     <AnimatePresence mode="wait">
@@ -103,7 +121,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
         }}
         className="w-full max-w-4xl px-4 sm:px-4"
       >
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6" dir="rtl">
+        <div
+          className={`rounded-lg shadow-lg p-4 sm:p-6 ${
+            isOtherPaymentProcessingOrder
+              ? "bg-amber-50 border border-amber-200"
+              : "bg-white"
+          }`}
+          dir="rtl"
+        >
           <OrderHeader
             key={order.id}
             order={order}
@@ -148,10 +173,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
+                order={order}
                 paymentMethod={order.payment_method_title}
                 isCompleting={isCompleting}
                 onComplete={handleComplete}
                 onSendAnyway={() => setShowLocalPickup(false)}
+                onStatusChanged={handleStatusChanged}
               />
             ) : (
               <DeliverySelector
@@ -165,6 +192,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}
                 isCompleting={isCompleting}
+                onStatusChanged={handleStatusChanged}
               />
             )}
           </div>
