@@ -35,7 +35,5 @@ export const isOtherPaymentProcessing = (
   return isOtherPaymentMethod(paymentMethodTitle, paymentMethod) && isProcessingStatus(status);
 };
 
-
-
 // Move aggregation logic to separate file
 export { aggregateOrderItems } from './order/aggregation';
