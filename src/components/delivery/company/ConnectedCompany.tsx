@@ -20,6 +20,7 @@ interface ConnectedCompanyProps {
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
+  onStatusChanged: () => void;
 }
 
 export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
@@ -31,6 +32,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   deliveryResponse,
   onComplete,
   isCompleting,
+  onStatusChanged,
 }) => {
   const [packageCount, setPackageCount] = React.useState<number>(1);
   
@@ -79,6 +81,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           />
           
           <ActionButtons 
+            order={order}
             deliveryResponse={deliveryResponse}
             isCreating={isCreating}
             isCompleting={isCompleting}
@@ -86,6 +89,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             onComplete={onComplete}
             packNum={packageCount.toString()} 
             deliveryType={deliveryType.toString()} 
+            onStatusChanged={onStatusChanged}
           />
           
           <CompanyLinks 
