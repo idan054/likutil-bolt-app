@@ -12,7 +12,6 @@ import { FastDeliveryDecisionCard } from "./fastDelivery/FastDeliveryDecisionCar
 import { LocalPickupAlert } from "./ui/LocalPickupAlert";
 import { useOrderCompletion } from "../hooks/useOrderCompletion";
 import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
-import { CheckCircle, Loader2, Printer, Truck } from "lucide-react";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
@@ -56,6 +55,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     console.log("handleComplete called");
     await completeOrder();
     clearDeliveryResponse();
+  };
+
+  const handleStatusChanged = () => {
+    clearDeliveryResponse();
+    onReset();
   };
 
   const {
@@ -148,10 +152,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
+                order={order}
                 paymentMethod={order.payment_method_title}
                 isCompleting={isCompleting}
                 onComplete={handleComplete}
                 onSendAnyway={() => setShowLocalPickup(false)}
+                onStatusChanged={handleStatusChanged}
               />
             ) : (
               <DeliverySelector
@@ -165,6 +171,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}
                 isCompleting={isCompleting}
+                onStatusChanged={handleStatusChanged}
               />
             )}
           </div>

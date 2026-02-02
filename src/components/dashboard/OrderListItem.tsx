@@ -9,6 +9,7 @@ import type { OrderSummary } from '../../types/order';
 import { StatusBadge } from '../ui/StatusBadge';
 import { DeliveryTypeBadge } from '../ui/DeliveryTypeBadge';
 import { useOrderFastDeliveryDecision } from '../../hooks/useOrderFastDeliveryDecision';
+import { isOtherPaymentMethod } from '../../utils/order';
 
 interface OrderListItemProps {
   order: OrderSummary;
@@ -32,12 +33,17 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
     }
   }, [customer, isLoading, refetch]);
 
+  const isOtherPayment = isOtherPaymentMethod(
+    order.payment_method_title,
+    order.payment_method
+  );
+
   return (
     <div 
       onClick={() => onSelect(order.id.toString())}
       //  ||  order.status == 'fulfilled'
       //  order.status == 'pending' ? 'bg-white' : 'bg-white/30'
-      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted? 'border-r-4 border-green-500/80' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' :  'bg-white' }`}
+      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted? 'border-r-4 border-green-500/80' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' :  'bg-white' } ${isOtherPayment && order.id.toString() !== selectedOrderId ? 'bg-green-50 border border-green-300' : ''}`}
     >
 
       <div className="flex flex-col gap-1">

@@ -1,20 +1,25 @@
 import React from 'react';
 import { CheckCircle, Loader2, Printer, Truck } from 'lucide-react';
-import { OrderSummary } from './OrderSummary';
 import { PaymentMethodDisplay } from './PaymentMethodDisplay';
+import type { OrderDetails } from '../../types/order';
+import { OrderStatusOverrideMenu } from './OrderStatusOverrideMenu';
 
 interface LocalPickupSectionProps {
+  order: OrderDetails;
   paymentMethod: string;
   isCompleting: boolean;
   onComplete: () => Promise<void>;
   onSendAnyway: () => void;
+  onStatusChanged: () => void;
 }
 
 export const LocalPickupSection: React.FC<LocalPickupSectionProps> = ({
+  order,
   paymentMethod,
   isCompleting,
   onComplete,
   onSendAnyway,
+  onStatusChanged,
 }) => {
   return (
     <div className="space-y-6">
@@ -30,18 +35,25 @@ export const LocalPickupSection: React.FC<LocalPickupSectionProps> = ({
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={onComplete}
-            disabled={isCompleting}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCompleting ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              <CheckCircle size={20} />
-            )}
-            <span>סיום</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onComplete}
+              disabled={isCompleting}
+              className="flex flex-1 items-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCompleting ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <CheckCircle size={20} />
+              )}
+              <span>סיום</span>
+            </button>
+            <OrderStatusOverrideMenu
+              order={order}
+              isDisabled={isCompleting}
+              onStatusChanged={onStatusChanged}
+            />
+          </div>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors w-full justify-center"
