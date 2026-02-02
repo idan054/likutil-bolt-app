@@ -18,7 +18,22 @@ export const isOtherPaymentMethod = (
   return normalizedTitle === "אחר" || normalizedTitle === "other" || normalizedMethod === "other";
 };
 
+export const isProcessingStatus = (status?: string): boolean => {
+  const normalizedStatus = (status || "").trim().toLowerCase();
+  return (
+    normalizedStatus === "processing" ||
+    normalizedStatus === "pending" ||
+    normalizedStatus === "בטיפול"
+  );
+};
 
+export const isOtherPaymentProcessing = (
+  status?: string,
+  paymentMethodTitle?: string,
+  paymentMethod?: string
+): boolean => {
+  return isOtherPaymentMethod(paymentMethodTitle, paymentMethod) && isProcessingStatus(status);
+};
 
 // Move aggregation logic to separate file
 export { aggregateOrderItems } from './order/aggregation';
