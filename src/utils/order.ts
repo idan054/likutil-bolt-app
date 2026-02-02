@@ -20,7 +20,11 @@ export const isOtherPaymentMethod = (
 
 export const isProcessingStatus = (status?: string): boolean => {
   const normalizedStatus = (status || "").trim().toLowerCase();
-  return normalizedStatus === "processing" || normalizedStatus === "pending";
+  return (
+    normalizedStatus === "processing" ||
+    normalizedStatus === "pending" ||
+    normalizedStatus === "בטיפול"
+  );
 };
 
 export const isOtherPaymentProcessing = (

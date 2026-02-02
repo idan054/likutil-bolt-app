@@ -38,13 +38,14 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
     order.payment_method_title,
     order.payment_method
   );
+  const isSelected = order.id.toString() === selectedOrderId;
 
   return (
     <div 
       onClick={() => onSelect(order.id.toString())}
       //  ||  order.status == 'fulfilled'
       //  order.status == 'pending' ? 'bg-white' : 'bg-white/30'
-      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted? 'border-r-4 border-green-500/80' : ''} ${order.id.toString() === selectedOrderId ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' :  'bg-white' } ${isOtherPaymentProcessingOrder && order.id.toString() !== selectedOrderId ? 'bg-green-50 border border-green-300' : ''}`}
+      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-r-4 border-green-500/80' : ''} ${isSelected ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'} ${isOtherPaymentProcessingOrder ? 'border border-amber-300' : ''} ${isOtherPaymentProcessingOrder && !isSelected ? 'bg-amber-50' : ''}`}
     >
 
       <div className="flex flex-col gap-1">
