@@ -20,6 +20,8 @@ export const isOtherPaymentMethod = (
     normalizedTitle.includes("אחר") ||
     normalizedTitle === "other" ||
     normalizedTitle.includes("other") ||
+    normalizedMethod === "אחר" ||
+    normalizedMethod.includes("אחר") ||
     normalizedMethod === "other" ||
     normalizedMethod.includes("other")
   );
