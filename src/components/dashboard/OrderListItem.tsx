@@ -47,14 +47,10 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
         ${isSelected ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'} 
         ${isOtherPayment && !isSelected ? 'bg-amber-50 border border-amber-200' : ''}`}
     >
-
       <div className="flex flex-col gap-1">
-      <div className="absolute top-2 left-2">
-      
-      {/* USE FOR DEBUG!!!! */}
+        <div className="absolute top-2 left-2">
         {/* <StatusBadge status={`${order.status}`} orderId={order.order_number.toString()} /> */}
-
-      </div>
+        </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-blue-900">#{order.order_number ?? order.id}</span>
