@@ -45,7 +45,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
       onClick={() => onSelect(order.id.toString())}
       //  ||  order.status == 'fulfilled'
       //  order.status == 'pending' ? 'bg-white' : 'bg-white/30'
-      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-r-4 border-green-500/80' : ''} ${isSelected ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'} ${isOtherPaymentProcessingOrder ? 'border border-amber-300' : ''} ${isOtherPaymentProcessingOrder && !isSelected ? 'bg-amber-50' : ''}`}
+      className={`rounded-md shadow p-3 hover:shadow-md transition-shadow cursor-pointer relative ${isCompleted ? 'border-r-4 border-green-500/80' : ''} ${isSelected ? 'ring-0 ring-blue-500 bg-[#e6f0ff]' : 'bg-white'} ${isOtherPaymentProcessingOrder ? 'border border-amber-200' : ''} ${isOtherPaymentProcessingOrder && !isSelected ? 'bg-amber-50' : ''}`}
     >
 
       <div className="flex flex-col gap-1">

@@ -117,7 +117,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
         <div
           className={`rounded-lg shadow-lg p-4 sm:p-6 ${
             isOtherPaymentProcessingOrder
-              ? "bg-amber-100 border border-amber-200"
+              ? "bg-amber-50 border border-amber-200"
               : "bg-white"
           }`}
           dir="rtl"
