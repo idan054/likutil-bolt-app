@@ -15,7 +15,14 @@ export const isOtherPaymentMethod = (
 ): boolean => {
   const normalizedTitle = normalizePaymentValue(paymentMethodTitle);
   const normalizedMethod = normalizePaymentValue(paymentMethod);
-  return normalizedTitle === "אחר" || normalizedTitle === "other" || normalizedMethod === "other";
+  return (
+    normalizedTitle === "אחר" ||
+    normalizedTitle.includes("אחר") ||
+    normalizedTitle === "other" ||
+    normalizedTitle.includes("other") ||
+    normalizedMethod === "other" ||
+    normalizedMethod.includes("other")
+  );
 };
 
 export const isProcessingStatus = (status?: string): boolean => {
