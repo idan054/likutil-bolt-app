@@ -16,7 +16,7 @@ import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
 import type { OrderDetails as OrderDetailType } from "../types/order";
-import { isOtherPaymentProcessing } from "../utils/order";
+import { isLocalPickupShipping, isOtherPaymentProcessing } from "../utils/order";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -39,17 +39,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     string | null
   >(null);
 
-  const isLocalPickup = (order.shipping_lines || []).some((line) => {
-    const methodId = line?.method_id?.toLowerCase() ?? "";
-    const methodTitle = line?.method_title?.toLowerCase() ?? "";
-    return (
-      methodId.includes("local_pickup") ||
-      methodId.includes("pickup") ||
-      methodTitle.includes("איסוף") ||
-      methodTitle.includes("pickup") ||
-      methodTitle.includes("local_pickup")
-    );
-  });
+  const isLocalPickup = isLocalPickupShipping(order.shipping_lines);
 
   // Get fast delivery decision for auto-selecting mahirLi
   const { decision } = useOrderFastDeliveryDecision(order);

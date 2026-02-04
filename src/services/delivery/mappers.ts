@@ -1,14 +1,15 @@
 import type { OrderDetails } from '../../types/order';
-import { createDeliveryFormatDate } from '../../utils/date';
+import { createDeliveryFormatDate, createDeliveryFormatDateTime } from '../../utils/date';
 import type { DeliveryTaskRequest } from './types';
 
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
   packNum: string = "1", // Default to 1 package
-  deliveryType: string = "client" 
+  deliveryType: string = "client",
+  requestedAt?: string
 ): DeliveryTaskRequest => {
   const deliveryDate =
-    order.date_completed || order.date_modified || order.date_created;
+    requestedAt || order.date_completed || order.date_modified || order.date_created;
   const shippingAddress =
     order.shipping.address_1?.trim() ||
     order.shipping.address_2?.trim() ||
@@ -39,7 +40,9 @@ export const mapOrderToDeliveryTask = (
     delivery_type: deliveryType,
     id: order.id.toString(),
     number: order.id.toString(),
-    date_created: createDeliveryFormatDate(deliveryDate),
+    date_created: requestedAt
+      ? createDeliveryFormatDateTime(deliveryDate)
+      : createDeliveryFormatDate(deliveryDate),
     customer_note: order.customer_note || "",
     shipping: {
       first_name: shippingFirstName,

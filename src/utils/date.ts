@@ -186,3 +186,28 @@ export const createDeliveryFormatDate = (dateString: string): string => {
   if (!year || !month || !day) return dateString;
   return `${year}-${month}-${day}`;
 };
+
+export const createDeliveryFormatDateTime = (dateString: string): string => {
+  if (!dateString) return dateString;
+
+  const date = tryParseDate(dateString);
+  if (!date) return dateString;
+
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+  const hour = parts.find((part) => part.type === 'hour')?.value;
+  const minute = parts.find((part) => part.type === 'minute')?.value;
+  if (!year || !month || !day || !hour || !minute) return dateString;
+  return `${year}-${month}-${day} ${hour}:${minute}`;
+};

@@ -72,13 +72,15 @@ export const useDeliveryCreation = ({
     setIsCreating(true);
 
     try {
+      const requestedAt = new Date().toISOString();
       const result = await createDelivery({
         userId,
         order,
         provider,
         keys,
         packNum,
-        deliveryType
+        deliveryType,
+        requestedAt
       });
 
       setDeliveryResponse(result);
