@@ -165,7 +165,10 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           <div className="mt-4 border-t pt-6">
             <ShippingMethod shippingLines={order.shipping_lines} />
             {!isLocalPickup || !showLocalPickup ? (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3">
+                <div className="text-sm font-semibold text-amber-900">
+                  שינוי סטטוס ידני
+                </div>
                 <OrderStatusOverrideMenu
                   order={order}
                   isDisabled={isCompleting || isCreating}

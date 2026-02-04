@@ -94,7 +94,11 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
         type="button"
         onClick={() => setIsMenuOpen((prev) => !prev)}
         disabled={isDisabled || isUpdating}
-        className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        aria-haspopup="menu"
+        aria-expanded={isMenuOpen}
+        className={`flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100 hover:shadow disabled:cursor-not-allowed disabled:opacity-60 ${
+          isMenuOpen ? "ring-2 ring-amber-200" : ""
+        }`}
       >
         <span>סטטוס אחר</span>
         {isUpdating ? (
@@ -108,14 +112,14 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
       </button>
 
       {isMenuOpen && (
-        <div className="absolute left-0 top-full z-20 mt-2 w-44 rounded-lg border border-gray-200 bg-white shadow-lg">
-          <div className="flex flex-col py-1">
+        <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-amber-100 bg-white p-1 shadow-lg">
+          <div className="flex flex-col">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleSelectOption(option)}
-                className="w-full px-3 py-2 text-right text-sm text-gray-700 hover:bg-gray-50"
+                className="w-full rounded-lg px-4 py-2 text-right text-sm font-medium text-gray-700 transition hover:bg-amber-50 hover:text-amber-900"
               >
                 {option.label}
               </button>
