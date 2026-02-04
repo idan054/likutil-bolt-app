@@ -17,6 +17,7 @@ import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 import { isLocalPickupShipping, isOtherPaymentProcessing } from "../utils/order";
+import { OrderStatusOverrideMenu } from "./order/OrderStatusOverrideMenu";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -163,6 +164,15 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
           <div className="mt-4 border-t pt-6">
             <ShippingMethod shippingLines={order.shipping_lines} />
+            {!isLocalPickup || !showLocalPickup ? (
+              <div className="mt-4 flex justify-end">
+                <OrderStatusOverrideMenu
+                  order={order}
+                  isDisabled={isCompleting || isCreating}
+                  onStatusChanged={handleStatusChanged}
+                />
+              </div>
+            ) : null}
 
             {isLocalPickup && showLocalPickup ? (
               <LocalPickupSection
