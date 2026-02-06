@@ -37,7 +37,7 @@ export const mapOrderToDeliveryTask = (
 
   return {
     pack_num: packNum,
-    delivery_type: deliveryType,
+     // delivery_type: deliveryType, // Removed to fix Mahir Li 500 Error
     id: order.id.toString(),
     number: order.id.toString(),
     date_created: requestedAt
