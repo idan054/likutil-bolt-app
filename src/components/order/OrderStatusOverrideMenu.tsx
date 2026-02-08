@@ -32,13 +32,13 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
   const [selectedOption, setSelectedOption] = useState<StatusOption | null>(
     null
   );
-  const [confirmationText, setConfirmationText] = useState("");
+
   const [isUpdating, setIsUpdating] = useState(false);
 
   const statusOptions = useMemo<StatusOption[]>(
     () => [
       {
-        value: "wc-acounting", // Spider3D custom status - PHP snippet handles REST API bypass
+        value: "wc-acounting", // Spider3D custom status "טרם שולם" - PHP snippet handles REST API bypass
         label: "בטרם שולם",
         note:
           "נשלח ללקוח יש לעקוב על החיוב של הלקוח הועבר לסטטוס לא שולם",
@@ -54,7 +54,6 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
 
   const resetModal = () => {
     setSelectedOption(null);
-    setConfirmationText("");
   };
 
   const handleSelectOption = (option: StatusOption) => {
@@ -85,8 +84,7 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
     }
   };
 
-  const isConfirmEnabled =
-    confirmationText.trim() === "כן" && !isUpdating && !isDisabled;
+  const isConfirmEnabled = !isUpdating && !isDisabled;
 
   return (
     <div className="relative inline-flex" dir="rtl">
@@ -152,21 +150,7 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
             </div>
 
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              הפעולה הזו משנה את סטטוס ההזמנה. כדי לאשר, הקלד{" "}
-              <span className="font-semibold">כן</span>.
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700">
-                הקלדת אישור
-              </label>
-              <input
-                type="text"
-                value={confirmationText}
-                onChange={(event) => setConfirmationText(event.target.value)}
-                placeholder='הקלד "כן"'
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
+              האם אתה בטוח שברצונך לשנות את הסטטוס?
             </div>
 
             <div className="mt-5 flex items-center justify-end gap-3">
