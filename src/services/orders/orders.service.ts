@@ -705,10 +705,15 @@ export const updateOrderStatus = async (
     console.log(`[orders.service] Using custom AJAX endpoint for status: ${status}`);
     
     const wcSettings = JSON.parse(localStorage.getItem("wc_settings") || "{}");
-    const storeUrl = wcSettings.storeUrl || "";
+    let storeUrl = wcSettings.storeUrl || "";
     
     if (!storeUrl) {
       throw new Error("Store URL not found in settings");
+    }
+
+    // Ensure www. prefix for CORS compatibility
+    if (!storeUrl.startsWith("www.")) {
+      storeUrl = "www." + storeUrl;
     }
 
     const ajaxUrl = `https://${storeUrl}/wp-admin/admin-ajax.php`;
