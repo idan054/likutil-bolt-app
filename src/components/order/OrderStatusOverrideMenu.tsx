@@ -38,7 +38,7 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
   const statusOptions = useMemo<StatusOption[]>(
     () => [
       {
-        value: "wc-acounting", // Spider3D custom status for "טרם שולם"
+        value: "on-hold", // Using standard WooCommerce status - custom statuses not supported via REST API
         label: "בטרם שולם",
         note:
           "נשלח ללקוח יש לעקוב על החיוב של הלקוח הועבר לסטטוס לא שולם",
