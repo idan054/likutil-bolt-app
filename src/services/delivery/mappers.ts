@@ -1,5 +1,5 @@
 import type { OrderDetails } from '../../types/order';
-import { createDeliveryFormatDate, createDeliveryFormatDateTime } from '../../utils/date';
+import { createDeliveryFormatDate } from '../../utils/date';
 import type { DeliveryTaskRequest } from './types';
 
 // Fallback value for empty required fields - Lionwheel API rejects empty strings
@@ -45,9 +45,7 @@ export const mapOrderToDeliveryTask = (
      // delivery_type: deliveryType, // Removed to fix Mahir Li 500 Error
     id: order.id.toString(),
     number: order.id.toString(),
-    date_created: requestedAt
-      ? createDeliveryFormatDateTime(deliveryDate)
-      : createDeliveryFormatDate(deliveryDate),
+    date_created: createDeliveryFormatDate(deliveryDate), // Always use date-only format (YYYY-MM-DD) - Lionwheel API rejects datetime
     customer_note: order.customer_note || "",
     shipping: {
       first_name: shippingFirstName,
