@@ -2,6 +2,9 @@ import type { OrderDetails } from '../../types/order';
 import { createDeliveryFormatDate, createDeliveryFormatDateTime } from '../../utils/date';
 import type { DeliveryTaskRequest } from './types';
 
+// Fallback value for empty required fields - Lionwheel API rejects empty strings
+const EMPTY_FIELD_FALLBACK = "-";
+
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
   packNum: string = "1", // Default to 1 package
@@ -15,15 +18,15 @@ export const mapOrderToDeliveryTask = (
     order.shipping.address_2?.trim() ||
     order.billing.address_1?.trim() ||
     order.billing.address_2?.trim() ||
-    "";
+    EMPTY_FIELD_FALLBACK;
 
   const shippingCity =
-    order.shipping.city?.trim() || order.billing.city?.trim() || "";
+    order.shipping.city?.trim() || order.billing.city?.trim() || EMPTY_FIELD_FALLBACK;
 
   const shippingFirstName =
-    order.shipping.first_name?.trim() || order.billing.first_name?.trim() || "";
+    order.shipping.first_name?.trim() || order.billing.first_name?.trim() || EMPTY_FIELD_FALLBACK;
   const shippingLastName =
-    order.shipping.last_name?.trim() || order.billing.last_name?.trim() || "";
+    order.shipping.last_name?.trim() || order.billing.last_name?.trim() || EMPTY_FIELD_FALLBACK;
 
   const billingAddressCandidate = order.billing.address_1?.trim() || "";
   const businessAddress =
@@ -34,6 +37,8 @@ export const mapOrderToDeliveryTask = (
   const businessCity = businessAddress
     ? order.billing.city?.trim() || ""
     : "";
+
+  const phone = order.billing.phone?.trim() || EMPTY_FIELD_FALLBACK;
 
   return {
     pack_num: packNum,
@@ -53,12 +58,13 @@ export const mapOrderToDeliveryTask = (
     },
     billing: {
       email: order.billing.email || "",
-      phone: order.billing.phone || "",
+      phone: phone,
     },
     business: {
       address: businessAddress,
       city: businessCity,
-      name: `${shippingFirstName} ${shippingLastName}`.trim(),
+      name: `${shippingFirstName} ${shippingLastName}`.trim() || EMPTY_FIELD_FALLBACK,
     },
   };
 };
+

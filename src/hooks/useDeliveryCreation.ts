@@ -28,7 +28,7 @@ export const useDeliveryCreation = ({
   const [isCreating, setIsCreating] = useState(false);
   const [deliveryResponse, setDeliveryResponse] =
     useState<DeliveryTaskResponse | null>(null);
-  const { activeIntegrations, integrations, savedData } =
+  const { activeIntegrations } =
     useDeliveryIntegrations();
   const [user] = useAuthState(auth);
 
@@ -40,17 +40,18 @@ export const useDeliveryCreation = ({
     console.log("START createDeliveryTask()");
     console.log(provider);
 
-    // console.log(savedData[provider]?.provider)
-    // console.log(savedData[provider])
+    if (!order) {
+      toast.error("לא נבחרה הזמנה");
+      return;
+    }
 
-    // // Find selected integration
+    // Find selected integration
     const selectedIntegration = activeIntegrations.find(
       (integration) => integration.provider === provider
     );
 
     console.log("selectedIntegration");
     console.log(selectedIntegration);
-    // return;
 
     if (!selectedIntegration) {
       toast.error("מפתח API חסר");
@@ -95,7 +96,6 @@ export const useDeliveryCreation = ({
   };
 
   const clearDeliveryResponse = () => {
-    // console.log("clearDeliveryResponse");
     setDeliveryResponse(null);
   };
 
@@ -106,3 +106,4 @@ export const useDeliveryCreation = ({
     clearDeliveryResponse,
   };
 };
+

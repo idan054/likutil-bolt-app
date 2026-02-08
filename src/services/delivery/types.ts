@@ -7,6 +7,7 @@ export interface DeliveryRequestParams {
 
 // Update existing types
 export interface DeliveryTaskRequest {
+  pack_num: string;
   id: string;
   number: string;
   date_created: string;

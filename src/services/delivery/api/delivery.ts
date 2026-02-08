@@ -20,6 +20,7 @@ export const createDeliveryTask = async (
       request,
       provider: params.provider
     });
+    console.log('[delivery.api] Request body JSON:', JSON.stringify(request, null, 2));
 
     const response = await fetch(url, {
       method: 'POST',
