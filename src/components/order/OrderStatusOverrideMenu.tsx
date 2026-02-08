@@ -38,13 +38,13 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
   const statusOptions = useMemo<StatusOption[]>(
     () => [
       {
-        value: "on-hold", // Uses WooCommerce standard 'on-hold' status
-        label: "בטרם שולם - שוטף",
+        value: "wc-acounting", // Uses custom AJAX endpoint to bypass REST API
+        label: "טרם שולם",
         note:
-          "⚠️ בטרם שולם - שוטף: יש לעקוב על החיוב של הלקוח",
+          "נשלח ללקוח יש לעקוב על החיוב של הלקוח הועבר לסטטוס טרם שולם",
       },
       {
-        value: "pending",
+        value: "on-hold",
         label: "בהשהיה",
         note: "הועבר לסטטוס בהשהיה",
       },

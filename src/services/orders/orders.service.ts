@@ -676,10 +676,13 @@ export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
 
 /**
  * Updates an order's status
+ * Uses custom AJAX endpoint for custom statuses (like wc-acounting)
+ * Falls back to standard WooCommerce API for standard statuses
  */
 export const updateOrderStatus = async (
   orderId: string,
-  status: string
+  status: string,
+  note?: string
 ): Promise<OrderDetails> => {
   const config = getApiConfig();
   const platform = config.platform;
@@ -693,6 +696,49 @@ export const updateOrderStatus = async (
   dataCache.delete(`search_${platform}_${orderId}`);
   dataCache.delete(`processing_orders_${platform}`);
 
+  // Check if this is a custom status that needs the custom AJAX endpoint
+  const customStatuses = ["wc-acounting", "acounting"];
+  const isCustomStatus = customStatuses.includes(status);
+
+  if (isCustomStatus && platform === "woo") {
+    // Use custom AJAX endpoint for custom statuses
+    console.log(`[orders.service] Using custom AJAX endpoint for status: ${status}`);
+    
+    const wcSettings = JSON.parse(localStorage.getItem("wc_settings") || "{}");
+    const storeUrl = wcSettings.storeUrl || "";
+    
+    if (!storeUrl) {
+      throw new Error("Store URL not found in settings");
+    }
+
+    const ajaxUrl = `https://${storeUrl}/wp-admin/admin-ajax.php`;
+    
+    const formData = new FormData();
+    formData.append("action", "likutil_update_order_status");
+    formData.append("order_id", orderId);
+    formData.append("status", status);
+    if (note) {
+      formData.append("note", note);
+    }
+
+    const response = await fetch(ajaxUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.data?.message || "Failed to update status");
+    }
+
+    console.log(`[orders.service] Order status updated via AJAX: ${result.data.new_status}`);
+    
+    // Refetch the order to get updated data
+    return getOrderById(orderId);
+  }
+
+  // Standard WooCommerce/Shopify API for regular statuses
   const response = await apiClient<any>({
     method: platform === "shopify" ? "PUT" : "POST",
     path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
