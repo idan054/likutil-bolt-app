@@ -22,7 +22,7 @@ export const useOrderSearch = () => {
     console.log('Available order IDs:', orders.map(order => order.id).join(', '));
     console.log('Available order IDs:', orders.map(order => order.order_number).join(', '));
 
-    const orderExists = orders.find(order => (isShopify ? order.order_number.toString() : order.id.toString()) === orderId);
+    const orderExists = orders.find(order => (isShopify ? order.order_number?.toString() : order.id?.toString()) === orderId);
     if(orderExists){
       setOrder(orderExists); 
       return orderExists;
