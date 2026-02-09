@@ -676,8 +676,7 @@ export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
 
 /**
  * Updates an order's status
- * For custom statuses like wc-acounting, we use 'on-hold' and a special note
- * PHP hook on WordPress will detect the note and change to custom status
+ * Custom statuses like 'acounting' are handled by PHP filter on WordPress
  */
 export const updateOrderStatus = async (
   orderId: string,
@@ -696,20 +695,13 @@ export const updateOrderStatus = async (
   dataCache.delete(`search_${platform}_${orderId}`);
   dataCache.delete(`processing_orders_${platform}`);
 
-  // Check if this is a custom status
-  const customStatuses = ["wc-acounting", "acounting"];
-  const isCustomStatus = customStatuses.includes(status);
-
-  // For custom statuses, use 'on-hold' and add special marker to note
-  const apiStatus = isCustomStatus ? "on-hold" : status;
-
   // Standard WooCommerce/Shopify API call
   const response = await apiClient<any>({
     method: platform === "shopify" ? "PUT" : "POST",
     path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
-    body: { status: apiStatus },
+    body: { status },
   });
 
-  console.log(`[orders.service] Order status updated to ${apiStatus}`);
+  console.log(`[orders.service] Order status updated to ${status}`);
   return mapOrder(response, platform) as OrderDetails;
 };

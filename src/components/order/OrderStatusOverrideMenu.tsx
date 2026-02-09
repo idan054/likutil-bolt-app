@@ -38,7 +38,7 @@ export const OrderStatusOverrideMenu: React.FC<OrderStatusOverrideMenuProps> = (
   const statusOptions = useMemo<StatusOption[]>(
     () => [
       {
-        value: "wc-acounting", // Uses custom AJAX endpoint to bypass REST API
+        value: "acounting", // WooCommerce adds 'wc-' prefix automatically
         label: "טרם שולם",
         note:
           "נשלח ללקוח יש לעקוב על החיוב של הלקוח הועבר לסטטוס טרם שולם",
