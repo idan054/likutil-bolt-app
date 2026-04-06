@@ -29,6 +29,8 @@ export const getUserSettings = async (
         authType: userData?.authType,
         favicon: `https://www.google.com/s2/favicons?domain=${userData.storeUrl}&sz=64`,
         myShopifyUrl: userData?.myShopifyUrl,
+        showProductImages: userData?.showProductImages ?? true,
+        version: userData?.version || 'v2',
       };
 
       // Save to local storage for API client

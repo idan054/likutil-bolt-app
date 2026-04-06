@@ -80,7 +80,12 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
       >
 
         <div className="flex items-center gap-4 flex-1">
-          <ProductImage src={item.image?.src ?? item.image} alt={item.name} />
+          {(settings?.showProductImages !== false) && (
+            <ProductImage 
+              src={typeof item.image === 'string' ? item.image : item.image?.src} 
+              alt={item.name} 
+            />
+          )}
 
 
           <button

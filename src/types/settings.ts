@@ -11,6 +11,8 @@ export interface UserSettings {
   lastUpdated?: string;
   authType?: Platform;
   shopifyToken?: string;
+  showProductImages?: boolean;
+  version?: string;
 }
 
 // Remove EncryptedSettings since we don't need it anymore
@@ -21,4 +23,5 @@ export interface SettingsFormData {
   accessToken: string | undefined;
   consumerKey: string | undefined;
   consumerSecret: string | undefined;
+  showProductImages?: boolean;
 }

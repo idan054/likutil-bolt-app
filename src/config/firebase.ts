@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDZ609tpVpSrWfOKVHVoyo9DK8dbYqAtRE",
@@ -15,6 +15,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Enable multi-tab persistence
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Firestore persistence failed-precondition: multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Firestore persistence unimplemented in this browser');
+  }
+});
 
 // Configure language
 auth.useDeviceLanguage();

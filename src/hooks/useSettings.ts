@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
 import { getUserSettings, saveUserSettings } from '../services/settings/settings.service';
@@ -33,19 +33,24 @@ export const useSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [orderStatuses, setOrderStatuses] = useState<OrderStatus[]>(getStoredOrderStatuses());
 
+  const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+
   const fetchSettings = useCallback(async () => {
-    // console.log('[useSettings.ts] fetchSettings()')
+    // Prevent simultaneous or too frequent fetches (throttle to once per 2 seconds)
+    if (isFetchingRef.current || (Date.now() - lastFetchTimeRef.current < 2000)) return;
+    
     const userId = user?.uid;
     if (!userId) return;
 
+    isFetchingRef.current = true;
+    lastFetchTimeRef.current = Date.now();
+
     try {
       const userSettings = await getUserSettings(userId);
-      console.log('[useSettings.ts] userSettings:', userSettings)
-    
-
+      
       if (userSettings) {
         setSettings(userSettings);
-        
         settingsStorage.set(userSettings);
         
         // Fetch order statuses only if we don't have them cached
@@ -54,17 +59,16 @@ export const useSettings = () => {
           setOrderStatuses(statuses);
           storeOrderStatuses(statuses);
         }
-
-        // console.log('[useSettings.ts] userSettings.storeUrl:', userSettings?.storeUrl)
       } else {
         settingsStorage.clear();
         setSettings(null);
       }
     } catch (error) {
       console.error('[useSettings] Failed to fetch settings:', error);
-      toast.error('שגיאה בטעינת הגדרות');
+      // No toast.error here to avoid flickering in case of minor issues
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, [user?.uid]);
 

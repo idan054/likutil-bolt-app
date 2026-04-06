@@ -51,19 +51,29 @@ class SettingsStorage {
 
   set(settings: UserSettings): void {
     try {
+      if (!settings) return;
+
       if (!this.validateSettingsData(settings)) {
-        throw new Error('Invalid settings data');
+        console.error('[settings.storage] Invalid settings data:', settings);
+        // Don't throw, just log and return to avoid breaking callers that might loop
+        return;
       }
 
       const data = {
         ...settings,
-        version: SETTINGS_VERSION,
-        lastUpdated: new Date().toISOString()
+        version: settings.version || SETTINGS_VERSION,
+        lastUpdated: settings.lastUpdated || new Date().toISOString()
       };
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      this.retryAttempts = 0; // Reset retry counter on successful save
-      this.notifyListeners();
+      const stringified = JSON.stringify(data);
+      const current = localStorage.getItem(STORAGE_KEY);
+      
+      // Only update and notify if data actually changed
+      if (stringified !== current) {
+        localStorage.setItem(STORAGE_KEY, stringified);
+        this.retryAttempts = 0;
+        this.notifyListeners();
+      }
     } catch (error) {
       console.error('[settings.storage] Failed to save settings:', error);
       this.handleStorageError();
@@ -87,13 +97,11 @@ class SettingsStorage {
   private validateSettingsData(settings: any): boolean {
     if (!settings) return false;
 
+    // We only require storeUrl for basic operation
+    // consumerKey/Secret are optional depending on authType
     return (
       typeof settings.storeUrl === 'string' &&
-      settings.storeUrl.trim().length > 0 &&
-      (settings.consumerKey === undefined || 
-        (typeof settings.consumerKey === 'string' && settings.consumerKey.trim().length > 0)) &&
-      (settings.consumerSecret === undefined || 
-        (typeof settings.consumerSecret === 'string' && settings.consumerSecret.trim().length > 0))
+      settings.storeUrl.trim().length > 0
     );
   }
 
