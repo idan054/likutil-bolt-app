@@ -37,4 +37,11 @@ export interface DeliveryTaskResponse {
   provider: string;
   track_number: string;
   error_text?: string;
+
+  // Mahir Li (Lionwheel) task fields returned by the create-delivery API.
+  // Not always typed by the proxy, kept optional so we can persist whatever is present.
+  id?: string | number;
+  public_id?: string;
+  barcode?: string;
+  destination_region_str?: string;
 }

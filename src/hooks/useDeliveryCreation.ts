@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { createDelivery } from "../services/delivery/delivery.service";
+import { createDelivery, persistMahirliMetaToOrder } from "../services/delivery/delivery.service";
 import {
   getKeysByProgramType,
   useDeliveryIntegrations,
@@ -86,6 +86,12 @@ export const useDeliveryCreation = ({
 
       setDeliveryResponse(result);
       toast.success(successMessages.deliveryCreated);
+
+      // Persist Mahir Li delivery identifiers onto the order (best-effort, never blocks).
+      if (provider === "mahirLi") {
+        await persistMahirliMetaToOrder(order, result, requestedAt);
+      }
+
       onSuccess();
     } catch (error) {
       console.error("[useDeliveryCreation] Failed to create delivery:", error);

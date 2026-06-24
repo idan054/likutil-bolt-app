@@ -705,3 +705,39 @@ export const updateOrderStatus = async (
   console.log(`[orders.service] Order status updated to ${status}`);
   return mapOrder(response, platform) as OrderDetails;
 };
+
+/**
+ * Adds/updates post-meta on a WooCommerce order (idempotent by meta key).
+ * WooCommerce REST matches meta_data entries by `key`, so re-sending the same
+ * keys overwrites the existing values without touching other meta. HPOS-safe.
+ * Only supported for WooCommerce stores; no-op for other platforms.
+ */
+export const updateOrderMeta = async (
+  orderId: string,
+  meta: Array<{ key: string; value: string }>
+): Promise<void> => {
+  const config = getApiConfig();
+  const platform = config.platform;
+
+  if (platform !== "woo") {
+    console.log(
+      `[orders.service] updateOrderMeta skipped: unsupported platform ${platform}`
+    );
+    return;
+  }
+
+  // Invalidate caches so the next read reflects the new meta
+  dataCache.delete(`order_${platform}_${orderId}`);
+  dataCache.delete(`search_${platform}_${orderId}`);
+
+  await apiClient<any>({
+    method: "PUT",
+    path: `${PLATFORM_ENDPOINTS.woo.orders}/${orderId}`,
+    body: { meta_data: meta },
+  });
+
+  console.log(
+    `[orders.service] Order ${orderId} meta updated:`,
+    meta.map((m) => m.key)
+  );
+};
