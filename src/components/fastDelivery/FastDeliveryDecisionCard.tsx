@@ -43,7 +43,7 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
     <div className="bg-white rounded-lg border p-4 mb-4" dir="rtl">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-500 mb-1">שיוך מהיר לי</div>
+          <div className="text-sm text-slate-500 mb-1">סוג משלוח</div>
           <div className="flex items-center gap-2">
             <div
               className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm ${badgeClasses(
