@@ -11,20 +11,26 @@ interface DeliveryDetailsProps {
 export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({ response, provider }) => {
   // Only show detailed tracking info for MahirLi
   if (provider === 'mahirLi') {
+    // The proxy returns the tracking number in `track_number`; the public_id is
+    // embedded in the print label URL (?public_id=XXXX).
+    let publicId = response.public_id || '';
+    if (!publicId && response.print_label) {
+      const match = /[?&]public_id=([^&]+)/i.exec(response.print_label);
+      if (match) publicId = decodeURIComponent(match[1]);
+    }
+
     return (
       <div className="space-y-4 text-right">
-        <ResponseField 
-          label="מספר משלוח" 
-          value={response.public_id} 
+        <ResponseField
+          label="מספר מעקב"
+          value={response.track_number}
         />
-        <ResponseField 
-          label="מספר מעקב" 
-          value={response.barcode} 
-        />
-        <ResponseField 
-          label="אזור חלוקה" 
-          value={response.destination_region_str} 
-        />
+        {publicId && (
+          <ResponseField
+            label="מזהה משלוח"
+            value={publicId}
+          />
+        )}
       </div>
     );
   }

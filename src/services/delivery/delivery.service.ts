@@ -56,9 +56,21 @@ export const persistMahirliMetaToOrder = async (
   // Whatever Mahir Li returns, log it so the exact shape is verifiable in production.
   console.log('[delivery.service] Mahir Li create response (raw):', response);
 
-  const taskId = response.id != null ? String(response.id) : '';
-  const publicId = response.public_id != null ? String(response.public_id) : '';
-  const barcode = response.barcode != null ? String(response.barcode) : '';
+  // The Likutil proxy returns: print_label, control_panel_link, provider, track_number.
+  // The numeric tracking/task number arrives as `track_number`, and the Lionwheel
+  // public_id is embedded in the print_label URL (?public_id=XXXX).
+  const trackNumber = response.track_number != null ? String(response.track_number) : '';
+
+  let publicId = response.public_id != null ? String(response.public_id) : '';
+  if (!publicId && response.print_label) {
+    const match = /[?&]public_id=([^&]+)/i.exec(response.print_label);
+    if (match) publicId = decodeURIComponent(match[1]);
+  }
+
+  // Prefer an explicit numeric id if the proxy ever provides one; otherwise the
+  // track number is our identifier for tasks/show. Barcode falls back to the track number.
+  const taskId = response.id != null ? String(response.id) : trackNumber;
+  const barcode = response.barcode != null ? String(response.barcode) : trackNumber;
 
   const meta: Array<{ key: string; value: string }> = [
     { key: '_s3_mahirli_task_id', value: taskId },
