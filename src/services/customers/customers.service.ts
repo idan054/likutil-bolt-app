@@ -58,6 +58,7 @@ const createEmptyShopifyCustomer = (id: number): CustomerDetails => ({
   last_name: "",
   username: "",
   role: "customer",
+  is_vip_member: false,
   billing: {
     first_name: "",
     last_name: "",
@@ -101,6 +102,7 @@ export const cacheShopifyCustomerFromOrder = (order: any): void => {
         order.customer.last_name || order.billing_address?.last_name || "",
       username: "",
       role: "customer",
+      is_vip_member: false,
       billing: {
         first_name: order.billing_address?.first_name || "",
         last_name: order.billing_address?.last_name || "",

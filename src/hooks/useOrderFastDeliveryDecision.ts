@@ -86,13 +86,23 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
 
     setIsLoading(true);
     try {
-      // Fetch customer role (VIP) if possible
+      // Prefer explicit VIP membership flag from order/customers API.
+      let isVipMember: boolean | null =
+        typeof (order as OrderDetails).is_vip_member === "boolean"
+          ? Boolean((order as OrderDetails).is_vip_member)
+          : null;
+
+      // Fallback role is kept only for backward compatibility.
       let role: string | null = null;
-      if ((order as OrderDetails).customer_id) {
+      if ((order as OrderDetails).customer_id && isVipMember === null) {
         try {
           const customer = await getCustomerById(String((order as OrderDetails).customer_id));
+          if (typeof customer?.is_vip_member === "boolean") {
+            isVipMember = customer.is_vip_member;
+          }
           role = customer?.role ?? null;
         } catch {
+          isVipMember = null;
           role = null;
         }
       }
@@ -101,6 +111,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       const lineItemNames = (order as OrderDetails).line_items?.map((li) => li.name).filter(Boolean) ?? [];
 
       const res = decideFastDelivery({
+        isVipMember,
         customerRole: role,
         city,
         lineItemNames,

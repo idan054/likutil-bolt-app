@@ -37,6 +37,7 @@ export interface LineItem {
 
 export interface OrderSummary {
   customer_id: number | null;
+  is_vip_member?: boolean;
   id: number;
   order_number: number;
   status: string;

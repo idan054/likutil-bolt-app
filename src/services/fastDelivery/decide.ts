@@ -11,6 +11,7 @@ const containsAny = (haystack: string, needles: string[]) => {
 };
 
 export interface DecideFastDeliveryInput {
+  isVipMember?: boolean | null;
   customerRole?: string | null;
   city?: string | null;
   lineItemNames: string[];
@@ -28,9 +29,11 @@ export const decideFastDelivery = (input: DecideFastDeliveryInput): DecideFastDe
   const city = (input.city || "").trim();
   const rules = input.rules;
 
+  const hasVipFlag = typeof input.isVipMember === "boolean";
   const isRoleKnown = !!role;
   const isCityKnown = !!city;
-  const isVip = role ? rules.vipRoles.includes(role) : false;
+  const isVipKnown = hasVipFlag || isRoleKnown;
+  const isVip = hasVipFlag ? Boolean(input.isVipMember) : (role ? rules.vipRoles.includes(role) : false);
 
   const cityMatch = city ? rules.cities.map(normalizeForMatch).includes(normalizeForMatch(city)) : false;
 
@@ -44,7 +47,7 @@ export const decideFastDelivery = (input: DecideFastDeliveryInput): DecideFastDe
 
   // Needs review if core data is missing
   const needsReview =
-    !isRoleKnown ||
+    !isVipKnown ||
     !isCityKnown ||
     input.lineItemNames.length === 0;
 

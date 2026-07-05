@@ -5,6 +5,7 @@ export interface CustomerDetails {
   last_name: string;
   username: string;
   role: string;
+  is_vip_member?: boolean;
   billing: {
     first_name: string;
     last_name: string;

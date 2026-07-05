@@ -71,6 +71,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         <div className="flex items-center gap-2">
           <RoleBadge 
             role={customer?.role} 
+            isVipMember={order.is_vip_member ?? customer?.is_vip_member}
             isLoading={isLoadingCustomer}
           />
           {isLocalPickup && <LocalPickupMarker />}

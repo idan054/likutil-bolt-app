@@ -4,10 +4,11 @@ import { translateRole } from '../../utils/customer';
 
 interface RoleBadgeProps {
   role: string | null | undefined;
+  isVipMember?: boolean | null;
   isLoading?: boolean;
 }
 
-export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, isLoading }) => {
+export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, isVipMember, isLoading }) => {
   if (isLoading) {
     return (
       <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 flex items-center gap-1">
@@ -17,8 +18,10 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, isLoading }) => {
     );
   }
 
-  const isVIP = role?.toLowerCase() === 'wholesale_customer';
-  const translatedRole = translateRole(role);
+  const isVIP = typeof isVipMember === 'boolean'
+    ? isVipMember
+    : role?.toLowerCase() === 'wholesale_customer';
+  const translatedRole = isVIP ? 'לקוח VIP' : translateRole(role);
 
   const getRoleStyles = () => {
     if (isVIP) {

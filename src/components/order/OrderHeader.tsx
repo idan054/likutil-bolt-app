@@ -57,6 +57,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
         <div className="flex items-center gap-2">
           <RoleBadge 
             role={customer?.role} 
+            isVipMember={order.is_vip_member ?? customer?.is_vip_member}
             isLoading={isLoading}
           />
           <StatusBadge status={status} orderId={order.id.toString()} />
