@@ -1,5 +1,6 @@
 import {
   stateStore, readState, readRuntimeConfig, blLogin, blFetchRecent, maxRecordId,
+  readHistory, computeCutoff, selectPending, describeRecord,
 } from './lib/locker-core.mjs';
 
 /**
@@ -59,7 +60,33 @@ export default async function handler(req) {
   const store = stateStore();
 
   if (req.method === 'GET') {
-    return json(await readState());
+    const state = await readState();
+    const wantsPreview = new URL(req.url).searchParams.get('preview') === '1';
+
+    if (!wantsPreview) {
+      return json({ ...state, history: await readHistory() });
+    }
+
+    // DRY RUN — sends nothing. Runs the exact same selection the sender uses,
+    // so this is literally who would be messaged on the next run.
+    const { token, marketMobile } = await blLogin();
+    const records = await blFetchRecent(token, marketMobile);
+    const pending = selectPending(records, { lastSeenId: state.lastSeenId, cutoff: computeCutoff(state) });
+
+    // Newest record overall, rendered as a message, so the wording can be
+    // reviewed even when nothing is currently pending.
+    const newest = [...records].sort((a, b) => Number(b.id) - Number(a.id))[0];
+
+    return json({
+      ...state,
+      history: await readHistory(),
+      preview: {
+        generatedAt: new Date().toISOString(),
+        wouldSend: pending.map(describeRecord),
+        sample: newest ? describeRecord(newest) : null,
+        waitingForPickup: records.filter((r) => !r.get_time && r.pick_code).length,
+      },
+    });
   }
 
   if (req.method === 'POST') {

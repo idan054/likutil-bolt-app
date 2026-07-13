@@ -1,6 +1,6 @@
 import {
   CONFIG, stateStore, readState, blLogin, blFetchRecent,
-  normalizePhone, buildMessage, sendWhatsApp,
+  computeCutoff, selectPending, normalizePhone, buildMessage, sendWhatsApp, appendHistory,
 } from './lib/locker-core.mjs';
 
 /**
@@ -11,9 +11,11 @@ import {
  * ON, that endpoint records the current newest record id as the starting point, so
  * the automation always begins "from now forward" and never messages older packages.
  *
- * Two guards decide who gets a message:
- *   TIME — deposited within the last MAX_AGE_MINUTES (and not before it was enabled)
- *   ID   — id higher than the last one handled (no duplicates across overlapping runs)
+ * Recipients come from selectPending() in locker-core — the same function the dry-run
+ * preview uses, so what the preview shows is exactly what gets sent here.
+ *
+ * Every send (success or failure) is appended to the history blob, so the app can
+ * show what actually went out without needing access to the Netlify logs.
  */
 
 export const config = { schedule: CONFIG.SCHEDULE };
@@ -28,38 +30,37 @@ export default async function handler() {
     });
   }
 
-  const windowStart = Date.now() - CONFIG.MAX_AGE_MINUTES * 60 * 1000;
-  const enabledAtMs = state.enabledAt ? Date.parse(state.enabledAt) : 0;
-  const cutoff = Math.max(windowStart, enabledAtMs || 0);
-
   const { token, marketMobile } = await blLogin();
   const records = await blFetchRecent(token, marketMobile);
+  const pending = selectPending(records, { lastSeenId: state.lastSeenId, cutoff: computeCutoff(state) });
 
-  const fresh = records
-    .filter((r) => {
-      const depositedAt = Date.parse(r.save_time);
-      return (
-        Number(r.id) > state.lastSeenId &&
-        !Number.isNaN(depositedAt) && depositedAt >= cutoff &&
-        !r.get_time && r.pick_code && r.get_user_mobile
-      );
-    })
-    .sort((a, b) => Number(a.id) - Number(b.id));
-
-  console.log(`Run start | enabled since ${state.enabledAt} | lastSeenId=${state.lastSeenId} | fresh=${fresh.length}`);
+  console.log(`Run start | enabled since ${state.enabledAt} | lastSeenId=${state.lastSeenId} | pending=${pending.length}`);
 
   const results = [];
-  for (const rec of fresh) {
+  const historyEntries = [];
+  for (const rec of pending) {
     const phone = normalizePhone(rec.get_user_mobile);
+    const entry = {
+      sentAt: new Date().toISOString(),
+      id: Number(rec.id),
+      orderNumber: rec.order_number,
+      phone,
+      code: rec.pick_code,
+      box: rec.box_name,
+    };
     try {
       await sendWhatsApp(phone, buildMessage(rec));
       console.log(`SENT → ${phone} | order ${rec.order_number} | code ${rec.pick_code}`);
       results.push({ id: Number(rec.id), ok: true });
+      historyEntries.push({ ...entry, ok: true });
     } catch (err) {
       console.error(`FAILED order ${rec.order_number} → ${phone}: ${err.message}`);
       results.push({ id: Number(rec.id), ok: false });
+      historyEntries.push({ ...entry, ok: false, error: err.message });
     }
   }
+
+  await appendHistory(historyEntries);
 
   // Advance the watermark only past records we actually sent, so a transient
   // failure is retried next run instead of being skipped.
@@ -70,8 +71,8 @@ export default async function handler() {
     await stateStore().set('lastSeenId', String(newLastSeen));
   }
 
-  console.log(`Run done | fresh=${fresh.length} sent=${okIds.length} lastSeenId=${newLastSeen}`);
-  return new Response(JSON.stringify({ enabled: true, fresh: fresh.length, sent: okIds.length, lastSeenId: newLastSeen }), {
+  console.log(`Run done | pending=${pending.length} sent=${okIds.length} lastSeenId=${newLastSeen}`);
+  return new Response(JSON.stringify({ enabled: true, pending: pending.length, sent: okIds.length, lastSeenId: newLastSeen }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
 }

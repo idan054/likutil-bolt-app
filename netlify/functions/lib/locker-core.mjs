@@ -54,6 +54,23 @@ export async function readState() {
   };
 }
 
+// --- Send history --------------------------------------------------------
+// Persisted so the app can show what actually went out; the Netlify function
+// logs are not reachable from the app's Netlify account.
+
+const HISTORY_LIMIT = 50;
+
+export async function readHistory() {
+  return (await stateStore().get('history', { type: 'json' })) || [];
+}
+
+export async function appendHistory(entries) {
+  if (!entries?.length) return;
+  const previous = await readHistory();
+  const next = [...entries, ...previous].slice(0, HISTORY_LIMIT);
+  await stateStore().set('history', JSON.stringify(next));
+}
+
 // --- BetterLockers API ---------------------------------------------------
 
 export async function blLogin() {
@@ -91,6 +108,43 @@ export async function blFetchRecent(token, marketMobile, pageSize = 50) {
 
 export function maxRecordId(records, floor = 0) {
   return records.reduce((m, r) => Math.max(m, Number(r.id) || 0), floor);
+}
+
+// --- Who gets a message (single source of truth) --------------------------
+// Used by BOTH the real sender and the dry-run preview, so what the preview
+// shows can never drift from what actually gets sent.
+
+export function computeCutoff(state) {
+  const windowStart = Date.now() - CONFIG.MAX_AGE_MINUTES * 60 * 1000;
+  const enabledAtMs = state.enabledAt ? Date.parse(state.enabledAt) : 0;
+  return Math.max(windowStart, enabledAtMs || 0);
+}
+
+export function selectPending(records, { lastSeenId = 0, cutoff = 0 } = {}) {
+  return records
+    .filter((r) => {
+      const depositedAt = Date.parse(r.save_time);
+      return (
+        Number(r.id) > lastSeenId &&
+        !Number.isNaN(depositedAt) && depositedAt >= cutoff &&
+        !r.get_time && r.pick_code && r.get_user_mobile
+      );
+    })
+    .sort((a, b) => Number(a.id) - Number(b.id));
+}
+
+// Shape a record for display in the dry-run preview.
+export function describeRecord(rec) {
+  return {
+    id: Number(rec.id),
+    orderNumber: rec.order_number,
+    phone: normalizePhone(rec.get_user_mobile),
+    code: rec.pick_code,
+    box: rec.box_name,
+    address: rec.device_address,
+    savedAt: depositTimeText(rec),
+    message: buildMessage(rec),
+  };
 }
 
 // --- Message building ----------------------------------------------------
