@@ -5,10 +5,15 @@ import { getStore } from '@netlify/blobs';
 import { renderLockerMessage } from '../../../src/config/lockerMessageTemplate.js';
 
 export const CONFIG = {
-  // How far back a run looks (also tolerates a few missed 5-min runs).
-  MAX_AGE_MINUTES: 20,
   SCHEDULE: '*/5 * * * *',
 };
+
+// BetterLockers timestamps cannot be trusted: save_time is labelled "GMT" but is
+// not GMT (a package deposited ~2h ago comes back stamped ~1h in the FUTURE), and
+// their own admin panel renders it further off still. So we never filter on their
+// clock — a skewed stamp could silently drop a real package and the customer would
+// never get their code. Recipient selection relies purely on the record id, which
+// is a reliable monotonic counter, and the message is stamped with our own clock.
 
 const BL_BASE = 'https://admin.betterlockers.com/api/api';
 
@@ -114,22 +119,16 @@ export function maxRecordId(records, floor = 0) {
 // Used by BOTH the real sender and the dry-run preview, so what the preview
 // shows can never drift from what actually gets sent.
 
-export function computeCutoff(state) {
-  const windowStart = Date.now() - CONFIG.MAX_AGE_MINUTES * 60 * 1000;
-  const enabledAtMs = state.enabledAt ? Date.parse(state.enabledAt) : 0;
-  return Math.max(windowStart, enabledAtMs || 0);
-}
-
-export function selectPending(records, { lastSeenId = 0, cutoff = 0 } = {}) {
+// A record is messaged when it is NEWER than the last one we handled (the id is
+// anchored to the newest record at the moment the automation was switched on, so
+// this can never reach backwards), is still waiting to be collected, and has both
+// a code and a phone. No timestamp filtering — see the note at the top of the file.
+export function selectPending(records, { lastSeenId = 0 } = {}) {
   return records
-    .filter((r) => {
-      const depositedAt = Date.parse(r.save_time);
-      return (
-        Number(r.id) > lastSeenId &&
-        !Number.isNaN(depositedAt) && depositedAt >= cutoff &&
-        !r.get_time && r.pick_code && r.get_user_mobile
-      );
-    })
+    .filter((r) => (
+      Number(r.id) > lastSeenId &&
+      !r.get_time && r.pick_code && r.get_user_mobile
+    ))
     .sort((a, b) => Number(a.id) - Number(b.id));
 }
 
@@ -142,7 +141,6 @@ export function describeRecord(rec) {
     code: rec.pick_code,
     box: rec.box_name,
     address: rec.device_address,
-    savedAt: depositTimeText(rec),
     message: buildMessage(rec),
   };
 }
@@ -157,17 +155,17 @@ export function normalizePhone(raw) {
   return d;
 }
 
-export function depositTimeText(rec) {
-  const t = Date.parse(rec.save_time);
-  if (Number.isNaN(t)) return '';
+// Our own clock, in Israel time. We poll every 5 minutes, so this is within a few
+// minutes of the actual deposit — and unlike the BetterLockers stamp, it is correct.
+export function notificationTimeText(at = new Date()) {
   return new Intl.DateTimeFormat('he-IL', {
     timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(t));
+  }).format(at);
 }
 
-export function buildMessage(rec) {
+export function buildMessage(rec, at = new Date()) {
   return renderLockerMessage({
-    time: depositTimeText(rec),
+    time: notificationTimeText(at),
     order_number: rec.order_number,
     address: rec.device_address,
     box: rec.box_name,

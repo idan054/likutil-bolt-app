@@ -1,6 +1,6 @@
 import {
   CONFIG, stateStore, readState, blLogin, blFetchRecent,
-  computeCutoff, selectPending, normalizePhone, buildMessage, sendWhatsApp, appendHistory,
+  selectPending, normalizePhone, buildMessage, sendWhatsApp, appendHistory,
 } from './lib/locker-core.mjs';
 
 /**
@@ -32,7 +32,7 @@ export default async function handler() {
 
   const { token, marketMobile } = await blLogin();
   const records = await blFetchRecent(token, marketMobile);
-  const pending = selectPending(records, { lastSeenId: state.lastSeenId, cutoff: computeCutoff(state) });
+  const pending = selectPending(records, { lastSeenId: state.lastSeenId });
 
   console.log(`Run start | enabled since ${state.enabledAt} | lastSeenId=${state.lastSeenId} | pending=${pending.length}`);
 

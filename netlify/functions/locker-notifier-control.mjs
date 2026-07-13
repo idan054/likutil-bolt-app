@@ -1,6 +1,6 @@
 import {
   stateStore, readState, readRuntimeConfig, blLogin, blFetchRecent, maxRecordId,
-  readHistory, computeCutoff, selectPending, describeRecord,
+  readHistory, selectPending, describeRecord,
 } from './lib/locker-core.mjs';
 
 /**
@@ -67,14 +67,18 @@ export default async function handler(req) {
       return json({ ...state, history: await readHistory() });
     }
 
-    // DRY RUN — sends nothing. Runs the exact same selection the sender uses,
-    // so this is literally who would be messaged on the next run.
+    // DRY RUN — sends nothing. Runs the exact same selection the sender uses.
     const { token, marketMobile } = await blLogin();
     const records = await blFetchRecent(token, marketMobile);
-    const pending = selectPending(records, { lastSeenId: state.lastSeenId, cutoff: computeCutoff(state) });
+
+    // While the automation is off, switching it on would anchor the starting point
+    // to the newest record that exists right now. Preview from that same anchor, so
+    // this shows what would REALLY go out — not packages that enabling would skip.
+    const effectiveLastSeenId = state.enabled ? state.lastSeenId : maxRecordId(records);
+    const pending = selectPending(records, { lastSeenId: effectiveLastSeenId });
 
     // Newest record overall, rendered as a message, so the wording can be
-    // reviewed even when nothing is currently pending.
+    // reviewed even when nothing is pending.
     const newest = [...records].sort((a, b) => Number(b.id) - Number(a.id))[0];
 
     return json({

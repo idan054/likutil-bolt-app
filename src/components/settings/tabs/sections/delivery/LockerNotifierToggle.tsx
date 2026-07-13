@@ -11,7 +11,6 @@ interface PreviewRecord {
   code: string;
   box: string;
   address: string;
-  savedAt: string;
   message: string;
 }
 
@@ -214,8 +213,13 @@ export const LockerNotifierToggle: React.FC = () => {
           <p className="text-sm">
             {preview.wouldSend.length === 0 ? (
               <span className="text-gray-600">
-                כרגע <b>לא הייתה נשלחת אף הודעה</b>. ({preview.waitingForPickup} חבילות ממתינות לאיסוף, אך אף אחת
-                לא הופקדה בחלון הזמן האחרון.)
+                כרגע <b>לא הייתה נשלחת אף הודעה</b>.{' '}
+                {!enabled && (
+                  <>
+                    ההדלקה נועלת את נקודת ההתחלה על ההפקדה האחרונה, ולכן {preview.waitingForPickup} החבילות
+                    שממתינות כרגע לאיסוף <b>לא</b> יקבלו הודעה — רק חבילות שייכנסו מרגע ההדלקה והלאה.
+                  </>
+                )}
               </span>
             ) : (
               <span className="text-green-700 font-medium">
