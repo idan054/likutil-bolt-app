@@ -39,10 +39,9 @@ async function authorize(req) {
 
   const body = await response.json();
   const user = body.users?.[0];
-  const allowedEmails = config.controlEmails.map((email) => String(email).trim().toLowerCase());
-  if (!user?.email || !allowedEmails.includes(user.email.toLowerCase())) {
-    return { error: json({ error: 'forbidden' }, 403) };
-  }
+
+  // Any signed-in Likutil user may control the automation — no email allow-list.
+  if (!user) return { error: json({ error: 'unauthorized' }, 401) };
 
   return { user };
 }

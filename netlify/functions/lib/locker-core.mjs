@@ -31,7 +31,6 @@ export async function readRuntimeConfig() {
     'greenApiInstance',
     'greenApiToken',
     'firebaseApiKey',
-    'controlEmails',
   ];
 
   if (!config || required.some((key) => !config[key])) {
