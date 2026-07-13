@@ -16,7 +16,11 @@ import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
 import type { OrderDetails as OrderDetailType } from "../types/order";
-import { isLocalPickupShipping, isOtherPaymentProcessing } from "../utils/order";
+import {
+  isCashPaymentMethod,
+  isLocalPickupShipping,
+  isOtherPaymentProcessing,
+} from "../utils/order";
 import { OrderStatusOverrideMenu } from "./order/OrderStatusOverrideMenu";
 
 interface OrderDetailsProps {
@@ -41,6 +45,10 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   >(null);
 
   const isLocalPickup = isLocalPickupShipping(order.shipping_lines);
+  const shouldWarnForCashPickup = isLocalPickup && isCashPaymentMethod(
+    order.payment_method_title,
+    order.payment_method
+  );
 
   // Get fast delivery decision for auto-selecting mahirLi
   const { decision } = useOrderFastDeliveryDecision(order);
@@ -181,6 +189,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
               <LocalPickupSection
                 order={order}
                 paymentMethod={order.payment_method_title}
+                showCashWarning={shouldWarnForCashPickup}
                 isCompleting={isCompleting}
                 onComplete={handleComplete}
                 onSendAnyway={() => setShowLocalPickup(false)}

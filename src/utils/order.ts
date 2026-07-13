@@ -32,6 +32,13 @@ const localPickupKeywords = [
   "נקודות חלוקה"
 ];
 
+const cashPaymentKeywords = [
+  "מזומן",
+  "cash",
+  "cod",
+  "cash on delivery"
+];
+
 export const isOtherPaymentMethod = (
   paymentMethodTitle?: string,
   paymentMethod?: string
@@ -47,6 +54,19 @@ export const isOtherPaymentMethod = (
     normalizedMethod.includes("אחר") ||
     normalizedMethod === "other" ||
     normalizedMethod.includes("other")
+  );
+};
+
+export const isCashPaymentMethod = (
+  paymentMethodTitle?: string,
+  paymentMethod?: string
+): boolean => {
+  const normalizedTitle = normalizePaymentValue(paymentMethodTitle);
+  const normalizedMethod = normalizePaymentValue(paymentMethod);
+
+  return cashPaymentKeywords.some(
+    (keyword) =>
+      normalizedTitle.includes(keyword) || normalizedMethod.includes(keyword)
   );
 };
 

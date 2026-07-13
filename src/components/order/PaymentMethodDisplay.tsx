@@ -1,5 +1,6 @@
 import React from 'react';
 import { HandCoins } from 'lucide-react';
+import { isCashPaymentMethod } from '../../utils/order';
 
 interface PaymentMethodDisplayProps {
   paymentMethod: string;
@@ -10,7 +11,7 @@ export const PaymentMethodDisplay: React.FC<PaymentMethodDisplayProps> = ({
   paymentMethod, 
   showHighlightedPaymentOnly = false 
 }) => {
-  const isHighlightedPayment = paymentMethod.includes('מזומן') || 
+  const isHighlightedPayment = isCashPaymentMethod(paymentMethod) ||
     paymentMethod.includes('תשלום בטלפון') || 
     paymentMethod.includes('העברה') || 
     paymentMethod.includes('בנקאית');
