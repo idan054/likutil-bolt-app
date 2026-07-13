@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
-import { ChevronRight, ChevronLeft, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, X, Pin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SavedTemplatesCarouselProps {
   templates: string[];
+  pinnedTemplates?: string[];  // Always shown first, cannot be deleted
   onSelect: (template: string) => void;
   onDelete: (template: string) => void;  // Add this prop
   isVisible: boolean;
@@ -12,6 +13,7 @@ interface SavedTemplatesCarouselProps {
 
 export const SavedTemplatesCarousel: React.FC<SavedTemplatesCarouselProps> = ({
   templates,
+  pinnedTemplates = [],
   onSelect,
   onDelete,
   isVisible,
@@ -69,6 +71,25 @@ export const SavedTemplatesCarousel: React.FC<SavedTemplatesCarouselProps> = ({
             ref={scrollRef}
             className="flex gap-3 overflow-x-auto scrollbar-none scroll-smooth"
           >
+            {/* Pinned templates — selectable & editable, but not deletable */}
+            {pinnedTemplates.map((template, index) => (
+              <div key={`pinned-${index}`} className="relative shrink-0 max-w-[200px]">
+                <span
+                  className="absolute top-1 left-1 z-10 p-1 rounded-full bg-blue-50 border border-blue-200"
+                  title="תבנית קבועה — ניתן לערוך בעת השליחה, לא ניתן למחוק"
+                >
+                  <Pin size={10} className="text-blue-500" />
+                </span>
+
+                <button
+                  onClick={() => onSelect(template)}
+                  className="w-full p-2 bg-white border border-blue-200 rounded text-right text-sm hover:bg-blue-50 transition-colors"
+                >
+                  <p className="line-clamp-3">{template}</p>
+                </button>
+              </div>
+            ))}
+
             {templates.map((template, index) => (
               <div key={index} className="relative shrink-0 max-w-[200px]">
 

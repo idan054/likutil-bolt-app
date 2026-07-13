@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.5.3",
+    "@netlify/blobs": "^10.7.9",
     "@shopify/app-bridge": "^3.7.10",
     "@shopify/app-bridge-react": "^4.1.8",
     "@shopify/app-bridge-utils": "^3.5.1",

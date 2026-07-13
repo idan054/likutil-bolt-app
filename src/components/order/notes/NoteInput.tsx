@@ -5,6 +5,10 @@ import { translations } from "../../../config/translations";
 import { AutoResizeTextArea } from "../../ui/AutoResizeTextArea";
 import { SavedTemplatesCarousel } from "./SavedTemplatesCarousel";
 import { useQuickMessages } from "../../../hooks/useQuickMessages";
+import { LOCKER_MESSAGE_TEMPLATE } from "../../../config/lockerMessageTemplate.js";
+
+// Fixed, non-deletable templates shown at the front of the carousel.
+const PINNED_TEMPLATES = [LOCKER_MESSAGE_TEMPLATE];
 
 interface NoteInputProps {
   value: string;
@@ -78,16 +82,17 @@ export const NoteInput: React.FC<NoteInputProps> = ({
           <Bookmark className={`transform transition-transform duration-200 ${
               showTemplates ? "-rotate-90" : ""
             } -ml-1`} size={16} />
-          <span>תבניות שמורות ({messages.length})</span>
+          <span>תבניות שמורות ({PINNED_TEMPLATES.length + messages.length})</span>
         </button>
 
 
 
 
       {/* Saved Templates Carousel */}
-      {messages.length > 0 && (
+      {(PINNED_TEMPLATES.length > 0 || messages.length > 0) && (
         <SavedTemplatesCarousel
           templates={messages}
+          pinnedTemplates={PINNED_TEMPLATES}
           onSelect={handleSelectTemplate}
           onDelete={handleDeleteTemplate}
           isVisible={showTemplates}

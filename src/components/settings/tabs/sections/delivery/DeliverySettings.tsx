@@ -1,5 +1,6 @@
 import React from 'react';
 import { DeliveryMarketplace } from './marketplace/DeliveryMarketplace';
+import { LockerNotifierToggle } from './LockerNotifierToggle';
 import { useDeliveryIntegrations } from '../../../../../hooks/settings/useDeliveryIntegrations';
 
 export const DeliverySettings: React.FC = () => {
@@ -24,6 +25,8 @@ export const DeliverySettings: React.FC = () => {
           התחבר בקלות לכל לחברות המשלוחים המובילות בישראל
         </p>
       </div>
+
+      <LockerNotifierToggle />
 
       <DeliveryMarketplace
         integrations={integrations}
