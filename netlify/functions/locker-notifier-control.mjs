@@ -1,5 +1,5 @@
 import {
-  stateStore, readState, blLogin, blFetchRecent, maxRecordId,
+  stateStore, readState, readRuntimeConfig, blLogin, blFetchRecent, maxRecordId,
 } from './lib/locker-core.mjs';
 
 /**
@@ -12,9 +12,51 @@ import {
  */
 
 const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+
+async function authorize(req) {
+  const authorization = req.headers.get('authorization') || '';
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) return { error: json({ error: 'unauthorized' }, 401) };
+
+  const config = await readRuntimeConfig();
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(config.firebaseApiKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: match[1] }),
+    },
+  );
+
+  if (!response.ok) return { error: json({ error: 'unauthorized' }, 401) };
+
+  const body = await response.json();
+  const user = body.users?.[0];
+  const allowedEmails = config.controlEmails.map((email) => String(email).trim().toLowerCase());
+  if (!user?.email || !allowedEmails.includes(user.email.toLowerCase())) {
+    return { error: json({ error: 'forbidden' }, 403) };
+  }
+
+  return { user };
+}
 
 export default async function handler(req) {
+  let authorization;
+  try {
+    authorization = await authorize(req);
+  } catch (error) {
+    console.error('Locker notifier authorization configuration failed:', error.message);
+    return json({ error: 'service unavailable' }, 503);
+  }
+  if (authorization.error) return authorization.error;
+
   const store = stateStore();
 
   if (req.method === 'GET') {

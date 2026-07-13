@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Package, Loader2, AlertCircle } from 'lucide-react';
+import { auth } from '../../../../../config/firebase';
 
 const CONTROL_URL = '/.netlify/functions/locker-notifier-control';
 
@@ -8,6 +9,20 @@ interface NotifierState {
   enabledAt: string | null;
   lastSeenId: number;
 }
+
+const authorizedFetch = async (init?: RequestInit) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Authentication required');
+
+  const token = await user.getIdToken();
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+
+  return fetch(CONTROL_URL, {
+    ...init,
+    headers,
+  });
+};
 
 export const LockerNotifierToggle: React.FC = () => {
   const [state, setState] = useState<NotifierState | null>(null);
@@ -18,7 +33,7 @@ export const LockerNotifierToggle: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(CONTROL_URL);
+        const res = await authorizedFetch();
         if (!res.ok) throw new Error();
         setState(await res.json());
       } catch {
@@ -34,7 +49,7 @@ export const LockerNotifierToggle: React.FC = () => {
     setToggling(true);
     setError(null);
     try {
-      const res = await fetch(CONTROL_URL, {
+      const res = await authorizedFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !state.enabled }),

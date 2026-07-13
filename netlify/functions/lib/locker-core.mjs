@@ -8,15 +8,6 @@ export const CONFIG = {
   // How far back a run looks (also tolerates a few missed 5-min runs).
   MAX_AGE_MINUTES: 20,
   SCHEDULE: '*/5 * * * *',
-
-  // BetterLockers login.
-  BETTERLOCKERS_USER: 'Spider972',
-  BETTERLOCKERS_PASS: 'Biton654321',
-
-  // GreenAPI (same instance used in src/components/order/notes/OrderNotes.tsx).
-  GREENAPI_API_URL: 'https://7105.api.greenapi.com',
-  GREENAPI_ID_INSTANCE: '7105474587',
-  GREENAPI_API_TOKEN: '79edee4743dc4946a148eff95b599c0d3bd14f2876714a52b3',
 };
 
 const BL_BASE = 'https://admin.betterlockers.com/api/api';
@@ -24,7 +15,30 @@ const BL_BASE = 'https://admin.betterlockers.com/api/api';
 // --- Persistent state (Netlify Blobs) -----------------------------------
 
 export function stateStore() {
-  return getStore('locker-notifier');
+  return getStore({ name: 'locker-notifier', consistency: 'strong' });
+}
+
+export function configStore() {
+  return getStore({ name: 'locker-notifier-config', consistency: 'strong' });
+}
+
+export async function readRuntimeConfig() {
+  const config = await configStore().get('runtime', { type: 'json' });
+  const required = [
+    'betterLockersUser',
+    'betterLockersPass',
+    'greenApiUrl',
+    'greenApiInstance',
+    'greenApiToken',
+    'firebaseApiKey',
+    'controlEmails',
+  ];
+
+  if (!config || required.some((key) => !config[key])) {
+    throw new Error('Locker notifier runtime configuration is incomplete.');
+  }
+
+  return config;
 }
 
 export async function readState() {
@@ -44,10 +58,14 @@ export async function readState() {
 // --- BetterLockers API ---------------------------------------------------
 
 export async function blLogin() {
+  const config = await readRuntimeConfig();
   const res = await fetch(`${BL_BASE}/user/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: CONFIG.BETTERLOCKERS_USER, password: CONFIG.BETTERLOCKERS_PASS }),
+    body: JSON.stringify({
+      username: config.betterLockersUser,
+      password: config.betterLockersPass,
+    }),
   });
   const json = await res.json();
   if (json.code !== 0 || !json.data?.token) {
@@ -107,7 +125,8 @@ export function buildMessage(rec) {
 // --- WhatsApp (GreenAPI) -------------------------------------------------
 
 export async function sendWhatsApp(phone, message) {
-  const url = `${CONFIG.GREENAPI_API_URL}/waInstance${CONFIG.GREENAPI_ID_INSTANCE}/sendMessage/${CONFIG.GREENAPI_API_TOKEN}`;
+  const config = await readRuntimeConfig();
+  const url = `${config.greenApiUrl}/waInstance${config.greenApiInstance}/sendMessage/${config.greenApiToken}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
