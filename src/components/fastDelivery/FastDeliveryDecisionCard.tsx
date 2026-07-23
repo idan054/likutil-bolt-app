@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { Pencil, AlertTriangle, RefreshCcw } from "lucide-react";
-import type { DeliveryType } from "../../types/fastDelivery";
 import type { OrderDetails } from "../../types/order";
 import { useOrderFastDeliveryDecision } from "../../hooks/useOrderFastDeliveryDecision";
 
@@ -16,7 +15,7 @@ const badgeClasses = (type: "fast" | "regular" | "needs_review") => {
 };
 
 export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ order }) => {
-  const { decision, isLoading, autoDecideIfNeeded, manualOverride, retryWooSync } =
+  const { decision, isLoading, decisionError, autoDecideIfNeeded, manualOverride, retryWooSync } =
     useOrderFastDeliveryDecision(order);
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -28,10 +27,12 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
   }, [order.id]);
 
   const label = useMemo(() => {
+    if (isLoading && !decision) return "מחשב...";
+    if (decisionError && !decision) return "שגיאה";
     if (!decision) return "לא נקבע";
     if (decision.decisionState === "needs_review") return "דורש בדיקה";
     return decision.deliveryType === "fast" ? "מהיר לי" : "רגיל";
-  }, [decision]);
+  }, [decision, decisionError, isLoading]);
 
   const badgeType = useMemo(() => {
     if (!decision) return "needs_review" as const;
@@ -72,6 +73,23 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
 
           {decision?.decisionState === "needs_review" && (
             <div className="text-xs text-amber-700 mt-2">חסר מידע מלא, נדרש לוודא ידנית</div>
+          )}
+
+          {decisionError && (
+            <div className="flex items-center gap-2 text-xs text-amber-700 mt-2">
+              <AlertTriangle size={14} />
+              <span>{decisionError}</span>
+              {!decision && (
+                <button
+                  type="button"
+                  onClick={autoDecideIfNeeded}
+                  className="underline"
+                  disabled={isLoading}
+                >
+                  נסה שוב
+                </button>
+              )}
+            </div>
           )}
         </div>
 

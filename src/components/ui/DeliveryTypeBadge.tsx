@@ -17,13 +17,20 @@ interface DeliveryTypeBadgeProps {
 }
 
 // Configure your fast delivery instance IDs here
-const FAST_DELIVERY_INSTANCE_IDS = [27, "27"]; // spider3d.co.il מהיר לי
+const FAST_DELIVERY_INSTANCE_IDS = [27]; // spider3d.co.il מהיר לי
 
 const normalize = (v: string) => v.trim().toLowerCase();
 
 const isFastMethodTitle = (title: string) => {
   const t = normalize(title);
-  return t.includes("מהיר") || t.includes("מהיר לי") || t.includes("fast") || t.includes("same day");
+  return (
+    t.includes("מהיר") ||
+    t.includes("מהיום להיום") ||
+    t.includes("היום להיום") ||
+    t.includes("fast") ||
+    t.includes("same day") ||
+    t.includes("same-day")
+  );
 };
 
 const isPickupMethodTitle = (title: string) => {

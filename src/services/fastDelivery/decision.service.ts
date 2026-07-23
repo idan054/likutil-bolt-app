@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import type { OrderDeliveryDecision } from "../../types/fastDelivery";
 import { normalizeStoreKey } from "../../utils/storeKey";
@@ -15,7 +15,7 @@ export const getOrderDeliveryDecision = async (
   const ref = doc(db, COLLECTION, makeId(storeKey, orderId));
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  const data = snap.data() as any;
+  const data = snap.data();
   return {
     storeKey,
     orderId,
@@ -44,10 +44,23 @@ export const upsertOrderDeliveryDecision = async (
     decisionState: decision.decisionState,
     override: decision.override,
     checks: decision.checks ?? [],
-    wooSyncError: decision.wooSyncError,
-    wooLastSyncAt: decision.wooLastSyncAt,
+    wooSyncError: decision.wooSyncError ?? false,
     updatedAt: decision.updatedAt ?? new Date().toISOString(),
   };
-  await setDoc(ref, next, { merge: true });
+
+  if (typeof decision.wooLastSyncAt === "string") {
+    next.wooLastSyncAt = decision.wooLastSyncAt;
+  }
+
+  await setDoc(
+    ref,
+    {
+      ...next,
+      // Firestore rejects `undefined`. Clear an older timestamp explicitly
+      // while a fresh WooCommerce note sync is still pending.
+      wooLastSyncAt: next.wooLastSyncAt ?? deleteField(),
+    },
+    { merge: true }
+  );
   return next;
 };

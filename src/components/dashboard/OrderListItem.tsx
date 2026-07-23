@@ -1,12 +1,8 @@
 import React, { useEffect } from 'react';
-import { Calendar, Package, Truck, CheckCircle, Clock } from 'lucide-react';
-import { formatShortDate, formatTimeAgo, formatDateWithTimeAgo } from '../../utils/date';
-import { formatCurrency } from '../../utils/currency';
-import { TruncatedText } from '../ui/TruncatedText';
-import { RoleBadge } from '../ui/RoleBadge';
+import { CheckCircle, Clock } from 'lucide-react';
+import { formatTimeAgo } from '../../utils/date';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { OrderSummary } from '../../types/order';
-import { StatusBadge } from '../ui/StatusBadge';
 import { DeliveryTypeBadge } from '../ui/DeliveryTypeBadge';
 import { useOrderFastDeliveryDecision } from '../../hooks/useOrderFastDeliveryDecision';
 import { isOtherPaymentMethod } from '../../utils/order';
@@ -60,7 +56,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
             <DeliveryTypeBadge 
               shippingMethodTitle={order.shipping_lines?.[0]?.method_title} 
               shippingMethodId={order.shipping_lines?.[0]?.method_id}
-              shippingInstanceId={(order.shipping_lines?.[0] as any)?.instance_id}
+              shippingInstanceId={order.shipping_lines?.[0]?.instance_id}
               shippingCost={order.shipping_lines?.[0]?.total}
               deliveryType={decision?.deliveryType} 
               decisionState={decision?.decisionState} 

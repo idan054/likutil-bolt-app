@@ -52,7 +52,10 @@ export interface OrderSummary {
   date_modified?: string;
   date_completed?: string;
   shipping_lines: Array<{
+    method_id?: string;
     method_title: string;
+    instance_id?: string | number;
+    total?: string;
   }>;
   payment_method?: string;
   payment_method_title?: string;
@@ -89,6 +92,7 @@ export interface OrderDetails extends OrderSummary {
   shipping_lines: Array<{
     method_id: string;
     method_title: string;
+    instance_id?: string | number;
     total: string;
   }>;
   shipping_total: string;

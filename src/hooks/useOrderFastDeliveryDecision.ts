@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import type { OrderDetails, OrderSummary } from "../types/order";
-import type { OrderDeliveryDecision, DeliveryType, DeliveryDecisionState } from "../types/fastDelivery";
+import type { OrderDeliveryDecision, DeliveryType } from "../types/fastDelivery";
 import { useSettings } from "./useSettings";
 import { useFastDeliveryRules } from "./useFastDeliveryRules";
 import { getOrderDeliveryDecision, upsertOrderDeliveryDecision } from "../services/fastDelivery/decision.service";
@@ -10,6 +10,23 @@ import { getCustomerById } from "../services/customers/customers.service";
 import { createOrderNote } from "../services/orders/notes.service";
 
 const decisionCache = new Map<string, OrderDeliveryDecision | null>();
+const decisionListeners = new Map<
+  string,
+  Set<(decision: OrderDeliveryDecision | null) => void>
+>();
+const decisionCacheRevisions = new Map<string, number>();
+
+const publishDecision = (
+  cacheKey: string,
+  decision: OrderDeliveryDecision | null
+) => {
+  decisionCache.set(cacheKey, decision);
+  decisionCacheRevisions.set(
+    cacheKey,
+    (decisionCacheRevisions.get(cacheKey) ?? 0) + 1
+  );
+  decisionListeners.get(cacheKey)?.forEach((listener) => listener(decision));
+};
 
 export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary) => {
   const { settings } = useSettings();
@@ -17,11 +34,31 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
 
   const [decision, setDecision] = useState<OrderDeliveryDecision | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [decisionError, setDecisionError] = useState<string | null>(null);
 
+  const orderId = order?.id;
   const cacheKey = useMemo(() => {
     const storeUrl = settings?.storeUrl ?? "";
-    return storeUrl && order?.id ? `${storeUrl}__${order.id}` : "";
-  }, [settings?.storeUrl, (order as any)?.id]);
+    return storeUrl && orderId ? `${storeUrl}__${orderId}` : "";
+  }, [settings?.storeUrl, orderId]);
+
+  useEffect(() => {
+    if (!cacheKey) return;
+
+    const listener = (next: OrderDeliveryDecision | null) => {
+      setDecision(next);
+    };
+    const listeners = decisionListeners.get(cacheKey) ?? new Set();
+    listeners.add(listener);
+    decisionListeners.set(cacheKey, listeners);
+
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        decisionListeners.delete(cacheKey);
+      }
+    };
+  }, [cacheKey]);
 
   const load = useCallback(async () => {
     if (!settings?.storeUrl || !order?.id) return;
@@ -29,14 +66,27 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       setDecision(decisionCache.get(cacheKey) ?? null);
       return;
     }
+    const revisionBeforeLoad = decisionCacheRevisions.get(cacheKey) ?? 0;
     setIsLoading(true);
     try {
       const d = await getOrderDeliveryDecision(settings.storeUrl, Number(order.id));
-      decisionCache.set(cacheKey, d);
-      setDecision(d);
+      const revisionAfterLoad = decisionCacheRevisions.get(cacheKey) ?? 0;
+
+      // Do not let a slower, older read overwrite a decision that another
+      // mounted order view has just saved.
+      if (
+        revisionAfterLoad !== revisionBeforeLoad &&
+        decisionCache.has(cacheKey)
+      ) {
+        setDecision(decisionCache.get(cacheKey) ?? null);
+        return;
+      }
+
+      publishDecision(cacheKey, d);
+      setDecisionError(null);
     } catch (e) {
       console.error('[FastDelivery] Failed to load decision:', e);
-      // Don't show toast - this is expected for new orders
+      setDecisionError("טעינת סוג המשלוח נכשלה");
     } finally {
       setIsLoading(false);
     }
@@ -50,8 +100,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
     async (next: Omit<OrderDeliveryDecision, "storeKey" | "updatedAt">) => {
       if (!settings?.storeUrl) return null;
       const saved = await upsertOrderDeliveryDecision(settings.storeUrl, next);
-      decisionCache.set(cacheKey, saved);
-      setDecision(saved);
+      publishDecision(cacheKey, saved);
       return saved;
     },
     [settings?.storeUrl, cacheKey]
@@ -64,7 +113,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       try {
         await createOrderNote(String(order.id), { note, customer_note: false }, order as OrderDetails);
         return { ok: true as const };
-      } catch (e) {
+      } catch {
         return { ok: false as const };
       }
     },
@@ -77,15 +126,18 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
     // Only for full order details screen (needs shipping + items). If it's summary, skip.
     if (!("shipping" in order)) return;
 
-    const existing = await getOrderDeliveryDecision(settings.storeUrl, Number(order.id));
-    if (existing) {
-      decisionCache.set(cacheKey, existing);
-      setDecision(existing);
-      return;
-    }
-
+    setDecisionError(null);
     setIsLoading(true);
     try {
+      const existing = await getOrderDeliveryDecision(
+        settings.storeUrl,
+        Number(order.id)
+      );
+      if (existing) {
+        publishDecision(cacheKey, existing);
+        return;
+      }
+
       // Prefer explicit VIP membership flag from order/customers API.
       let isVipMember: boolean | null =
         typeof (order as OrderDetails).is_vip_member === "boolean"
@@ -96,7 +148,9 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       let role: string | null = null;
       if ((order as OrderDetails).customer_id && isVipMember === null) {
         try {
-          const customer = await getCustomerById(String((order as OrderDetails).customer_id));
+          const customer = await getCustomerById(
+            Number((order as OrderDetails).customer_id)
+          );
           if (typeof customer?.is_vip_member === "boolean") {
             isVipMember = customer.is_vip_member;
           }
@@ -154,7 +208,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       }
     } catch (e) {
       console.error('[FastDelivery] autoDecideIfNeeded error:', e);
-      // Only log to console, don't bother user with toast for background auto-decision
+      setDecisionError("שמירת סוג המשלוח נכשלה");
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +222,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       if (!("shipping" in order)) return;
 
       setIsLoading(true);
+      setDecisionError(null);
       try {
         const now = new Date().toISOString();
         const next: Omit<OrderDeliveryDecision, "storeKey" | "updatedAt"> = {
@@ -198,7 +253,9 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
             wooLastSyncAt: now,
           });
         }
-      } catch {
+      } catch (e) {
+        console.error('[FastDelivery] manualOverride error:', e);
+        setDecisionError("שמירת סוג המשלוח נכשלה");
         toast.error("שינוי סוג משלוח נכשל");
       } finally {
         setIsLoading(false);
@@ -213,6 +270,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
     if (!("shipping" in order)) return;
 
     setIsLoading(true);
+    setDecisionError(null);
     try {
       const now = new Date().toISOString();
       const noteText =
@@ -229,6 +287,9 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         wooSyncError: !sync.ok,
         wooLastSyncAt: now,
       });
+    } catch (e) {
+      console.error('[FastDelivery] retryWooSync error:', e);
+      setDecisionError("עדכון ההערה ב־WooCommerce נכשל");
     } finally {
       setIsLoading(false);
     }
@@ -237,6 +298,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
   return {
     decision,
     isLoading,
+    decisionError,
     loadDecision: load,
     autoDecideIfNeeded,
     manualOverride,

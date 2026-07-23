@@ -329,6 +329,7 @@ const mapOrder = (
       order.shipping_lines?.map((sl: any) => ({
         method_id: sl.method_id || "flat_rate",
         method_title: sl.method_title || "Flat Rate",
+        instance_id: sl.instance_id ?? undefined,
         total: sl.total || "0",
       })) || [],
     line_items: (order.line_items || []).map((item: any) =>
