@@ -14,8 +14,10 @@ import {
  * Recipients come from selectPending() in locker-core — the same function the dry-run
  * preview uses, so what the preview shows is exactly what gets sent here.
  *
- * Every send (success or failure) is appended to the history blob, so the app can
- * show what actually went out without needing access to the Netlify logs.
+ * Every one-time attempt (success or failure) is appended to the history blob, so
+ * the app can show what happened without needing access to the Netlify logs.
+ * A record is marked handled BEFORE GreenAPI is called. This deliberately provides
+ * at-most-once delivery: failures are never retried, preventing duplicate messages.
  */
 
 export const config = { schedule: '*/5 * * * *' };
@@ -38,41 +40,43 @@ export default async function handler() {
 
   const results = [];
   const historyEntries = [];
+  const store = stateStore();
+  let newLastSeen = state.lastSeenId;
   for (const rec of pending) {
+    const recordId = Number(rec.id);
     const phone = normalizePhone(rec.get_user_mobile);
     const entry = {
       sentAt: new Date().toISOString(),
-      id: Number(rec.id),
+      id: recordId,
       orderNumber: rec.order_number,
       phone,
       code: rec.pick_code,
       box: rec.box_name,
     };
+
+    // Claim the record before contacting GreenAPI. If the request fails or the
+    // function stops afterwards, this record is intentionally never sent again.
+    await store.set('lastSeenId', String(recordId));
+    newLastSeen = recordId;
+
     try {
       await sendWhatsApp(phone, buildMessage(rec));
       console.log(`SENT → ${phone} | order ${rec.order_number} | code ${rec.pick_code}`);
-      results.push({ id: Number(rec.id), ok: true });
+      results.push({ id: recordId, ok: true });
       historyEntries.push({ ...entry, ok: true });
     } catch (err) {
       console.error(`FAILED order ${rec.order_number} → ${phone}: ${err.message}`);
-      results.push({ id: Number(rec.id), ok: false });
+      results.push({ id: recordId, ok: false });
       historyEntries.push({ ...entry, ok: false, error: err.message });
     }
   }
 
   await appendHistory(historyEntries);
 
-  // Advance the watermark only past records we actually sent, so a transient
-  // failure is retried next run instead of being skipped.
-  const okIds = results.filter((r) => r.ok).map((r) => r.id);
-  let newLastSeen = state.lastSeenId;
-  if (okIds.length) {
-    newLastSeen = Math.max(state.lastSeenId, ...okIds);
-    await stateStore().set('lastSeenId', String(newLastSeen));
-  }
+  const sentCount = results.filter((r) => r.ok).length;
 
-  console.log(`Run done | pending=${pending.length} sent=${okIds.length} lastSeenId=${newLastSeen}`);
-  return new Response(JSON.stringify({ enabled: true, pending: pending.length, sent: okIds.length, lastSeenId: newLastSeen }), {
+  console.log(`Run done | attempted=${pending.length} sent=${sentCount} lastSeenId=${newLastSeen}`);
+  return new Response(JSON.stringify({ enabled: true, attempted: pending.length, sent: sentCount, lastSeenId: newLastSeen }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
 }

@@ -10,11 +10,13 @@
 //   {box}           box number
 //   {code}          pickup code
 
-export const LOCKER_MESSAGE_TEMPLATE = `היי! 👋 החבילה שלך הגיעה וממתינה לך בלוקר 📦
+export const LOCKER_MESSAGE_TEMPLATE = `היי! 👋 החבילה שלך ממתינה לך בלוקר  האדום📦
 🕒 נכנסה בתאריך {time}
 
 הזמנה מספר: {order_number}
 📍 כתובת: {address}
+🚗 ניווט ישיר ב-Waze:
+https://waze.com/ul?ll=31.8914,34.73749&navigate=yes
 🔢 תא מספר: {box}
 
 🔑 קוד לפתיחת התא: {code}

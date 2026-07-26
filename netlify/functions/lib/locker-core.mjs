@@ -12,6 +12,8 @@ import { renderLockerMessage } from '../../../src/config/lockerMessageTemplate.j
 // is a reliable monotonic counter, and the message is stamped with our own clock.
 
 const BL_BASE = 'https://admin.betterlockers.com/api/api';
+const LOCKER_IMAGE_PATH = '/assets/images/locker-location.png';
+const DEFAULT_SITE_URL = 'https://my.likutil.co.il';
 
 // --- Persistent state (Netlify Blobs) -----------------------------------
 
@@ -173,12 +175,29 @@ export function buildMessage(rec, at = new Date()) {
 
 export async function sendWhatsApp(phone, message) {
   const config = await readRuntimeConfig();
-  const url = `${config.greenApiUrl}/waInstance${config.greenApiInstance}/sendMessage/${config.greenApiToken}`;
+  const url = `${config.greenApiUrl}/waInstance${config.greenApiInstance}/sendFileByUrl/${config.greenApiToken}`;
+  const imageUrl = new URL(LOCKER_IMAGE_PATH, process.env.URL || DEFAULT_SITE_URL).toString();
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId: `${phone}@c.us`, message }),
+    body: JSON.stringify({
+      chatId: `${phone}@c.us`,
+      urlFile: imageUrl,
+      fileName: 'locker-location.png',
+      caption: message,
+    }),
   });
-  if (!res.ok) throw new Error(`GreenAPI send failed (${res.status}): ${await res.text()}`);
-  return res.json();
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`GreenAPI media send failed (${res.status}): ${responseText}`);
+
+  let response;
+  try {
+    response = JSON.parse(responseText);
+  } catch {
+    throw new Error('GreenAPI media send returned an invalid response.');
+  }
+  if (!response?.idMessage) {
+    throw new Error('GreenAPI media send returned no message id.');
+  }
+  return response;
 }
