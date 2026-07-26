@@ -313,6 +313,10 @@ const mapOrder = (
 
   return {
     id: order.id,
+    is_vip_member:
+      typeof order.is_vip_member === "boolean"
+        ? order.is_vip_member
+        : undefined,
     status: order.status || "processing",
     total: order.total || "0",
     customer_id: order.customer_id || null,

@@ -23,8 +23,7 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
   React.useEffect(() => {
     // Auto decide on first open
     autoDecideIfNeeded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order.id]);
+  }, [order.id, autoDecideIfNeeded]);
 
   const label = useMemo(() => {
     if (isLoading && !decision) return "מחשב...";

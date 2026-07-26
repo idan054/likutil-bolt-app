@@ -1,6 +1,7 @@
 import React from "react";
 import { Truck, Zap, MapPin, AlertCircle } from "lucide-react";
 import type { DeliveryCheck, DeliveryDecisionState, DeliveryType } from "../../types/fastDelivery";
+import { isFastShippingLine, isPickupShippingLine } from "../../utils/shippingMethod";
 
 interface DeliveryTypeBadgeProps {
   // fallback (when no decision exists yet)
@@ -15,28 +16,6 @@ interface DeliveryTypeBadgeProps {
   checks?: DeliveryCheck[];
   className?: string;
 }
-
-// Configure your fast delivery instance IDs here
-const FAST_DELIVERY_INSTANCE_IDS = [27]; // spider3d.co.il מהיר לי
-
-const normalize = (v: string) => v.trim().toLowerCase();
-
-const isFastMethodTitle = (title: string) => {
-  const t = normalize(title);
-  return (
-    t.includes("מהיר") ||
-    t.includes("מהיום להיום") ||
-    t.includes("היום להיום") ||
-    t.includes("fast") ||
-    t.includes("same day") ||
-    t.includes("same-day")
-  );
-};
-
-const isPickupMethodTitle = (title: string) => {
-  const t = normalize(title);
-  return t.includes("איסוף") || t.includes("pickup") || t.includes("local_pickup");
-};
 
 type BadgeType = "fast" | "regular" | "needs_review" | "pickup";
 
@@ -76,31 +55,30 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   checks,
   className = "",
 }) => {
-  // Check if instance_id matches fast delivery (most reliable)
-  const isFastByInstanceId = shippingInstanceId != null && 
-    FAST_DELIVERY_INSTANCE_IDS.includes(Number(shippingInstanceId));
-
-  // Check if shipping cost indicates fast delivery (e.g., ₪45) - less reliable fallback
-  const isFastByPrice = (() => {
-    if (!shippingCost) return false;
-    const cost = typeof shippingCost === 'string' ? parseFloat(shippingCost) : shippingCost;
-    return cost >= 40 && cost <= 50;
-  })();
+  const shippingLine = {
+    method_title: shippingMethodTitle || "",
+    method_id: shippingMethodId || undefined,
+    instance_id: shippingInstanceId ?? undefined,
+    total: shippingCost == null ? undefined : String(shippingCost),
+  };
+  const isPickupMethod = isPickupShippingLine(shippingLine);
+  const isSelectedFastMethod = isFastShippingLine(shippingLine);
 
   const derivedType: BadgeType = (() => {
-    // Check for pickup first (from method_id or title)
-    if (shippingMethodId === "local_pickup") return "pickup";
-    if (shippingMethodTitle && isPickupMethodTitle(shippingMethodTitle)) return "pickup";
-    
-    // Then check decision state
+    if (isPickupMethod) return "pickup";
+
+    // A manual override is intentional and must remain authoritative.
+    if (decisionState === "manual" && deliveryType) {
+      return deliveryType === "fast" ? "fast" : "regular";
+    }
+
+    // The shipping service selected in the store is authoritative. This also
+    // masks stale automatic decisions until the detail view repairs them.
+    if (isSelectedFastMethod) return "fast";
+
     if (decisionState === "needs_review") return "needs_review";
     if (deliveryType) return deliveryType === "fast" ? "fast" : "regular";
-    
-    // Fallbacks: instance_id (best), title, price (worst)
-    if (isFastByInstanceId) return "fast";
-    if (shippingMethodTitle && isFastMethodTitle(shippingMethodTitle)) return "fast";
-    if (isFastByPrice) return "fast";
-    
+
     return "regular";
   })();
 

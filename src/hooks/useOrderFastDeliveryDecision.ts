@@ -5,9 +5,13 @@ import type { OrderDeliveryDecision, DeliveryType } from "../types/fastDelivery"
 import { useSettings } from "./useSettings";
 import { useFastDeliveryRules } from "./useFastDeliveryRules";
 import { getOrderDeliveryDecision, upsertOrderDeliveryDecision } from "../services/fastDelivery/decision.service";
-import { decideFastDelivery } from "../services/fastDelivery/decide";
+import {
+  decideFastDelivery,
+  type DecideFastDeliveryResult,
+} from "../services/fastDelivery/decide";
 import { getCustomerById } from "../services/customers/customers.service";
 import { createOrderNote } from "../services/orders/notes.service";
+import { hasSelectedFastShipping } from "../utils/shippingMethod";
 
 const decisionCache = new Map<string, OrderDeliveryDecision | null>();
 const decisionListeners = new Map<
@@ -121,7 +125,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
   );
 
   const autoDecideIfNeeded = useCallback(async () => {
-    if (!settings?.storeUrl || !rules) return;
+    if (!settings?.storeUrl) return;
 
     // Only for full order details screen (needs shipping + items). If it's summary, skip.
     if (!("shipping" in order)) return;
@@ -133,44 +137,76 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         settings.storeUrl,
         Number(order.id)
       );
-      if (existing) {
+      const hasExplicitFastShipping = hasSelectedFastShipping(
+        (order as OrderDetails).shipping_lines
+      );
+
+      // Preserve intentional manual choices. Automatic/needs-review decisions
+      // may be repaired when WooCommerce already contains an explicit fast
+      // shipping service.
+      if (existing?.override || existing?.decisionState === "manual") {
         publishDecision(cacheKey, existing);
         return;
       }
 
-      // Prefer explicit VIP membership flag from order/customers API.
-      let isVipMember: boolean | null =
-        typeof (order as OrderDetails).is_vip_member === "boolean"
-          ? Boolean((order as OrderDetails).is_vip_member)
-          : null;
+      const shouldRepairExisting = Boolean(
+        existing &&
+        hasExplicitFastShipping &&
+        (existing.deliveryType !== "fast" ||
+          existing.decisionState === "needs_review")
+      );
 
-      // Fallback role is kept only for backward compatibility.
-      let role: string | null = null;
-      if ((order as OrderDetails).customer_id && isVipMember === null) {
-        try {
-          const customer = await getCustomerById(
-            Number((order as OrderDetails).customer_id)
-          );
-          if (typeof customer?.is_vip_member === "boolean") {
-            isVipMember = customer.is_vip_member;
-          }
-          role = customer?.role ?? null;
-        } catch {
-          isVipMember = null;
-          role = null;
-        }
+      if (existing && !shouldRepairExisting) {
+        publishDecision(cacheKey, existing);
+        return;
       }
 
-      const city = (order as OrderDetails).shipping?.city || (order as OrderDetails).billing?.city || "";
-      const lineItemNames = (order as OrderDetails).line_items?.map((li) => li.name).filter(Boolean) ?? [];
+      if (!rules && !hasExplicitFastShipping) return;
 
-      const res = decideFastDelivery({
-        isVipMember,
-        customerRole: role,
-        city,
-        lineItemNames,
-        rules,
-      });
+      let res: DecideFastDeliveryResult;
+      if (hasExplicitFastShipping) {
+        res = {
+          deliveryType: "fast" as const,
+          decisionState: "auto" as const,
+          checks: [
+            { label: "שיטת משלוח מהיר נקבעה בחנות", ok: true },
+          ],
+        };
+      } else {
+        // Prefer explicit VIP membership flag from order/customers API.
+        let isVipMember: boolean | null =
+          typeof (order as OrderDetails).is_vip_member === "boolean"
+            ? Boolean((order as OrderDetails).is_vip_member)
+            : null;
+
+        // Fallback role is kept only for backward compatibility.
+        let role: string | null = null;
+        if ((order as OrderDetails).customer_id && isVipMember === null) {
+          try {
+            const customer = await getCustomerById(
+              Number((order as OrderDetails).customer_id)
+            );
+            if (typeof customer?.is_vip_member === "boolean") {
+              isVipMember = customer.is_vip_member;
+            }
+            role = customer?.role ?? null;
+          } catch {
+            isVipMember = null;
+            role = null;
+          }
+        }
+
+        const city = (order as OrderDetails).shipping?.city || (order as OrderDetails).billing?.city || "";
+        const lineItemNames = (order as OrderDetails).line_items?.map((li) => li.name).filter(Boolean) ?? [];
+
+        res = decideFastDelivery({
+          isVipMember,
+          customerRole: role,
+          city,
+          lineItemNames,
+          rules: rules!,
+        });
+      }
 
       const now = new Date().toISOString();
       const toSave: Omit<OrderDeliveryDecision, "storeKey" | "updatedAt"> = {
