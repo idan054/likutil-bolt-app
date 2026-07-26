@@ -91,9 +91,14 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
     }
   })();
 
+  const effectiveChecks =
+    isSelectedFastMethod && decisionState !== "manual"
+      ? [{ label: "שיטת משלוח מהיר נקבעה בחנות", ok: true }]
+      : checks;
+
   const title =
-    checks && checks.length
-      ? checks.map((c) => `${c.ok ? "✔" : "✖"} ${c.label}`).join("\n")
+    effectiveChecks && effectiveChecks.length
+      ? effectiveChecks.map((c) => `${c.ok ? "✔" : "✖"} ${c.label}`).join("\n")
       : undefined;
 
   return (
