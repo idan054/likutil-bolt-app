@@ -31,7 +31,7 @@ export const createDelivery = async ({
     deliveryType
   });
 
-  const request = mapOrderToDeliveryTask(order!, packNum, deliveryType, requestedAt);
+  const request = mapOrderToDeliveryTask(order!, packNum, requestedAt);
   
   return createDeliveryTask(request, {
     userId,

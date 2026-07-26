@@ -1,5 +1,7 @@
 import type { OrderDetails } from '../../types/order';
 import { createDeliveryFormatDate } from '../../utils/date';
+import { sanitizeDeliveryContactName } from '../../utils/delivery';
+import { formatPhoneForDisplay } from '../../utils/phone';
 import type { DeliveryTaskRequest } from './types';
 
 // Fallback value for empty required fields - Lionwheel API rejects empty strings
@@ -8,7 +10,6 @@ const EMPTY_FIELD_FALLBACK = "-";
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
   packNum: string = "1", // Default to 1 package
-  deliveryType: string = "client",
   requestedAt?: string
 ): DeliveryTaskRequest => {
   const deliveryDate =
@@ -24,9 +25,13 @@ export const mapOrderToDeliveryTask = (
     order.shipping.city?.trim() || order.billing.city?.trim() || EMPTY_FIELD_FALLBACK;
 
   const shippingFirstName =
-    order.shipping.first_name?.trim() || order.billing.first_name?.trim() || EMPTY_FIELD_FALLBACK;
+    sanitizeDeliveryContactName(
+      order.shipping.first_name?.trim() || order.billing.first_name?.trim() || ''
+    ) || EMPTY_FIELD_FALLBACK;
   const shippingLastName =
-    order.shipping.last_name?.trim() || order.billing.last_name?.trim() || EMPTY_FIELD_FALLBACK;
+    sanitizeDeliveryContactName(
+      order.shipping.last_name?.trim() || order.billing.last_name?.trim() || ''
+    ) || EMPTY_FIELD_FALLBACK;
 
   const billingAddressCandidate = order.billing.address_1?.trim() || "";
   const businessAddress =
@@ -38,7 +43,10 @@ export const mapOrderToDeliveryTask = (
     ? order.billing.city?.trim() || ""
     : "";
 
-  const phone = order.billing.phone?.trim() || EMPTY_FIELD_FALLBACK;
+  const phone =
+    formatPhoneForDisplay(
+      order.shipping.phone?.trim() || order.billing.phone?.trim() || ''
+    ) || EMPTY_FIELD_FALLBACK;
 
   return {
     pack_num: packNum,

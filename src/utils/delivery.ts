@@ -23,3 +23,11 @@ export const getDeliveryUrl = (provider: string): string => {
       return '#';
   }
 };
+
+export const sanitizeDeliveryContactName = (name: string): string =>
+  name
+    .normalize('NFKC')
+    .replace(/['’`"]+/g, '')
+    .replace(/[^\p{L}\p{N}\s.-]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();

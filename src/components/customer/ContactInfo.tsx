@@ -2,6 +2,7 @@ import React from "react";
 import { Mail } from "lucide-react";
 import { WhatsAppIcon } from "../icons/WhatsAppIcon";
 import { useMessagingStore } from "../../store/useMessagingStore";
+import { formatPhoneForDisplay } from "../../utils/phone";
 
 interface ContactInfoProps {
   email?: string;
@@ -9,8 +10,9 @@ interface ContactInfoProps {
 }
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
-  const { toggleWhatsAppNote, toggleCustomerNote, setWhatsAppNote } = useMessagingStore();
+  const { toggleCustomerNote, setWhatsAppNote } = useMessagingStore();
   const hasEmail = email && email.trim().length > 0;
+  const displayPhone = phone ? formatPhoneForDisplay(phone) : '';
 
   return (
     <div className="space-y-2 text-right">
@@ -38,7 +40,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
         </div>
       )}
 
-      {phone && (
+      {displayPhone && (
         <div className={`flex items-center gap-2`}>
           <a
             href="#"
@@ -48,7 +50,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ email, phone }) => {
             }}
             className="text-gray-700 hover:text-green-600 flex-1"
           >
-            {phone}
+            {displayPhone}
           </a>
           <a
             href="#"
