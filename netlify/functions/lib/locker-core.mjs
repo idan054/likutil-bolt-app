@@ -4,10 +4,6 @@
 import { getStore } from '@netlify/blobs';
 import { renderLockerMessage } from '../../../src/config/lockerMessageTemplate.js';
 
-export const CONFIG = {
-  SCHEDULE: '*/5 * * * *',
-};
-
 // BetterLockers timestamps cannot be trusted: save_time is labelled "GMT" but is
 // not GMT (a package deposited ~2h ago comes back stamped ~1h in the FUTURE), and
 // their own admin panel renders it further off still. So we never filter on their

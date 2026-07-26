@@ -1,5 +1,5 @@
 import {
-  CONFIG, stateStore, readState, blLogin, blFetchRecent,
+  stateStore, readState, blLogin, blFetchRecent,
   selectPending, normalizePhone, buildMessage, sendWhatsApp, appendHistory,
 } from './lib/locker-core.mjs';
 
@@ -18,7 +18,7 @@ import {
  * show what actually went out without needing access to the Netlify logs.
  */
 
-export const config = { schedule: CONFIG.SCHEDULE };
+export const config = { schedule: '*/5 * * * *' };
 
 export default async function handler() {
   const state = await readState();
