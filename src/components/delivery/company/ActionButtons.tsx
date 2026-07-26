@@ -1,6 +1,8 @@
 import React from 'react';
+import { toast } from 'react-hot-toast';
 import { Printer, Loader2, CheckCircle, Rocket } from 'lucide-react';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
+import { getPrintLabelSource } from '../../../services/delivery/validation/response';
 import type { OrderDetails } from '../../../types/order';
 import { OrderStatusOverrideMenu } from '../../order/OrderStatusOverrideMenu';
 
@@ -28,19 +30,31 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onStatusChanged,
 }) => {
   const handlePrintLabel = (printLabel: string) => {
-    if (printLabel.startsWith('http')) {
-      window.open(printLabel, '_blank', 'noopener,noreferrer');
-    } else {
-      const binary = atob(printLabel);
+    const source = getPrintLabelSource(printLabel);
+
+    if (!source) {
+      toast.error('לא התקבלה מדבקת PDF תקינה מחברת המשלוחים');
+      return;
+    }
+
+    if (source.type === 'url') {
+      window.open(source.value, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    try {
+      const binary = atob(source.value);
       const array = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) {
         array[i] = binary.charCodeAt(i);
       }
       const blob = new Blob([array], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      // Clean up the URL object after a short delay to ensure the PDF has loaded
-      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      // Allow the new tab enough time to finish reading the blob before releasing it.
+      setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('לא ניתן לפתוח את מדבקת ה-PDF שהתקבלה');
     }
   };
 

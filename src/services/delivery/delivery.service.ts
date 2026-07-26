@@ -23,15 +23,18 @@ export const createDelivery = async ({
   deliveryType = "client",
   requestedAt
 }: CreateDeliveryParams): Promise<DeliveryTaskResponse> => {
+  if (!order) {
+    throw new Error('לא ניתן ליצור משלוח: לא נבחרה הזמנה');
+  }
+
   console.log('[delivery.service] Creating delivery:', { 
-    orderId: order!.id, 
-    userId, 
+    orderId: order.id,
     provider,
     packNum,
     deliveryType
   });
 
-  const request = mapOrderToDeliveryTask(order!, packNum, requestedAt);
+  const request = mapOrderToDeliveryTask(order, packNum, requestedAt);
   
   return createDeliveryTask(request, {
     userId,
@@ -53,9 +56,6 @@ export const persistMahirliMetaToOrder = async (
   response: DeliveryTaskResponse,
   createdAt: string
 ): Promise<void> => {
-  // Whatever Mahir Li returns, log it so the exact shape is verifiable in production.
-  console.log('[delivery.service] Mahir Li create response (raw):', response);
-
   // The Likutil proxy returns: print_label, control_panel_link, provider, track_number.
   // The numeric tracking/task number arrives as `track_number`, and the Lionwheel
   // public_id is embedded in the print_label URL (?public_id=XXXX).

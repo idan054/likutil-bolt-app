@@ -37,9 +37,6 @@ export const useDeliveryCreation = ({
   }, [order?.id]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
-    console.log("START createDeliveryTask()");
-    console.log(provider);
-
     if (!order) {
       toast.error("לא נבחרה הזמנה");
       return;
@@ -50,18 +47,13 @@ export const useDeliveryCreation = ({
       (integration) => integration.provider === provider
     );
 
-    console.log("selectedIntegration");
-    console.log(selectedIntegration);
-
     if (!selectedIntegration) {
       toast.error("מפתח API חסר");
       return;
     }
     
-    let keys = getKeysByProgramType(selectedIntegration);
-    let userId = user?.uid ?? "";
-    
-    console.log(provider, " KEYS ", keys);
+    const keys = getKeysByProgramType(selectedIntegration);
+    const userId = user?.uid ?? "";
     
     // Will skip look for keys if UPS
     const isUpsDelivery = selectedIntegration.programType === DeliveryProgramType.UPS;
@@ -94,7 +86,6 @@ export const useDeliveryCreation = ({
 
       onSuccess();
     } catch (error) {
-      console.error("[useDeliveryCreation] Failed to create delivery:", error);
       showErrorToast(error);
     } finally {
       setIsCreating(false);

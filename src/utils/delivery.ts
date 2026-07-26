@@ -24,10 +24,40 @@ export const getDeliveryUrl = (provider: string): string => {
   }
 };
 
-export const sanitizeDeliveryContactName = (name: string): string =>
-  name
+const normalizeDeliveryText = (value: string): string =>
+  value
     .normalize('NFKC')
+    .replace(/[\p{Cc}\p{Cf}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const sanitizeDeliveryContactName = (name: string): string =>
+  normalizeDeliveryText(name)
     .replace(/['’`"]+/g, '')
     .replace(/[^\p{L}\p{N}\s.-]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+export const sanitizeDeliveryCity = (city: string): string =>
+  normalizeDeliveryText(city)
+    .replace(/['’`"@&<>[\]{}\\|^~]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s.()-]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const sanitizeDeliveryAddress = (address: string): string =>
+  normalizeDeliveryText(address)
+    .replace(/['’`"@&<>[\]{}\\|^~]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s.,()/#:-]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const sanitizeDeliveryNote = (note: string): string =>
+  normalizeDeliveryText(note)
+    .replace(/['’`"@&<>[\]{}\\|^~]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s.,()/#:;!?%+-]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const sanitizeDeliveryEmail = (email: string): string =>
+  normalizeDeliveryText(email).replace(/\s+/g, '');

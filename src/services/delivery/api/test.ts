@@ -45,18 +45,22 @@ export const testDeliveryConnection = async (
   userId: string
 ): Promise<DeliveryTestResult> => {
   try {
-    // Use 'method' instead of 'Company' in the query params
-    const response = await fetch(
-      `${BASE_URL}/api/create-delivery?userId=${userId}&provider=${provider}&keys=${keys}&isConnectionTest=true`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(createTestRequest()),
-      }
-    );
+    const query = new URLSearchParams({
+      userId,
+      provider,
+      keys,
+      isConnectionTest: 'true',
+    });
+    const url = `${BASE_URL}/api/create-delivery?${query.toString()}`;
+    const safeUrl = `${BASE_URL}/api/create-delivery?provider=${encodeURIComponent(provider)}&isConnectionTest=true`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(createTestRequest()),
+    });
 
     const responseText = await response.text();
 
@@ -74,9 +78,9 @@ export const testDeliveryConnection = async (
     }
 
     throw new ApiError({
-      requestUrl: `${BASE_URL}/api/create-delivery?userId=${userId}&provider=${provider}&keys=${keys}&isConnectionTest=true`,
+      requestUrl: safeUrl,
       requestMethod: 'POST',
-      requestBody: JSON.stringify(createTestRequest()),
+      requestBody: { provider, isConnectionTest: true },
       requestHeaders: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -86,7 +90,10 @@ export const testDeliveryConnection = async (
       responseBody: responseText,
     });
   } catch (error) {
-    console.error('[delivery.api.test] Connection test failed:', error);
+    console.error('[delivery.api.test] Connection test failed:', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message : 'Unknown delivery test error',
+    });
     throw error;
   }
 };
