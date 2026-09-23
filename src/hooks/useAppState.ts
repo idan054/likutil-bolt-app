@@ -19,6 +19,8 @@ export const useAppState = () => {
   const {
     orders,
     setOrders,
+    orderPage,
+    applyOrderPage,
     isLoading: isLoadingOrders,
     isRefetching,
     refetch: refetchOrders,
@@ -79,6 +81,8 @@ export const useAppState = () => {
     isRefetching,
     orders,
     setOrders,
+    orderPage,
+    applyOrderPage,
     refetchOrders,
     handleSettingsSave,
     cleanOrders,

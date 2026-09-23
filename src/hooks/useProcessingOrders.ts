@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getFilteredOrders } from "../services/orders/orders.service";
+import { getFilteredOrdersPage, type OrdersPage } from "../services/orders/orders.service";
 import { showErrorToast } from "../utils/error";
 import type { OrderSummary } from "../types/order";
 import { useSettings } from "./useSettings";
@@ -13,6 +13,11 @@ export const useProcessingOrders = () => {
   const { options } = useGetFirebaseMetadata();
 
   const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [orderPage, setOrderPage] = useState<Pick<OrdersPage, "total" | "status"> & { loadedCount: number }>({
+    total: null,
+    status: null,
+    loadedCount: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -31,6 +36,13 @@ export const useProcessingOrders = () => {
 
   // Abort controller for canceling requests
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const applyOrderPage = useCallback((page: OrdersPage) => {
+    setOrders(page.orders);
+    ordersRef.current = page.orders;
+    setOrderPage({ total: page.total, status: page.status, loadedCount: page.orders.length });
+    lastFetchedRef.current = Date.now();
+  }, []);
 
   const fetchOrders = useCallback(
     async (force = false) => {
@@ -89,20 +101,19 @@ export const useProcessingOrders = () => {
         }));
 
         // Pass metadata configs and processing status to getFilteredOrders
-        const data = await getFilteredOrders("init", metadataConfigs);
-
-        // Record the fetch time
-        lastFetchedRef.current = Date.now();
+        const data = await getFilteredOrdersPage("init", metadataConfigs);
 
         // Only update state if component is still mounted
         if (isMountedRef.current) {
-          setOrders(data);
-          ordersRef.current = data;
+          const selectedStatus = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "null");
+          if (data.status === selectedStatus) {
+            applyOrderPage(data);
+          }
           setError(null);
         }
 
         // Return the data for direct use if needed
-        return data;
+        return data.orders;
       } catch (error) {
         // Only handle error if it's not an abort error
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -135,7 +146,7 @@ export const useProcessingOrders = () => {
         }
       }
     },
-    [settings, options]
+    [settings, options, applyOrderPage]
   ); // Depend on settings and options
 
   // Fetch orders on mount and clean up on unmount
@@ -159,6 +170,8 @@ export const useProcessingOrders = () => {
   return {
     orders,
     setOrders,
+    orderPage,
+    applyOrderPage,
     isLoading,
     isRefetching,
     error,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { OrderSearch } from "../OrderSearch";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
@@ -14,7 +14,7 @@ import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { OrderDetails } from "../OrderDetails";
-import { getFilteredOrders } from "../../services/orders/orders.service";
+import { getFilteredOrdersPage } from "../../services/orders/orders.service";
 import { filter } from "framer-motion/client";
 // import { OrderDetails } from '../../types/order';
 import { AnimatePresence, motion } from "framer-motion";
@@ -29,7 +29,9 @@ interface OrdersDashboardProps {
 }
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
-  const { orders, isLoading, isRefetching, setOrders } = useAppState();
+  const { orders, orderPage, applyOrderPage, isLoading, setOrders } = useAppState();
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
+  const statusRequestRef = useRef(0);
   const { orderStatuses , user, settings} = useSettings();
   
   // Initialize selectedStatus from localStorage
@@ -143,18 +145,29 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
 
 
   const handleSelectedStatus = (status: string | null) => {
+    const requestId = ++statusRequestRef.current;
     setSelectedStatus(status);
+    setIsStatusLoading(true);
     
     toast.promise(
-      getFilteredOrders(status),
+      getFilteredOrdersPage(status),
       {
         loading: `מעדכן רשימת הזמנות ${status ?? ''}...`,
 
         success: (data) => {
-          setOrders(data);
-          return `${data.length} הזמנות אחרונות נוספו בהצלחה`;
+          if (requestId === statusRequestRef.current) {
+            applyOrderPage(data);
+            setIsStatusLoading(false);
+          }
+          return `${data.orders.length} הזמנות אחרונות נוספו בהצלחה`;
         },
-        error: 'Failed to refresh orders'
+        error: () => {
+          if (requestId === statusRequestRef.current) {
+            setSelectedStatus(orderPage.status);
+            setIsStatusLoading(false);
+          }
+          return 'Failed to refresh orders';
+        }
       }
     );
 
@@ -191,8 +204,10 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           onGenerateSuperOrder={generateSuperOrder}
           isGenerating={isGeneratingSuperOrder}
           completedOrdersCount={completedOrdersCount}
-          isRefetching={isRefetching}
           selectedStatus={selectedStatus}
+          loadedCount={orderPage.loadedCount}
+          totalOrders={orderPage.total}
+          isLoading={isLoading || isStatusLoading || orderPage.status !== selectedStatus}
 
         />
         <div className="flex flex-col md:flex-row gap-1 mt-6">
@@ -246,11 +261,11 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     >
       <EmptyState onRefresh={() => {
         toast.promise(
-          getFilteredOrders(selectedStatus),
+          getFilteredOrdersPage(selectedStatus),
           {
             loading: 'Refreshing orders...',
             success: (data) => {
-              setOrders(data);
+              applyOrderPage(data);
               return 'Orders refreshed successfully';
             },
             error: 'Failed to refresh orders'

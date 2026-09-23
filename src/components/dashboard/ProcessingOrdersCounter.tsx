@@ -11,6 +11,9 @@ interface ProcessingOrdersCounterProps {
   isGenerating?: boolean;
   completedOrdersCount: number;
   selectedStatus: string | null;
+  loadedCount: number;
+  totalOrders: number | null;
+  isLoading?: boolean;
 }
 
 export const ProcessingOrdersCounter: React.FC<
@@ -21,9 +24,19 @@ export const ProcessingOrdersCounter: React.FC<
   isGenerating = false,
   completedOrdersCount,
   selectedStatus,
+  loadedCount,
+  totalOrders,
+  isLoading = false,
 }) => {
   const [isSuperOrderEnabled, setIsSuperOrderEnabled] = useState(false);
   const pendingOrdersCount = orders.length - completedOrdersCount;
+  const countLabel = isLoading
+    ? "…"
+    : totalOrders !== null && totalOrders > loadedCount
+      ? `${loadedCount} מתוך ${totalOrders}`
+      : totalOrders === null && loadedCount >= 15
+        ? `${loadedCount}+`
+        : String(loadedCount);
 
   const handleSuperOrderClick = useCallback(async () => {
     if (!isSuperOrderEnabled) {
@@ -42,7 +55,7 @@ export const ProcessingOrdersCounter: React.FC<
     >
       {/* Desktop Layout */}
       <div className="hidden sm:flex items-center justify-between">
-        <OrdersHeader count={pendingOrdersCount} icon={Package} selectedStatus={selectedStatus}
+        <OrdersHeader count={loadedCount} total={totalOrders} isLoading={isLoading} icon={Package} selectedStatus={selectedStatus}
  />
         <div className="flex items-center gap-4">
           <SuperOrderButton
@@ -57,14 +70,14 @@ export const ProcessingOrdersCounter: React.FC<
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
-            {pendingOrdersCount}
+            {countLabel}
           </motion.span>
         </div>
       </div>
 
       {/* Mobile Layout */}
       <div className="sm:hidden space-y-4">
-        <OrdersHeader count={pendingOrdersCount} icon={Package} />
+        <OrdersHeader count={loadedCount} total={totalOrders} isLoading={isLoading} icon={Package} selectedStatus={selectedStatus} />
         <div className="flex flex-col gap-3">
           <motion.span
             className="text-4xl font-bold text-blue-600 text-center"
@@ -72,7 +85,7 @@ export const ProcessingOrdersCounter: React.FC<
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
-            {pendingOrdersCount}
+            {countLabel}
           </motion.span>
           <SuperOrderButton
             count={pendingOrdersCount}

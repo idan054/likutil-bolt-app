@@ -485,14 +485,19 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
 /**
  * Gets orders by status
  */
-export const getFilteredOrders = async (
+export interface OrdersPage {
+  orders: OrderSummary[];
+  total: number | null;
+  status: string | null;
+}
+
+export const getFilteredOrdersPage = async (
   status: string | null,
   metadataConfigs?: MetadataConfig[],
   order_number?: string | null,
-): Promise<OrderSummary[]> => {
+): Promise<OrdersPage> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = `orders_${platform}_${status || "all"}`;
 
   console.log(
     `[orders.service] Fetching processing orders for platform: ${platform}`
@@ -501,8 +506,15 @@ export const getFilteredOrders = async (
 
   if (status === "init")
     status = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "null");
+  status = status && status !== "null" ? status : null;
   console.log("Cache status:", status);
 
+  const shopifyStore = platform === "shopify"
+    ? JSON.parse(localStorage.getItem("wc_settings") || "null")?.myShopifyUrl
+    : null;
+  const cacheKey = JSON.stringify([
+    config.baseUrl, platform, shopifyStore, status, order_number, metadataConfigs,
+  ]);
   return dedupedApiRequest(cacheKey, async () => {
     // Platform-specific parameters
     const params = new URLSearchParams({
@@ -534,12 +546,16 @@ export const getFilteredOrders = async (
         console.warn("wc_settings not found or storeUrl is missing.");
       }
     }
-
-
-
+    let responseTotal: number | null = null;
     const response = await apiClient<any>({
       method: "GET",
       path: `${PLATFORM_ENDPOINTS[platform].orders}?${params.toString()}`,
+      onResponse: ({ headers }) => {
+        const value = headers.get("X-WP-Total");
+        if (value !== null && /^\d+$/.test(value)) {
+          responseTotal = Number(value);
+        }
+      },
     });
 
     // Handle different response formats
@@ -565,11 +581,35 @@ export const getFilteredOrders = async (
       }`
     );
 
-    return metadataConfigs?.length
+    const mappedOrders = metadataConfigs?.length
       ? processMultiOrdersMetadata(orders, metadataConfigs, platform)
       : orders;
+    const bodyTotal = response?.total_count ?? response?.total;
+    const parsedBodyTotal = bodyTotal == null ? NaN : Number(bodyTotal);
+    const reportedTotal = (
+      responseTotal !== null &&
+      Number.isSafeInteger(responseTotal) &&
+      responseTotal >= orders.length
+    ) ? responseTotal : (
+      Number.isSafeInteger(parsedBodyTotal) && parsedBodyTotal >= orders.length
+        ? parsedBodyTotal
+        : null
+    );
+
+    return {
+      orders: mappedOrders,
+      total: reportedTotal ?? (orders.length < ITEMS_PER_PAGE ? orders.length : null),
+      status,
+    };
   });
 };
+
+export const getFilteredOrders = async (
+  status: string | null,
+  metadataConfigs?: MetadataConfig[],
+  order_number?: string | null,
+): Promise<OrderSummary[]> =>
+  (await getFilteredOrdersPage(status, metadataConfigs, order_number)).orders;
 
 /**
  * Searches for an order by ID with optional metadata processing

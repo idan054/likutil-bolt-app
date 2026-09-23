@@ -6,10 +6,21 @@ interface OrdersHeaderProps {
   count: number;
   icon: LucideIcon;
   selectedStatus: string | null;
+  total: number | null;
+  isLoading?: boolean;
 }
 
-export const OrdersHeader: React.FC<OrdersHeaderProps> = ({ count, icon: Icon, selectedStatus }) => {
-  const translatedStatus = translateOrderStatus(selectedStatus ??'');
+export const OrdersHeader: React.FC<OrdersHeaderProps> = ({ count, total, isLoading, icon: Icon, selectedStatus }) => {
+  const statusLabel = selectedStatus
+    ? `במצב ${translateOrderStatus(selectedStatus)}`
+    : 'בכל הסטטוסים';
+  const countLabel = isLoading
+    ? 'מעדכן הזמנות...'
+    : total !== null && total > count
+      ? `${count} מתוך ${total} הזמנות ${statusLabel}`
+      : total === null && count >= 15
+        ? `${count} הזמנות מוצגות ${statusLabel}; הסך הכולל אינו זמין`
+        : `${count} הזמנות ${statusLabel}`;
 
   return (
     <div className="flex items-center gap-4">
@@ -18,7 +29,7 @@ export const OrdersHeader: React.FC<OrdersHeaderProps> = ({ count, icon: Icon, s
       </div>
       <div>
         <h3 className="text-xl font-bold text-blue-900">הזמנות אחרונות</h3>
-        <p className="text-blue-700 text-lg">{count} הזמנות במצב {translatedStatus}</p>
+        <p className="text-blue-700 text-lg">{countLabel}</p>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ export const apiClient = async <T>({
   method,
   path,
   body,
+  onResponse,
 }: ApiRequestConfig): Promise<T> => {
   const config = getApiConfig(); // Retrieve API configuration based on platform
   const settings = settingsStorage.get();
@@ -102,6 +103,7 @@ const url = isWooRequest
       responseBody: parsedData,
     });
 
+    onResponse?.(response);
     return parsedData;
   } catch (error) {
     console.error("[ERROR] Network/API Failure:", error);
