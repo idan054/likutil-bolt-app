@@ -206,7 +206,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
               />
             </div>
             <OrdersList
-              key={filteredOrders.length}
+              key={`${settings?.storeUrl ?? ''}:${selectedStatus ?? ''}`}
               orders={filteredOrders}
               onSelectOrder={handleOrderSelection}
               isCompleted={isCompleted}

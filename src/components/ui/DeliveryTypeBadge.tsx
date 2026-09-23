@@ -1,9 +1,11 @@
 import React from "react";
 import { Truck, Zap, MapPin, AlertCircle } from "lucide-react";
 import type { DeliveryCheck, DeliveryDecisionState, DeliveryType } from "../../types/fastDelivery";
-import { isFastShippingLine, isPickupShippingLine } from "../../utils/shippingMethod";
+import type { OrderSummary } from "../../types/order";
+import { getOrderDeliveryBadgeType, hasSelectedFastShipping } from "../../utils/shippingMethod";
 
 interface DeliveryTypeBadgeProps {
+  shippingLines?: OrderSummary["shipping_lines"];
   // fallback (when no decision exists yet)
   shippingMethodTitle?: string | null;
   shippingMethodId?: string | null;
@@ -17,7 +19,7 @@ interface DeliveryTypeBadgeProps {
   className?: string;
 }
 
-type BadgeType = "fast" | "regular" | "needs_review" | "pickup";
+type BadgeType = ReturnType<typeof getOrderDeliveryBadgeType>;
 
 const badge = (type: BadgeType) => {
   switch (type) {
@@ -46,6 +48,7 @@ const getIcon = (type: BadgeType) => {
 };
 
 export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
+  shippingLines,
   shippingMethodTitle,
   shippingMethodId,
   shippingInstanceId,
@@ -55,32 +58,18 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   checks,
   className = "",
 }) => {
-  const shippingLine = {
+  const fallbackShippingLine = {
     method_title: shippingMethodTitle || "",
     method_id: shippingMethodId || undefined,
     instance_id: shippingInstanceId ?? undefined,
     total: shippingCost == null ? undefined : String(shippingCost),
   };
-  const isPickupMethod = isPickupShippingLine(shippingLine);
-  const isSelectedFastMethod = isFastShippingLine(shippingLine);
-
-  const derivedType: BadgeType = (() => {
-    if (isPickupMethod) return "pickup";
-
-    // A manual override is intentional and must remain authoritative.
-    if (decisionState === "manual" && deliveryType) {
-      return deliveryType === "fast" ? "fast" : "regular";
-    }
-
-    // The shipping service selected in the store is authoritative. This also
-    // masks stale automatic decisions until the detail view repairs them.
-    if (isSelectedFastMethod) return "fast";
-
-    if (decisionState === "needs_review") return "needs_review";
-    if (deliveryType) return deliveryType === "fast" ? "fast" : "regular";
-
-    return "regular";
-  })();
+  const effectiveShippingLines = shippingLines ?? [fallbackShippingLine];
+  const isSelectedFastMethod = hasSelectedFastShipping(effectiveShippingLines);
+  const derivedType = getOrderDeliveryBadgeType(effectiveShippingLines, {
+    deliveryType,
+    decisionState,
+  });
 
   const label = (() => {
     switch (derivedType) {
@@ -92,7 +81,7 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   })();
 
   const effectiveChecks =
-    isSelectedFastMethod && decisionState !== "manual"
+    isSelectedFastMethod && derivedType === "fast" && decisionState !== "manual"
       ? [{ label: "שיטת משלוח מהיר נקבעה בחנות", ok: true }]
       : checks;
 

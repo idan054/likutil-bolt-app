@@ -1,4 +1,5 @@
 import type { OrderSummary } from "../types/order";
+import type { DeliveryDecisionState, DeliveryType } from "../types/fastDelivery";
 
 type ShippingLine = OrderSummary["shipping_lines"][number];
 
@@ -47,3 +48,37 @@ export const isFastShippingLine = (
 export const hasSelectedFastShipping = (
   shippingLines: OrderSummary["shipping_lines"] | null | undefined
 ) => Boolean(shippingLines?.some(isFastShippingLine));
+
+export const getOrderDeliveryBadgeType = (
+  shippingLines: OrderSummary["shipping_lines"] | null | undefined,
+  decision?: {
+    deliveryType?: DeliveryType;
+    decisionState?: DeliveryDecisionState;
+  } | null
+): "fast" | "regular" | "needs_review" | "pickup" => {
+  if (shippingLines?.some(isPickupShippingLine)) return "pickup";
+
+  // A manual choice takes precedence over an automatic classification.
+  if (decision?.decisionState === "manual" && decision.deliveryType) {
+    return decision.deliveryType;
+  }
+
+  if (hasSelectedFastShipping(shippingLines)) return "fast";
+  if (decision?.decisionState === "needs_review") return "needs_review";
+  return decision?.deliveryType ?? "regular";
+};
+
+export const sortOrdersByDeliveryPriority = (
+  orders: OrderSummary[],
+  fastByOrderId: Record<number, boolean>
+): OrderSummary[] =>
+  orders
+    .map((order, index) => ({
+      order,
+      index,
+      isFast:
+        fastByOrderId[order.id] ??
+        (getOrderDeliveryBadgeType(order.shipping_lines) === "fast"),
+    }))
+    .sort((a, b) => Number(b.isFast) - Number(a.isFast) || a.index - b.index)
+    .map(({ order }) => order);

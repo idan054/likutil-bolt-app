@@ -6,22 +6,30 @@ import type { OrderSummary } from '../../types/order';
 import { DeliveryTypeBadge } from '../ui/DeliveryTypeBadge';
 import { useOrderFastDeliveryDecision } from '../../hooks/useOrderFastDeliveryDecision';
 import { isOtherPaymentMethod } from '../../utils/order';
+import { getOrderDeliveryBadgeType } from '../../utils/shippingMethod';
 
 interface OrderListItemProps {
   order: OrderSummary;
   onSelect: (orderId: string) => void;
   isCompleted: boolean;
   selectedOrderId: string | null;
+  onPriorityChange: (orderId: number, isFast: boolean) => void;
 }
 
 export const OrderListItem: React.FC<OrderListItemProps> = ({ 
   order, 
   onSelect,
   isCompleted,
-  selectedOrderId
+  selectedOrderId,
+  onPriorityChange
 }) => {
   const { customer, isLoading, refetch } = useCustomerDetails(order.customer_id);
   const { decision } = useOrderFastDeliveryDecision(order);
+
+  const isFast = getOrderDeliveryBadgeType(order.shipping_lines, decision) === 'fast';
+  useEffect(() => {
+    onPriorityChange(order.id, isFast);
+  }, [order.id, isFast, onPriorityChange]);
 
   useEffect(() => {
     if (!customer && !isLoading) {
@@ -54,10 +62,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <DeliveryTypeBadge 
-              shippingMethodTitle={order.shipping_lines?.[0]?.method_title} 
-              shippingMethodId={order.shipping_lines?.[0]?.method_id}
-              shippingInstanceId={order.shipping_lines?.[0]?.instance_id}
-              shippingCost={order.shipping_lines?.[0]?.total}
+              shippingLines={order.shipping_lines}
               deliveryType={decision?.deliveryType} 
               decisionState={decision?.decisionState} 
               checks={decision?.checks} 

@@ -5,9 +5,10 @@ import { useSettings } from '../../../hooks/useSettings';
 import { getProductUrl } from '../../../utils/product';
 import type { LineItem } from '../../../types/order';
 import { QuantityBadge } from '../../ui/QuantityBadge';
-import { Eclipse, MoreHorizontal, PanelBottomClose, X, Check, RefreshCcw, RotateCw, Divide, Loader2, BookmarkPlus, ListPlus, Diamond, PackagePlus, RectangleHorizontal, ListCollapse, LayoutList, Wrench, Settings2, Pencil, Settings, Bolt, Delete, XCircle, EyeOff, Eye } from 'lucide-react';
+import { X, Check, RotateCw, Loader2, Settings2, EyeOff, Eye } from 'lucide-react';
 import { useGetAiMetadata } from '../../../hooks/useGetAiMetadata';
 import toast from 'react-hot-toast';
+import { getOrderItemMetadataDisplay } from '../../../utils/orderItemMetadata';
 
 interface OrderItemCardProps {
   item: LineItem;
@@ -46,7 +47,14 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
     });
   };
 
-  const visibleMetaData = localMetaData?.filter(meta => !hiddenMetaKeys.includes(meta.key));
+  const displayMetaData = Array.isArray(localMetaData)
+    ? localMetaData
+        .map(meta => ({
+          ...meta,
+          display: getOrderItemMetadataDisplay(String(meta.key ?? ''), meta.value),
+        }))
+        .filter(meta => meta.display)
+    : [];
 
 
   React.useEffect(() => {
@@ -99,6 +107,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
             top: `${buttonPosition.top}px`
           }}
           className="p-1 rounded-full hover:bg-blue-100 transition-colors"
+          aria-label="הגדרות מידע על המוצר"
         >
           <Settings2
             size={14}
@@ -129,31 +138,30 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
 
       
 
-      {Array.isArray(localMetaData) && localMetaData.length > 0 && 
-       localMetaData.some(meta => !hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
+      {displayMetaData.some(meta => !hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
         <div key={item.id} className="border-b text-sl text-gray-500 mt-1 pb-3 flex flex-col gap-1">
-          {localMetaData.map((meta, index) => (
+          {displayMetaData.map((meta, index) => (
             (!hiddenMetaKeys.includes(meta.key) || isMetadataOpen) && (
-              <div  className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors relative">
+              <div key={meta.id ?? `${meta.key}-${index}`} className="flex items-center px-3 py-1.5 rounded-md hover:bg-gray-50 group transition-colors relative">
         
 
                 <div className={`flex items-center gap-2 flex-1 ${hiddenMetaKeys.includes(meta.key) ? 'opacity-50' : ''}`}>
-                  <span className="font-medium text-m text-gray-900 mt-1">{`${meta.key}`}</span>
+                  <span className="font-medium text-m text-gray-900 mt-1">{meta.display?.label}</span>
                   <span className="text-gray-400">•</span>
                   <span className="text-m text-gray-600 mt-1">
                     {(() => {
                       // Check if the value contains a URL pattern
                       const urlRegex = /(https?:\/\/[^\s]+)/g;
-                      const text = `${meta.value}`;
+                      const text = meta.display?.value ?? '';
                       if (urlRegex.test(text)) {
                         // Split text by URLs and map each part
                         return text.split(urlRegex).map((part, i) => {
-                          if (urlRegex.test(part)) {
+                          if (part.startsWith('https://') || part.startsWith('http://')) {
                             // Extract filename from URL for display text
                             let displayText;
                             try {
                               const url = new URL(part);
-                              const filename = part.split('/').pop() || '';
+                              const filename = url.pathname.split('/').pop() || '';
                               displayText = `מעבר אל ${filename}`;
                             } catch {
                               displayText = 'מעבר לקישור';
@@ -181,10 +189,11 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
 
                 <button 
                   className={`p-1 rounded-full hover:bg-gray-100 transition-all pl-3 ${!isMetadataOpen && 'opacity-0 group-hover:opacity-100'}`}
+                  aria-label={`${hiddenMetaKeys.includes(meta.key) ? 'הצג' : 'הסתר'} ${meta.display?.label}`}
                   onClick={(e) => {
                     e.preventDefault();
                     toggleMetadataVisibility(meta.key);
-                    toast.success(`${meta.key} • ${hiddenMetaKeys.includes(meta.key)? 'יוצג מעכשיו בכל המוצרים' : 'יוסתר מעכשיו בכל המוצרים'}`);
+                    toast.success(`${meta.display?.label} • ${hiddenMetaKeys.includes(meta.key)? 'יוצג מעכשיו בכל המוצרים' : 'יוסתר מעכשיו בכל המוצרים'}`);
                   }}
                 >
                   {hiddenMetaKeys.includes(meta.key) ? (
@@ -205,6 +214,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
           <button
             onClick={() => setIsMetadataOpen(false)}
             className="absolute -top-1 -left-1 p-0.5 rounded-full bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+            aria-label="סגור הגדרות מידע על המוצר"
           >
             <X size={14} className="text-gray-400 hover:text-blue-600" />
           </button>
