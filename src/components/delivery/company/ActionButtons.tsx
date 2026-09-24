@@ -6,6 +6,7 @@ import { getPrintLabelSource } from '../../../services/delivery/validation/respo
 import type { OrderDetails } from '../../../types/order';
 import { OrderStatusOverrideMenu } from '../../order/OrderStatusOverrideMenu';
 import { getReprintLabelUrl, getShipmentLabelUrl } from '../../../utils/shippingLabel';
+import { getDeliveryCity } from '../../../services/delivery/mappers';
 
 interface ActionButtonsProps {
   order: OrderDetails;
@@ -32,9 +33,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   deliveryType,  
   onStatusChanged,
 }) => {
-  const reprintUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider);
+  const sentCity = getDeliveryCity(order);
+  const reprintUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider, sentCity);
   const signedPrintUrl = deliveryResponse
-    ? getShipmentLabelUrl(order.s3_label_url, order.id, provider, deliveryResponse, packNum)
+    ? getShipmentLabelUrl(order.s3_label_url, order.id, provider, deliveryResponse, packNum, sentCity)
     : null;
   const handlePrintLabel = (printLabel: string) => {
     const source = getPrintLabelSource(printLabel);

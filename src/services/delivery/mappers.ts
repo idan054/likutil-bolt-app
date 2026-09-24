@@ -20,6 +20,10 @@ const requireFields = (fields: Array<[string, string]>): void => {
   }
 };
 
+export const getDeliveryCity = (order: OrderDetails): string =>
+  sanitizeDeliveryCity(order.shipping?.city || '') ||
+  sanitizeDeliveryCity(order.billing?.city || '');
+
 export const mapOrderToDeliveryTask = (
   order: OrderDetails,
   packNum: string = "1", // Default to 1 package
@@ -62,9 +66,7 @@ export const mapOrderToDeliveryTask = (
     secondaryShippingAddress = '';
   }
 
-  const shippingCity =
-    sanitizeDeliveryCity(order.shipping.city || '') ||
-    sanitizeDeliveryCity(order.billing.city || '');
+  const shippingCity = getDeliveryCity(order);
 
   const shippingFirstName =
     sanitizeDeliveryContactName(order.shipping.first_name || '') ||

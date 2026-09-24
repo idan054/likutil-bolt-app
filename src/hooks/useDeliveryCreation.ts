@@ -14,6 +14,7 @@ import { DeliveryProgramType } from "../components/settings/tabs/sections/delive
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../config/firebase";
 import { getReprintLabelUrl, getShipmentLabelUrl } from "../utils/shippingLabel";
+import { getDeliveryCity } from "../services/delivery/mappers";
 
 interface UseDeliveryCreationProps {
   order?: OrderDetails;
@@ -69,7 +70,8 @@ export const useDeliveryCreation = ({
     setIsCreating(true);
 
     // Reserve a tab during the user's click; browsers block tabs opened after the API reply.
-    const signedLabelUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider);
+    const sentCity = getDeliveryCity(order);
+    const signedLabelUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider, sentCity);
     let labelTab: Window | null = null;
     try {
       if (signedLabelUrl) labelTab = window.open("about:blank", "_blank");
@@ -104,7 +106,7 @@ export const useDeliveryCreation = ({
 
       if (signedLabelUrl) {
         const printUrl = getShipmentLabelUrl(
-          order.s3_label_url, order.id, provider, result, packNum
+          order.s3_label_url, order.id, provider, result, packNum, sentCity
         );
         if (!printUrl) {
           labelTab?.close();

@@ -63,7 +63,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           />
           
           <PackageCounter 
-            isCreating={isCreating}
+            isCreating={isCreating || !!deliveryResponse}
             onCountChange={setPackageCount}
             maxCount={getLabelCarrier(integration.provider) === 'negev' ? 20 : 99}
           />

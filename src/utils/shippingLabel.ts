@@ -53,7 +53,8 @@ export const getShipmentLabelUrl = (
   orderId: number,
   provider: string,
   response: DeliveryTaskResponse,
-  packageCount: string
+  packageCount: string,
+  sentCity?: string
 ): string | null => {
   const url = getBaseUrl(labelUrl, orderId);
   const carrier = getLabelCarrier(provider);
@@ -63,10 +64,12 @@ export const getShipmentLabelUrl = (
   url.searchParams.set("c", carrier);
   url.searchParams.set("d", shipmentNumber);
   url.searchParams.delete("n");
+  url.searchParams.delete("city");
   if (carrier === "negev") {
     const count = Number(packageCount);
     if (!Number.isInteger(count) || count < 1 || count > 20) return null;
     if (count > 1) url.searchParams.set("n", String(count));
+    if (sentCity) url.searchParams.set("city", sentCity);
   }
   return url.toString();
 };
@@ -74,7 +77,8 @@ export const getShipmentLabelUrl = (
 export const getReprintLabelUrl = (
   labelUrl: unknown,
   orderId: number,
-  provider: string
+  provider: string,
+  sentCity?: string
 ): string | null => {
   const url = getBaseUrl(labelUrl, orderId);
   const carrier = getLabelCarrier(provider);
@@ -82,5 +86,7 @@ export const getReprintLabelUrl = (
   url.searchParams.set("c", carrier);
   url.searchParams.delete("d");
   url.searchParams.delete("n");
+  url.searchParams.delete("city");
+  if (carrier === "negev" && sentCity) url.searchParams.set("city", sentCity);
   return url.toString();
 };

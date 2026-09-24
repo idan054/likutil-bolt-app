@@ -6,6 +6,8 @@ let viteServer;
 let getShipmentLabelUrl;
 let getReprintLabelUrl;
 let getLabelCarrier;
+let getDeliveryCity;
+let mapOrderToDeliveryTask;
 
 before(async () => {
   viteServer = await createServer({
@@ -15,6 +17,8 @@ before(async () => {
   });
   ({ getShipmentLabelUrl, getReprintLabelUrl, getLabelCarrier } =
     await viteServer.ssrLoadModule("/src/utils/shippingLabel.ts"));
+  ({ getDeliveryCity, mapOrderToDeliveryTask } =
+    await viteServer.ssrLoadModule("/src/services/delivery/mappers.ts"));
 });
 
 after(async () => {
@@ -38,15 +42,40 @@ test("Negev label uses the returned shipment number and package count", () => {
   assert.equal(getShipmentLabelUrl(base, 85626, "negevExpress", response, "21"), null);
 });
 
+test("Negev label and reprint use the exact city sent in the delivery request", () => {
+  const order = {
+    id: 85626,
+    date_created: "2026-09-24",
+    shipping: {
+      first_name: "דנה", last_name: "כהן", address_1: "הראשון 1",
+      city: "  תל  אביב  ", phone: "0501234567",
+    },
+    billing: { city: "חיפה", email: "" },
+  };
+  const sentCity = getDeliveryCity(order);
+  assert.equal(mapOrderToDeliveryTask(order, "2").shipping.city, sentCity);
+  assert.equal(sentCity, "תל אביב");
+  assert.equal(getDeliveryCity({ ...order, shipping: { ...order.shipping, city: "" } }), "חיפה");
+
+  const label = new URL(getShipmentLabelUrl(base, 85626, "negevExpress", response, "2", sentCity));
+  assert.equal(label.searchParams.get("city"), sentCity);
+  assert.match(label.toString(), /city=%D7/);
+  const reprint = new URL(getReprintLabelUrl(base, 85626, "negevExpress", sentCity));
+  assert.equal(reprint.searchParams.get("city"), sentCity);
+  assert.equal(reprint.searchParams.has("d"), false);
+});
+
 test("Mahir Li uses the task id and never sends a package parameter", () => {
   const url = new URL(getShipmentLabelUrl(base, 85626, "mahirLi", {
     ...response,
     task_id: 28130601,
     id: 42,
-  }, "4"));
+  }, "4", "תל אביב"));
   assert.equal(url.searchParams.get("c"), "mahirli");
   assert.equal(url.searchParams.get("d"), "28130601");
   assert.equal(url.searchParams.has("n"), false);
+  assert.equal(url.searchParams.has("city"), false);
+  assert.equal(new URL(getReprintLabelUrl(base, 85626, "mahirLi", "תל אביב")).searchParams.has("city"), false);
 });
 
 test("reprinting uses the signed order link without a new shipment number", () => {
