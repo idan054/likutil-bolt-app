@@ -4,9 +4,10 @@ import { Package, Plus, Minus } from 'lucide-react';
 interface PackageCounterProps {
   isCreating: boolean;
   onCountChange: (count: number) => void;
+  maxCount?: number;
 }
 
-export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCountChange }) => {
+export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCountChange, maxCount = 99 }) => {
   const [count, setCount] = useState(1);
 
   const handleChange = (newCount: number) => {
@@ -32,8 +33,8 @@ export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCo
           </button>
           <span className="w-12 text-center font-bold text-lg text-blue-700">{count}</span>
           <button
-            onClick={() => handleChange(Math.min(99, count + 1))}
-            disabled={count >= 99 || isCreating}
+            onClick={() => handleChange(Math.min(maxCount, count + 1))}
+            disabled={count >= maxCount || isCreating}
             className="p-2 rounded-lg bg-white hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-blue-200"
             title="הוסף חבילה"
           >

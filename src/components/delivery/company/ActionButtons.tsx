@@ -5,9 +5,11 @@ import type { DeliveryTaskResponse } from '../../../services/delivery/types';
 import { getPrintLabelSource } from '../../../services/delivery/validation/response';
 import type { OrderDetails } from '../../../types/order';
 import { OrderStatusOverrideMenu } from '../../order/OrderStatusOverrideMenu';
+import { getReprintLabelUrl, getShipmentLabelUrl } from '../../../utils/shippingLabel';
 
 interface ActionButtonsProps {
   order: OrderDetails;
+  provider: string;
   deliveryResponse: DeliveryTaskResponse | null;
   isCreating: boolean;
   isCompleting: boolean;
@@ -20,6 +22,7 @@ interface ActionButtonsProps {
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   order,
+  provider,
   deliveryResponse,
   isCreating,
   isCompleting,
@@ -29,6 +32,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   deliveryType,  
   onStatusChanged,
 }) => {
+  const reprintUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider);
+  const signedPrintUrl = deliveryResponse
+    ? getShipmentLabelUrl(order.s3_label_url, order.id, provider, deliveryResponse, packNum)
+    : null;
   const handlePrintLabel = (printLabel: string) => {
     const source = getPrintLabelSource(printLabel);
 
@@ -61,29 +68,47 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
       {!deliveryResponse ? (
-        <button
-          onClick={() => onCreateDelivery(packNum, deliveryType)}
-          disabled={isCreating}
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isCreating ? (
-            <Loader2 className="animate-spin" size={20} />
-          ) : (
-            // <Package size={20} />
-            <Rocket size={20} />
+        <div className="flex flex-1 flex-col gap-2">
+          <button
+            onClick={() => onCreateDelivery(packNum, deliveryType)}
+            disabled={isCreating}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCreating ? <Loader2 className="animate-spin" size={20} /> : <Rocket size={20} />}
+            <span>שגר משלוח בטיל!</span>
+          </button>
+          {reprintUrl && !isCreating && (
+            <a
+              href={reprintUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-center text-sm font-semibold text-blue-700 underline underline-offset-2"
+            >
+              כבר הוקם משלוח? הדפס מדבקה שוב
+            </a>
           )}
-          {/* <span>פתח הזמנה</span> */}
-          <span>שגר משלוח בטיל!</span>
-        </button>
+        </div>
       ) : (
         <>
-          <button
-            onClick={() => handlePrintLabel(deliveryResponse.print_label)}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Printer size={20} />
-            <span>הדפסת מדבקה</span>
-          </button>
+          {reprintUrl ? (
+            <a
+              href={signedPrintUrl ?? reprintUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Printer size={20} />
+              <span>הדפסת מדבקה</span>
+            </a>
+          ) : (
+            <button
+              onClick={() => handlePrintLabel(deliveryResponse.print_label)}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Printer size={20} />
+              <span>הדפסת מדבקה</span>
+            </button>
+          )}
           <div className="flex flex-1 items-center gap-2">
             <button
               onClick={onComplete}

@@ -242,6 +242,7 @@ const mapOrder = (
       tax_exempt: order.tax_exempt || false,
       tags: order.tags ? order.tags.split(", ") : [],
       s3_print: order.s3_print ?? null,
+      s3_label_url: order.s3_label_url ?? null,
     };
   }
 // --------------------------------------------------
@@ -341,6 +342,7 @@ const mapOrder = (
       mapLineItem(item, platform)
     ),
     s3_print: order.s3_print ?? null,
+    s3_label_url: order.s3_label_url ?? null,
   };
 };
 

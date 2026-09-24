@@ -79,6 +79,7 @@ export interface OrderSummary {
   payment_method?: string;
   payment_method_title?: string;
   s3_print?: CompanyPrintDocuments | null;
+  s3_label_url?: string | null;
 }
 
 export interface OrderDetails extends OrderSummary {

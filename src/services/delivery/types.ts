@@ -44,4 +44,6 @@ export interface DeliveryTaskResponse {
   public_id?: string;
   barcode?: string;
   destination_region_str?: string;
+  task_id?: string | number;
+  DeliveryNumber?: string | number;
 }

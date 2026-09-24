@@ -10,6 +10,7 @@ import { DeliveryAddress } from './address/DeliveryAddress';
 import type { DeliveryIntegration } from '../../../types/delivery';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
 import { OrderDetails } from '../../../types/order';
+import { getLabelCarrier } from '../../../utils/shippingLabel';
 
 interface ConnectedCompanyProps {
   order: OrderDetails;
@@ -64,6 +65,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           <PackageCounter 
             isCreating={isCreating}
             onCountChange={setPackageCount}
+            maxCount={getLabelCarrier(integration.provider) === 'negev' ? 20 : 99}
           />
 
           <DeliveryAddress 
@@ -82,6 +84,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           
           <ActionButtons 
             order={order}
+            provider={integration.provider}
             deliveryResponse={deliveryResponse}
             isCreating={isCreating}
             isCompleting={isCompleting}
