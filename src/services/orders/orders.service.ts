@@ -7,7 +7,7 @@ import type {
 } from "../../types/order";
 import { JSONPath } from "jsonpath-plus";
 import { getApiConfig } from "../api/config";
-import { OrderDetails } from "../../components/OrderDetails";
+import { settingsStorage } from "../settings";
 
 // Cache configuration
 const ITEMS_PER_PAGE = 15;
@@ -241,6 +241,7 @@ const mapOrder = (
       ),
       tax_exempt: order.tax_exempt || false,
       tags: order.tags ? order.tags.split(", ") : [],
+      s3_print: order.s3_print ?? null,
     };
   }
 // --------------------------------------------------
@@ -339,8 +340,19 @@ const mapOrder = (
     line_items: (order.line_items || []).map((item: any) =>
       mapLineItem(item, platform)
     ),
+    s3_print: order.s3_print ?? null,
   };
 };
+
+const orderCacheKey = (kind: string, orderId: string, platform: string, baseUrl: string) =>
+  JSON.stringify([
+    kind,
+    platform,
+    baseUrl,
+    settingsStorage.get()?.storeUrl,
+    settingsStorage.get()?.myShopifyUrl,
+    orderId,
+  ]);
 
 /**
  * Builds metadata entries from configurations
@@ -461,10 +473,10 @@ const processMultiOrdersMetadata = (
 /**
  * Gets an order by ID
  */
-export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
+export const getOrderById = async (orderId: string, forceRefresh = false): Promise<OrderDetails> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = `order_${platform}_${orderId}`;
+  const cacheKey = orderCacheKey("order", orderId, platform, config.baseUrl);
 
   console.log(
     `[orders.service] Getting order by ID: ${orderId} for platform: ${platform}`
@@ -472,14 +484,22 @@ export const getOrderById = async (orderId: string): Promise<OrderDetails> => {
 
   
 
-  return dedupedApiRequest(cacheKey, async () => {
+  const loadOrder = async () => {
     const response = await apiClient<any>({
       method: "GET",
       path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
     });
 
     return mapOrder(response, platform) as OrderDetails;
-  });
+  };
+
+  if (forceRefresh) {
+    const freshOrder = await loadOrder();
+    dataCache.set(cacheKey, { data: freshOrder, timestamp: Date.now() });
+    return freshOrder;
+  }
+
+  return dedupedApiRequest(cacheKey, loadOrder);
 };
 
 /**
@@ -620,7 +640,7 @@ export const searchOrderById = async (
 ): Promise<OrderDetails> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = `search_${platform}_${orderId}`;
+  const cacheKey = orderCacheKey("search", orderId, platform, config.baseUrl);
 
   console.log(
     `[orders.search.service] Searching for order ID: ${orderId} on platform: ${platform}`
@@ -736,8 +756,8 @@ export const updateOrderStatus = async (
   );
 
   // Clear relevant caches
-  dataCache.delete(`order_${platform}_${orderId}`);
-  dataCache.delete(`search_${platform}_${orderId}`);
+  dataCache.delete(orderCacheKey("order", orderId, platform, config.baseUrl));
+  dataCache.delete(orderCacheKey("search", orderId, platform, config.baseUrl));
   dataCache.delete(`processing_orders_${platform}`);
 
   // Standard WooCommerce/Shopify API call
@@ -772,8 +792,8 @@ export const updateOrderMeta = async (
   }
 
   // Invalidate caches so the next read reflects the new meta
-  dataCache.delete(`order_${platform}_${orderId}`);
-  dataCache.delete(`search_${platform}_${orderId}`);
+  dataCache.delete(orderCacheKey("order", orderId, platform, config.baseUrl));
+  dataCache.delete(orderCacheKey("search", orderId, platform, config.baseUrl));
 
   await apiClient<any>({
     method: "PUT",

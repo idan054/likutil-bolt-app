@@ -42,13 +42,7 @@ const url = isWooRequest
   };
 
   // 🔥 Debugging log (optional)
-  console.log("[DEBUG] API Request:", {
-    url,
-    method,
-    headers: requestHeaders,
-    body: body || "No body",
-    platform,
-  });
+  console.log("[DEBUG] API Request:", { url, method, platform });
 
   try {
     const response = await fetch(url, {
@@ -73,7 +67,7 @@ const url = isWooRequest
     try {
       parsedData = responseText ? JSON.parse(responseText) : null;
     } catch {
-      console.warn("[WARNING] Failed to parse API response:", responseText);
+      console.warn("[WARNING] Failed to parse API response");
       parsedData = responseText;
     }
 
@@ -82,7 +76,6 @@ const url = isWooRequest
         url,
         method,
         status: response.status,
-        responseBody: parsedData,
       });
 
       throw new ApiError({
@@ -100,13 +93,12 @@ const url = isWooRequest
       url,
       method,
       status: response.status,
-      responseBody: parsedData,
     });
 
     onResponse?.(response);
     return parsedData;
   } catch (error) {
-    console.error("[ERROR] Network/API Failure:", error);
+    console.error("[ERROR] Network/API Failure");
 
     throw new ApiError({
       requestUrl: url,

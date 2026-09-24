@@ -63,7 +63,6 @@ export const getApiConfig = (): ApiConfig => {
 
   const authType = settings.authType?.toLowerCase(); // Normalize case
 
-  console.log("[DEBUG] Fetched settings:", settings);
   console.log("[DEBUG] authType:", authType);
 
   if (authType === "woo") {

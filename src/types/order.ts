@@ -35,6 +35,25 @@ export interface LineItem {
   
 }
 
+export interface CompanyPrintDocuments {
+  type: string;
+  quote_id: number;
+  company: string;
+  delivery_note: {
+    exists: boolean;
+    number: number | string | null;
+    print_url: string;
+  };
+  invoices: Array<{
+    number: number | string;
+    print_url: string;
+  }>;
+  popup: {
+    title: string;
+    lines: string[];
+  };
+}
+
 export interface OrderSummary {
   customer_id: number | null;
   is_vip_member?: boolean;
@@ -59,6 +78,7 @@ export interface OrderSummary {
   }>;
   payment_method?: string;
   payment_method_title?: string;
+  s3_print?: CompanyPrintDocuments | null;
 }
 
 export interface OrderDetails extends OrderSummary {

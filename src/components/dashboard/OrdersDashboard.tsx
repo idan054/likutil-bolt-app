@@ -232,6 +232,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ||  filteredOrders.length === 0 ? 'block' : 'hidden md:block'}`}>
             {selectedOrder ? (
               <OrderDetails
+                key={selectedOrder.id}
                 order={selectedOrder}
                 onReset={handleBackToList}
                 onComplete={() => handleOrderComplete(selectedOrderId)}

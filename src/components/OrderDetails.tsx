@@ -22,6 +22,8 @@ import {
   isOtherPaymentProcessing,
 } from "../utils/order";
 import { OrderStatusOverrideMenu } from "./order/OrderStatusOverrideMenu";
+import { CompanyPrintDocuments } from "./order/CompanyPrintDocuments";
+import { useCompanyPrintDocuments } from "../hooks/useCompanyPrintDocuments";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -38,6 +40,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
 
   const { reset: resetMessaging } = useMessagingStore();
+  const companyPrint = useCompanyPrintDocuments(order);
   const [showLocalPickupAlert, setShowLocalPickupAlert] = useState(false);
   const [showLocalPickup, setShowLocalPickup] = useState<boolean>(true);
   const [selectedDeliveryProvider, setSelectedDeliveryProvider] = useState<
@@ -62,7 +65,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   });
 
   const handleComplete = async () => {
-    console.log("handleComplete called");
+    if (companyPrint.isBlocked) return;
     await completeOrder();
     clearDeliveryResponse();
   };
@@ -140,8 +143,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             dateCreated={order.date_created}
             isLocalPickup={isLocalPickup}
             customerId={order.customer_id}
-            onReset={onReset}
+            onReset={() => {
+              if (!companyPrint.isBlocked) onReset();
+            }}
+            beforeStatusChange={(newStatus) =>
+              newStatus !== "completed" || !companyPrint.isBlocked
+            }
           />
+          <CompanyPrintDocuments order={order} print={companyPrint} />
           <FastDeliveryDecisionCard order={order} />
 
           <CustomerNote note={order.customer_note} />

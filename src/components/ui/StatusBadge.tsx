@@ -9,9 +9,10 @@ interface StatusBadgeProps {
   status: string;
   orderId: string;
   onStatusUpdate?: (newStatus: string) => void;
+  beforeStatusChange?: (newStatus: string) => boolean;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status: initialStatus, orderId, onStatusUpdate }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status: initialStatus, orderId, onStatusUpdate, beforeStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(initialStatus);
@@ -38,6 +39,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status: initialStatus,
 
   const handleStatusChange = async (newStatus: string) => {
     if (isUpdating) return;
+    if (beforeStatusChange && !beforeStatusChange(newStatus)) {
+      setIsOpen(false);
+      return;
+    }
     setIsUpdating(true);
     setCurrentStatus(newStatus); // Optimistic update
     try {
