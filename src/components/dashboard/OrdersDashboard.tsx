@@ -23,21 +23,12 @@ import { isPickingStatus } from "../../services/orders/eligibility";
 export const OrdersDashboard: React.FC = () => {
   const { orderStatuses , user, settings} = useSettings();
   
-  // Initialize selectedStatus from localStorage
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(() => {
-    const cached = localStorage.getItem('selectedOrderStatus');
-    const defaultStatus = settings?.authType === "shopify" ? "pending" : "processing";
-    try {
-      const saved = cached ? JSON.parse(cached) : defaultStatus;
-      return saved === null || (typeof saved === "string" && isPickingStatus(saved, settings?.authType))
-        ? saved : defaultStatus;
-    } catch {
-      return defaultStatus;
-    }
-  });
+  // Every page load starts with the platform's orders awaiting handling.
+  const processingStatus = settings?.authType === "shopify" ? "pending" : "processing";
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(() => processingStatus);
   const { orders, orderPage, isLoading, isRefetching, ordersError, setOrders, refetchOrders, cancelOrdersRefresh } = useAppState(selectedStatus);
 
-  // Update localStorage when selectedStatus changes
+  // Keep legacy order-service callers aligned with this tab's current filter.
   useEffect(() => {
     localStorage.setItem('selectedOrderStatus', JSON.stringify(selectedStatus));
   }, [selectedStatus]);
@@ -163,7 +154,7 @@ export const OrdersDashboard: React.FC = () => {
 
 
   const handleSelectedStatus = (status: string | null) => {
-    // Persist the filter for reload; this tab's requests use its own selection.
+    // Update legacy callers immediately; reloading still starts with processing.
     localStorage.setItem('selectedOrderStatus', JSON.stringify(status));
     setSelectedStatus(status);
     handleBackToList(status === selectedStatus);
@@ -231,6 +222,7 @@ export const OrdersDashboard: React.FC = () => {
               onSelectOrder={handleOrderSelection}
               isCompleted={isCompleted}
               selectedOrderId={selectedOrderId}
+              muteDeliveryBadges={selectedStatus !== processingStatus}
             />
             <AppInfoStatus />
           </div>

@@ -14,6 +14,7 @@ interface OrderListItemProps {
   isCompleted: boolean;
   selectedOrderId: string | null;
   onPriorityChange: (orderId: number, isFast: boolean) => void;
+  muteDeliveryBadge?: boolean;
 }
 
 export const OrderListItem: React.FC<OrderListItemProps> = ({ 
@@ -21,7 +22,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   onSelect,
   isCompleted,
   selectedOrderId,
-  onPriorityChange
+  onPriorityChange,
+  muteDeliveryBadge = false
 }) => {
   const { customer, isLoading, refetch } = useCustomerDetails(order.customer_id);
   const { decision } = useOrderFastDeliveryDecision(order);
@@ -62,6 +64,7 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <DeliveryTypeBadge 
+              className={muteDeliveryBadge ? '!bg-gray-100 !text-gray-500' : undefined}
               shippingLines={order.shipping_lines}
               deliveryType={decision?.deliveryType} 
               decisionState={decision?.decisionState} 

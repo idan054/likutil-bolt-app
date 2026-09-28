@@ -9,13 +9,15 @@ interface OrdersListProps {
   onSelectOrder: (orderId: string) => void;
   isCompleted: (orderId: string) => boolean;
   selectedOrderId: string | null;
+  muteDeliveryBadges?: boolean;
 }
 
 export const OrdersList: React.FC<OrdersListProps> = ({
   orders, 
   onSelectOrder,
   isCompleted,
-  selectedOrderId
+  selectedOrderId,
+  muteDeliveryBadges = false
 }) => {
   const [fastByOrderId, setFastByOrderId] = useState<Record<number, boolean>>({});
   const onPriorityChange = useCallback((orderId: number, isFast: boolean) => {
@@ -50,6 +52,7 @@ export const OrdersList: React.FC<OrdersListProps> = ({
               isCompleted={isCompleted(order.id.toString())}
               selectedOrderId={selectedOrderId}
               onPriorityChange={onPriorityChange}
+              muteDeliveryBadge={muteDeliveryBadges}
             />
           </motion.div>
         ))}
