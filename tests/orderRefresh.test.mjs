@@ -402,6 +402,29 @@ test("opening an order cancels an already pending background refresh", async () 
   assert.equal(renderer.root.findByType("OrderDetails").props.order.id, 1);
 });
 
+test("refreshing the list cannot unmount an open order that no longer matches the filter", async () => {
+  await mountDashboard();
+  await act(async () => renderer.root.findByType("OrdersList").props.onSelectOrder("1"));
+  const originalOrder = renderer.root.findByType("OrderDetails").props.order;
+  respond = (_request, response) => json(response, []);
+  await act(async () => refreshDashboard());
+  await settle(() => listedIds().length === 0);
+  assert.equal(renderer.root.findByType("OrderDetails").props.order, originalOrder);
+  assert.equal(intervals.size, 0);
+  await act(async () => renderer.root.findByType("OrderDetails").props.onReset());
+  assert.equal(renderer.root.findAllByType("OrderDetails").length, 0);
+});
+
+test("switching stores clears the active order instead of carrying its draft to another tenant", async () => {
+  await mountDashboard();
+  await act(async () => renderer.root.findByType("OrdersList").props.onSelectOrder("1"));
+  fixture.settings = { ...fixture.settings, storeUrl: "another-tenant.invalid" };
+  respond = (_request, response) => json(response, [order(2)]);
+  await act(async () => renderer.update(React.createElement(OrdersDashboard)));
+  await settle(() => listedIds().includes(2));
+  assert.equal(renderer.root.findAllByType("OrderDetails").length, 0);
+});
+
 test("initial connection failure is not displayed as all orders having been handled", async () => {
   respond = (_request, response) => json(response, { message: "unavailable" }, 503);
   await act(async () => { renderer = create(React.createElement(OrdersDashboard)); });

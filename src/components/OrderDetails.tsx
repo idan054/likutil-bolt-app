@@ -67,7 +67,8 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   const handleComplete = async () => {
     if (companyPrint.isBlocked) return;
     await completeOrder();
-    clearDeliveryResponse();
+    // Success closes this view through onSuccess. On failure keep the existing
+    // shipment and label available, so retrying completion cannot recreate it.
   };
 
   const handleStatusChanged = () => {

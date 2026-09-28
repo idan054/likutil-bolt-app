@@ -62,7 +62,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
             isVipMember={order.is_vip_member ?? customer?.is_vip_member}
             isLoading={isLoading}
           />
-          <StatusBadge status={status} orderId={order.id.toString()} beforeStatusChange={beforeStatusChange} onStatusUpdate={onReset} />
+          <StatusBadge status={status} orderId={order.id.toString()} beforeStatusChange={beforeStatusChange} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>
 

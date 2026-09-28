@@ -1,42 +1,45 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import type { OrderDetails, OrderSummary } from '../../../types/order';
-import { useOrderSearch } from '../../../hooks/orders/useOrderSearch';
-import { useAppState } from '../../../hooks/useAppState';
-import { s } from 'framer-motion/client';
-import { se } from 'date-fns/locale/se';
+import type { OrderSummary } from '../../../types/order';
 
-export const useOrderSelection = (orders: OrderSummary[], setOrders: React.Dispatch<React.SetStateAction<OrderSummary[]>>) => {
-  
-  
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  
-  
-  
+export const useOrderSelection = (
+  orders: OrderSummary[],
+  setOrders: React.Dispatch<React.SetStateAction<OrderSummary[]>>,
+  scope: string,
+) => {
+  // An active workflow owns its order snapshot. List refreshes must not discard
+  // its shipment response or printing controls when the server status changes.
+  const [selection, setSelection] = useState<{ scope: string; order: OrderSummary } | null>(null);
+  const selectedOrder = selection?.scope === scope ? selection.order : null;
+  const selectedOrderId = selectedOrder?.id.toString() ?? null;
+
+  useEffect(() => {
+    setSelection((current) => current?.scope === scope ? current : null);
+  }, [scope]);
+
   const handleSearchOrder = useCallback((searchOrder: OrderSummary) => {
-    // Check if order already exists
-    const orderExists = orders.some(order => order.id === searchOrder.id);
-    if (!orderExists) {
-      setOrders(prevOrders => [searchOrder, ...prevOrders]);
-    }
-    setSelectedOrderId(searchOrder.id.toString());
-  }, [orders]);
+    setOrders((current) => current.some((order) => order.id === searchOrder.id)
+      ? current.map((order) => order.id === searchOrder.id ? searchOrder : order)
+      : [searchOrder, ...current]);
+    setSelection({ scope, order: searchOrder });
+  }, [scope, setOrders]);
 
   const handleOrderSelect = useCallback((orderId: string) => {
     const order = orders.find(o => o.id.toString() === orderId);
     if (order) {
-      setSelectedOrderId(orderId);
+      setSelection({ scope, order });
     } else {
       toast.error('הזמנה לא נמצאה או שאינה בסטטוס "בטיפול"');
     }
-  }, [orders]);
+  }, [orders, scope]);
 
   const handleReset = useCallback(() => {
-    setSelectedOrderId(null);
+    setSelection(null);
   }, []);
 
   return {
     handleSearchOrder,
+    selectedOrder,
     selectedOrderId,
     handleOrderSelect,
     handleReset

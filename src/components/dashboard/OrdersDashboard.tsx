@@ -37,7 +37,8 @@ export const OrdersDashboard: React.FC = () => {
 
 
 
-  const { selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders);
+  const orderScope = JSON.stringify([user?.uid, settings?.authType, settings?.storeUrl, settings?.myShopifyUrl]);
+  const { selectedOrder, selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders, orderScope);
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
     generateSuperOrder,
@@ -173,10 +174,6 @@ export const OrdersDashboard: React.FC = () => {
       : orders;
 
  
-
-    const selectedOrder = selectedOrderId
-      ? orders.find((o) => o.id.toString() === selectedOrderId)
-      : null;
 
       
 
