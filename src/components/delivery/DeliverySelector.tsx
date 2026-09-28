@@ -59,12 +59,13 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   );
 
   // Find selected integration
+  const displayedProvider = deliveryResponse?.provider || selectedProvider;
   const selectedIntegration = integrations.find(
-    integration => integration.provider === selectedProvider
-  );
+    integration => integration.provider === displayedProvider
+  ) ?? integrations.find(integration => integration.provider === selectedProvider);
   const selectProvider = React.useCallback((provider: string) => {
-    if (!isCreating) onSelect(provider);
-  }, [isCreating, onSelect]);
+    if (!isCreating && !isCreationBlocked && !deliveryResponse) onSelect(provider);
+  }, [isCreating, isCreationBlocked, deliveryResponse, onSelect]);
 
 
   return (
@@ -84,7 +85,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
       </div>
       
       <DeliveryCarousel
-        selectedProvider={selectedProvider}
+        selectedProvider={displayedProvider}
         onSelect={selectProvider}
         connectedProviders={connectedProviders}
       />
