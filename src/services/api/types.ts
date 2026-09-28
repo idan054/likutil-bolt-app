@@ -15,6 +15,7 @@ export interface ApiRequestConfig {
   path: string;
   body?: unknown;
   signal?: AbortSignal;
+  cache?: RequestCache;
   onResponse?: (response: Response) => void;
 }
 

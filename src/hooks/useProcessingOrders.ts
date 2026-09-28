@@ -1,182 +1,122 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getFilteredOrdersPage, type OrdersPage } from "../services/orders/orders.service";
-import { showErrorToast } from "../utils/error";
 import type { OrderSummary } from "../types/order";
 import { useSettings } from "./useSettings";
 import { useGetFirebaseMetadata } from "./useGetFirebaseMetadata";
 
-// Cache duration in milliseconds (30 seconds)
 const CACHE_DURATION = 30 * 1000;
+const REQUEST_TIMEOUT = 20 * 1000;
 
-export const useProcessingOrders = () => {
-  const { settings } = useSettings();
+export const useProcessingOrders = (selectedStatus?: string | null) => {
+  const { settings, user } = useSettings();
   const { options } = useGetFirebaseMetadata();
+  const scope = settings ? JSON.stringify([
+    user?.uid, settings.authType, settings.storeUrl, settings.myShopifyUrl,
+  ]) : null;
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const metadataConfigs = useMemo(() => options.map((config) => ({
+    label_path: config.original_path?.label_path,
+    value_path: config.original_path?.value_path,
+    parent_path: config.original_path?.parent_path,
+  })), [options]);
 
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [orders, setOrdersState] = useState<OrderSummary[]>([]);
   const [orderPage, setOrderPage] = useState<Pick<OrdersPage, "total" | "status"> & { loadedCount: number }>({
-    total: null,
-    status: null,
-    loadedCount: 0,
+    total: null, status: null, loadedCount: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-
-  // Use ref to store orders without creating dependencies
   const ordersRef = useRef<OrderSummary[]>([]);
-
-  // Track when orders were last fetched
   const lastFetchedRef = useRef<number | null>(null);
-
-  // Use ref to track if a fetch is in progress to prevent duplicate calls
-  const isFetchingRef = useRef(false);
-
-  // Track if component is mounted
   const isMountedRef = useRef(true);
-
-  // Abort controller for canceling requests
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelRefresh = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+    setIsRefetching(false);
+  }, []);
+
+  const setOrders = useCallback((update: React.SetStateAction<OrderSummary[]>) => {
+    const next = typeof update === "function" ? update(ordersRef.current) : update;
+    ordersRef.current = next;
+    setOrdersState(next);
+  }, []);
 
   const applyOrderPage = useCallback((page: OrdersPage) => {
     setOrders(page.orders);
-    ordersRef.current = page.orders;
     setOrderPage({ total: page.total, status: page.status, loadedCount: page.orders.length });
     lastFetchedRef.current = Date.now();
-  }, []);
+    setError(null);
+  }, [setOrders]);
 
-  const fetchOrders = useCallback(
-    async (force = false) => {
-      // Skip if settings or options are not loaded
-      if (!settings || !options) {
+  const fetchOrders = useCallback(async (force = false) => {
+    if (!scope || !isMountedRef.current) {
+      setIsLoading(false);
+      setIsRefetching(false);
+      return;
+    }
+    if (!force && abortControllerRef.current) return;
+    if (!force && lastFetchedRef.current !== null &&
+        Date.now() - lastFetchedRef.current < CACHE_DURATION) return ordersRef.current;
+
+    // A forced refresh supersedes pending reads, including reads for an old filter.
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const isCurrent = () => isMountedRef.current && scopeRef.current === scope &&
+      abortControllerRef.current === controller;
+    const isInitialFetch = lastFetchedRef.current === null;
+    setIsLoading(isInitialFetch);
+    setIsRefetching(!isInitialFetch);
+    // Keep the warning until fresh data has actually arrived.
+    const timeout = setTimeout(() => controller.abort(new DOMException(
+      "טעינת ההזמנות ארכה זמן רב מדי. יש לנסות לרענן שוב.", "TimeoutError"
+    )), REQUEST_TIMEOUT);
+
+    try {
+      const data = await getFilteredOrdersPage(selectedStatus === undefined ? "init" : selectedStatus, metadataConfigs, undefined, {
+        forceRefresh: true,
+        signal: controller.signal,
+      });
+      if (!isCurrent() || controller.signal.aborted) return;
+      applyOrderPage(data);
+      return data.orders;
+    } catch (failure) {
+      if (!isCurrent() || (controller.signal.aborted &&
+          controller.signal.reason?.name !== "TimeoutError")) return;
+      setError(failure instanceof Error ? failure : new Error("טעינת ההזמנות נכשלה"));
+      // Never replace the last known list with an empty list on failure.
+      return ordersRef.current;
+    } finally {
+      clearTimeout(timeout);
+      if (isCurrent()) {
+        abortControllerRef.current = null;
         setIsLoading(false);
         setIsRefetching(false);
-        return;
       }
+    }
+  }, [scope, selectedStatus, metadataConfigs, applyOrderPage]);
 
-      // If a fetch is already in progress, don't start another one
-      if (isFetchingRef.current) return;
-
-      // Don't refetch if we recently fetched, unless force=true
-      const now = Date.now();
-      if (
-        !force &&
-        lastFetchedRef.current &&
-        now - lastFetchedRef.current < CACHE_DURATION &&
-        ordersRef.current.length > 0
-      ) {
-        return ordersRef.current;
-      }
-
-      const isInitialFetch = ordersRef.current.length === 0;
-
-      // Only update loading states if component is mounted
-      if (isMountedRef.current) {
-        if (isInitialFetch) {
-          setIsLoading(true);
-        } else {
-          setIsRefetching(true);
-        }
-        setError(null);
-      }
-
-      try {
-        // Set fetching flag to true before making the API call
-        isFetchingRef.current = true;
-
-        // Cancel any existing request
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-
-        // Create new abort controller
-        abortControllerRef.current = new AbortController();
-
-        console.log("[useProcessingOrders] Fetching orders...");
-
-        // Prepare metadata configs from Firebase options
-        const metadataConfigs = options.map((config) => ({
-          label_path: config.original_path?.label_path,
-          value_path: config.original_path?.value_path,
-          parent_path: config.original_path?.parent_path,
-        }));
-
-        // Pass metadata configs and processing status to getFilteredOrders
-        const data = await getFilteredOrdersPage("init", metadataConfigs);
-
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          const selectedStatus = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "null");
-          if (data.status === selectedStatus) {
-            applyOrderPage(data);
-          }
-          setError(null);
-        }
-
-        // Return the data for direct use if needed
-        return data.orders;
-      } catch (error) {
-        // Only handle error if it's not an abort error
-        if (error instanceof DOMException && error.name === "AbortError") {
-          console.log("[useProcessingOrders] Request was aborted");
-          return ordersRef.current;
-        }
-
-        console.error("[useProcessingOrders] Failed to fetch orders:", error);
-
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          showErrorToast(error);
-          setError(
-            error instanceof Error ? error : new Error("Failed to fetch orders")
-          );
-          if (isInitialFetch) {
-            setOrders([]);
-          }
-        }
-
-        return ordersRef.current;
-      } finally {
-        // Reset fetching flag when done
-        isFetchingRef.current = false;
-
-        // Only update loading states if component is still mounted
-        if (isMountedRef.current) {
-          setIsLoading(false);
-          setIsRefetching(false);
-        }
-      }
-    },
-    [settings, options, applyOrderPage]
-  ); // Depend on settings and options
-
-  // Fetch orders on mount and clean up on unmount
   useEffect(() => {
     isMountedRef.current = true;
-
-    // Initial fetch
-    fetchOrders();
-
+    lastFetchedRef.current = null;
+    setOrders([]);
+    setOrderPage({ total: null, status: null, loadedCount: 0 });
+    setError(null);
+    void fetchOrders();
     return () => {
-      // Mark component as unmounted
       isMountedRef.current = false;
-
-      // Cancel any pending request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
     };
-  }, [fetchOrders]);
+  }, [fetchOrders, setOrders]);
 
   return {
-    orders,
-    setOrders,
-    orderPage,
-    applyOrderPage,
-    isLoading,
-    isRefetching,
-    error,
-    fetchOrders,
-    refetch: useCallback((force = false) => fetchOrders(force), [fetchOrders]),
-    lastFetched: lastFetchedRef.current,
+    orders, setOrders, orderPage, applyOrderPage, isLoading, isRefetching, error,
+    fetchOrders, refetch: fetchOrders, cancelRefresh, lastFetched: lastFetchedRef.current,
   };
 };

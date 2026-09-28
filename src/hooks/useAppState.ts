@@ -8,7 +8,7 @@ import { useSettings } from "./useSettings";
 import { OrderSummary, OrderDetails } from "../types/order";
 import { resetUserOneTimeToken } from "../services/auth/woo-auth";
 
-export const useAppState = () => {
+export const useAppState = (orderStatus?: string | null) => {
   const [user, loading] = useAuthState(auth);
   const {
     settings,
@@ -23,8 +23,10 @@ export const useAppState = () => {
     applyOrderPage,
     isLoading: isLoadingOrders,
     isRefetching,
+    error: ordersError,
     refetch: refetchOrders,
-  } = useProcessingOrders();
+    cancelRefresh: cancelOrdersRefresh,
+  } = useProcessingOrders(orderStatus);
 
   const [isInitialized, setIsInitialized] = useState(false);
   const initialFetchRef = useRef(false);
@@ -79,11 +81,13 @@ export const useAppState = () => {
     hasSettings: !!settings,
     isLoading: loading || isLoadingSettings || isLoadingOrders,
     isRefetching,
+    ordersError,
     orders,
     setOrders,
     orderPage,
     applyOrderPage,
     refetchOrders,
+    cancelOrdersRefresh,
     handleSettingsSave,
     cleanOrders,
   };

@@ -43,8 +43,13 @@ export interface MetadataConfig {
 const dedupedApiRequest = <T>(
   key: string,
   requestFn: () => Promise<T>,
-  cacheDuration = CACHE_EXPIRATION
+  cacheDuration = CACHE_EXPIRATION,
+  forceRefresh = false,
 ): Promise<T> => {
+  if (forceRefresh) {
+    dataCache.delete(key);
+    requestCache.delete(key);
+  }
   // Check data cache first
   const cachedData = dataCache.get(key);
   const now = Date.now();
@@ -63,14 +68,16 @@ const dedupedApiRequest = <T>(
   const request = requestFn()
     .then((data) => {
       // Store in data cache
-      dataCache.set(key, { data, timestamp: Date.now() });
-      // Clear from request cache
-      requestCache.delete(key);
+      // An older request must not repopulate a cache invalidated by a write/refresh.
+      if (requestCache.get(key) === request) {
+        dataCache.set(key, { data, timestamp: Date.now() });
+        requestCache.delete(key);
+      }
       return data;
     })
     .catch((error) => {
       // Clear from request cache on error
-      requestCache.delete(key);
+      if (requestCache.get(key) === request) requestCache.delete(key);
       throw error;
     });
 
@@ -346,15 +353,26 @@ const mapOrder = (
   };
 };
 
-const orderCacheKey = (kind: string, orderId: string, platform: string, baseUrl: string) =>
+const orderCacheScope = (platform: string, baseUrl: string) =>
   JSON.stringify([
-    kind,
     platform,
     baseUrl,
     settingsStorage.get()?.storeUrl,
     settingsStorage.get()?.myShopifyUrl,
-    orderId,
   ]);
+
+const orderCacheKey = (kind: string, orderId: string, platform: string, baseUrl: string) =>
+  `${orderCacheScope(platform, baseUrl)}:${kind}:${orderId}`;
+
+const invalidateOrderCaches = (scope: string, orderId: string) => {
+  for (const key of new Set([...dataCache.keys(), ...requestCache.keys()])) {
+    if (key.startsWith(`${scope}:orders:`) ||
+        key === `${scope}:order:${orderId}` || key === `${scope}:search:${orderId}`) {
+      dataCache.delete(key);
+      requestCache.delete(key);
+    }
+  }
+};
 
 /**
  * Builds metadata entries from configurations
@@ -495,13 +513,7 @@ export const getOrderById = async (orderId: string, forceRefresh = false): Promi
     return mapOrder(response, platform) as OrderDetails;
   };
 
-  if (forceRefresh) {
-    const freshOrder = await loadOrder();
-    dataCache.set(cacheKey, { data: freshOrder, timestamp: Date.now() });
-    return freshOrder;
-  }
-
-  return dedupedApiRequest(cacheKey, loadOrder);
+  return dedupedApiRequest(cacheKey, loadOrder, CACHE_EXPIRATION, forceRefresh);
 };
 
 /**
@@ -517,6 +529,7 @@ export const getFilteredOrdersPage = async (
   status: string | null,
   metadataConfigs?: MetadataConfig[],
   order_number?: string | null,
+  requestOptions: { forceRefresh?: boolean; signal?: AbortSignal } = {},
 ): Promise<OrdersPage> => {
   const config = getApiConfig();
   const platform = config.platform;
@@ -531,12 +544,9 @@ export const getFilteredOrdersPage = async (
   status = status && status !== "null" ? status : null;
   console.log("Cache status:", status);
 
-  const shopifyStore = platform === "shopify"
-    ? JSON.parse(localStorage.getItem("wc_settings") || "null")?.myShopifyUrl
-    : null;
-  const cacheKey = JSON.stringify([
-    config.baseUrl, platform, shopifyStore, status, order_number, metadataConfigs,
-  ]);
+  const cacheKey = orderCacheKey("orders", JSON.stringify([
+    status, order_number, metadataConfigs,
+  ]), platform, config.baseUrl);
   return dedupedApiRequest(cacheKey, async () => {
     // Platform-specific parameters
     const params = new URLSearchParams({
@@ -572,6 +582,8 @@ export const getFilteredOrdersPage = async (
     const response = await apiClient<any>({
       method: "GET",
       path: `${PLATFORM_ENDPOINTS[platform].orders}?${params.toString()}`,
+      signal: requestOptions.signal,
+      cache: "no-store",
       onResponse: ({ headers }) => {
         const value = headers.get("X-WP-Total");
         if (value !== null && /^\d+$/.test(value)) {
@@ -583,7 +595,7 @@ export const getFilteredOrdersPage = async (
     // Handle different response formats
     let orders: OrderSummary[] = [];
 
-    if (platform === "shopify" && response.orders) {
+    if (platform === "shopify" && Array.isArray(response?.orders)) {
       // Shopify returns { orders: [...] }
       orders = response.orders.map(
         (order: any) => mapOrder(order, platform) as OrderSummary
@@ -595,6 +607,8 @@ export const getFilteredOrdersPage = async (
       orders = response.map(
         (order) => mapOrder(order, platform) as OrderSummary
       );
+    } else {
+      throw new Error("לא התקבלה רשימת הזמנות תקינה מהחנות. יש לנסות לרענן שוב.");
     }
 
     console.log(
@@ -623,7 +637,7 @@ export const getFilteredOrdersPage = async (
       total: reportedTotal ?? (orders.length < ITEMS_PER_PAGE ? orders.length : null),
       status,
     };
-  });
+  }, CACHE_EXPIRATION, requestOptions.forceRefresh);
 };
 
 export const getFilteredOrders = async (
@@ -757,20 +771,23 @@ export const updateOrderStatus = async (
     `[orders.service] Updating order ${orderId} status to ${status} on platform ${platform}`
   );
 
-  // Clear relevant caches
-  dataCache.delete(orderCacheKey("order", orderId, platform, config.baseUrl));
-  dataCache.delete(orderCacheKey("search", orderId, platform, config.baseUrl));
-  dataCache.delete(`processing_orders_${platform}`);
+  const scope = orderCacheScope(platform, config.baseUrl);
+  invalidateOrderCaches(scope, orderId);
 
   // Standard WooCommerce/Shopify API call
-  const response = await apiClient<any>({
-    method: platform === "shopify" ? "PUT" : "POST",
-    path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
-    body: { status },
-  });
+  try {
+    const response = await apiClient<any>({
+      method: platform === "shopify" ? "PUT" : "POST",
+      path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
+      body: { status },
+    });
 
-  console.log(`[orders.service] Order status updated to ${status}`);
-  return mapOrder(response, platform) as OrderDetails;
+    return mapOrder(response, platform) as OrderDetails;
+  } finally {
+    // A lost response can follow a committed write. Reconcile by reading, never
+    // automatically repeat the mutation, and discard reads started during it.
+    invalidateOrderCaches(scope, orderId);
+  }
 };
 
 /**

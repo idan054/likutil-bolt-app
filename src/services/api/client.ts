@@ -8,6 +8,8 @@ export const apiClient = async <T>({
   path,
   body,
   onResponse,
+  signal,
+  cache = "no-cache",
 }: ApiRequestConfig): Promise<T> => {
   const config = getApiConfig(); // Retrieve API configuration based on platform
   const settings = settingsStorage.get();
@@ -50,7 +52,8 @@ const url = isWooRequest
       headers: requestHeaders,
       ...(body ? { body: JSON.stringify(body) } : {}),
       mode: "cors",
-      cache: "no-cache",
+      cache,
+      signal,
       referrerPolicy: "no-referrer",
     });
 
@@ -98,6 +101,8 @@ const url = isWooRequest
     onResponse?.(response);
     return parsedData;
   } catch (error) {
+    if (signal?.aborted) throw signal.reason ?? error;
+    if (error instanceof ApiError) throw error;
     console.error("[ERROR] Network/API Failure");
 
     throw new ApiError({

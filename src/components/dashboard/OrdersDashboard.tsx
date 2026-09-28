@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { toast } from "react-hot-toast";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { OrderSearch } from "../OrderSearch";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
 import { StatusFilter } from "./StatusFilter";
@@ -14,24 +13,13 @@ import { useOrderSelection } from "./hooks/useOrderSelection";
 import { useVisitedOrders } from "../../hooks/useVisitedOrders";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { OrderDetails } from "../OrderDetails";
-import { getFilteredOrdersPage } from "../../services/orders/orders.service";
-import { filter } from "framer-motion/client";
-// import { OrderDetails } from '../../types/order';
+import type { OrderDetails as OrderData } from "../../types/order";
 import { AnimatePresence, motion } from "framer-motion";
-import { useDeliveryCreation } from "../../hooks/useDeliveryCreation";
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
-import { analytics, AnalyticsEvent } from "../../services/analytics";
-import { se } from "date-fns/locale";
+import { analytics } from "../../services/analytics";
 
 
-interface OrdersDashboardProps {
-  
-}
-
-export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
-  const { orders, orderPage, applyOrderPage, isLoading, setOrders } = useAppState();
-  const [isStatusLoading, setIsStatusLoading] = useState(false);
-  const statusRequestRef = useRef(0);
+export const OrdersDashboard: React.FC = () => {
   const { orderStatuses , user, settings} = useSettings();
   
   // Initialize selectedStatus from localStorage
@@ -39,6 +27,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     const cached = localStorage.getItem('selectedOrderStatus');
     return cached ? JSON.parse(cached) : null;
   });
+  const { orders, orderPage, isLoading, isRefetching, ordersError, setOrders, refetchOrders, cancelOrdersRefresh } = useAppState(selectedStatus);
 
   // Update localStorage when selectedStatus changes
   useEffect(() => {
@@ -57,17 +46,42 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     isLoading: isGeneratingSuperOrder,
   } = useSuperOrder();
 
+  // Poll only the list view: replacing an open order could discard a draft or
+  // close a shipment/printing flow. Returning to the list always refreshes it.
+  useEffect(() => {
+    if (selectedOrderId) {
+      cancelOrdersRefresh();
+      return;
+    }
+    const refresh = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        void refetchOrders(true);
+      }
+    };
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener("online", refresh);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [selectedOrderId, refetchOrders, cancelOrdersRefresh]);
+
   // Handle browser history
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       if (event.state?.view === "orders-list") {
         handleReset();
+        void refetchOrders(true);
       }
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [handleReset]);
+  }, [handleReset, refetchOrders]);
 
   // Track page view and identify user when component mounts
  useEffect(() => {
@@ -106,29 +120,24 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     }
   }, [selectedOrderId]);
 
-  const handleBackToList = () => {
+  const handleBackToList = useCallback((refresh = true) => {
     window.history.pushState({ view: "orders-list" }, "", "/");
     handleReset();
     setIsMobileDetailsVisible(false);
-  };
+    if (refresh) void refetchOrders(true);
+  }, [handleReset, refetchOrders]);
 
   // Calculate completed orders count
   const completedOrdersCount = useMemo(() => {
     return orders.filter((order) => isCompleted(order.id.toString())).length;
   }, [orders, isCompleted]);
 
-  const handleOrderComplete = (orderId: string) => {
-    markAsCompleted(orderId);
+  const handleOrderComplete = (updatedOrder: OrderData) => {
+    markAsCompleted(String(updatedOrder.id));
+    setOrders((current) => current.map((order) =>
+      order.id === updatedOrder.id ? updatedOrder : order
+    ));
   };
-
-  const {
-    clearDeliveryResponse,
-  } = useDeliveryCreation({
-    order: undefined,
-    provider: '',
-    onSuccess: () => {}, 
-  });
-
 
   const handleOrderSelection = (orderId: string) => {
       if(orderId === selectedOrderId) {
@@ -139,40 +148,16 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
     handleOrderSelect(orderId);
   };
 
-  const handleSearchOrdered = (order: any) => {
+  const handleSearchOrdered = (order: OrderData) => {
     handleSearchOrder(order);
   };
 
 
   const handleSelectedStatus = (status: string | null) => {
-    const requestId = ++statusRequestRef.current;
+    // Persist the filter for reload; this tab's requests use its own selection.
+    localStorage.setItem('selectedOrderStatus', JSON.stringify(status));
     setSelectedStatus(status);
-    setIsStatusLoading(true);
-    
-    toast.promise(
-      getFilteredOrdersPage(status),
-      {
-        loading: `מעדכן רשימת הזמנות ${status ?? ''}...`,
-
-        success: (data) => {
-          if (requestId === statusRequestRef.current) {
-            applyOrderPage(data);
-            setIsStatusLoading(false);
-          }
-          return `${data.orders.length} הזמנות אחרונות נוספו בהצלחה`;
-        },
-        error: () => {
-          if (requestId === statusRequestRef.current) {
-            setSelectedStatus(orderPage.status);
-            setIsStatusLoading(false);
-          }
-          return 'Failed to refresh orders';
-        }
-      }
-    );
-
-    
-    handleBackToList();
+    handleBackToList(status === selectedStatus);
 
   
 
@@ -207,9 +192,16 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
           selectedStatus={selectedStatus}
           loadedCount={orderPage.loadedCount}
           totalOrders={orderPage.total}
-          isLoading={isLoading || isStatusLoading || orderPage.status !== selectedStatus}
+          isLoading={isLoading || orderPage.status !== selectedStatus}
 
         />
+        {ordersError && (
+          <div role="alert" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            רשימת ההזמנות לא מעודכנת. לא הצלחנו לקבל נתונים מהחנות.
+            {!selectedOrderId && " ננסה שוב אוטומטית."}
+            {" אפשר ללחוץ על רענון ההזמנות או לרענן את העמוד."}
+          </div>
+        )}
         <div className="flex flex-col md:flex-row gap-1 mt-6">
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
             <div className="space-y-2 mb-2">
@@ -219,6 +211,14 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
                 selectedStatus={selectedStatus}
                 onStatusChange={handleSelectedStatus}
               />
+              <button
+                type="button"
+                onClick={() => void refetchOrders(true)}
+                disabled={isLoading || isRefetching}
+                className="w-full rounded-md border bg-white px-3 py-2 text-sm text-blue-700 disabled:opacity-50"
+              >
+                {isLoading || isRefetching ? "מעדכן הזמנות…" : "רענון ההזמנות"}
+              </button>
             </div>
             <OrdersList
               key={`${settings?.storeUrl ?? ''}:${selectedStatus ?? ''}`}
@@ -235,7 +235,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
                 key={selectedOrder.id}
                 order={selectedOrder}
                 onReset={handleBackToList}
-                onComplete={() => handleOrderComplete(selectedOrderId)}
+                onComplete={handleOrderComplete}
               />
             ) : (
               <div className="flex items-center justify-center h-[800px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
@@ -260,19 +260,9 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = () => {
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
     >
-      <EmptyState onRefresh={() => {
-        toast.promise(
-          getFilteredOrdersPage(selectedStatus),
-          {
-            loading: 'Refreshing orders...',
-            success: (data) => {
-              applyOrderPage(data);
-              return 'Orders refreshed successfully';
-            },
-            error: 'Failed to refresh orders'
-          }
-        );
-      }} />
+      {ordersError ? (
+        <p className="text-amber-800">לא ניתן לטעון את ההזמנות כרגע. הרשימה תעודכן כשהחיבור יתחדש.</p>
+      ) : <EmptyState onRefresh={() => void refetchOrders(true)} />}
     </motion.div>
   ) : (
     <motion.div
