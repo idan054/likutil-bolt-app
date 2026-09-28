@@ -17,6 +17,7 @@ interface ConnectedCompanyProps {
   integration: DeliveryIntegration;
   apiKey?: string;
   isCreating: boolean;
+  isCreationBlocked?: boolean;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
@@ -29,6 +30,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   integration,
   apiKey,
   isCreating,
+  isCreationBlocked,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
@@ -63,7 +65,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           />
           
           <PackageCounter 
-            isCreating={isCreating || !!deliveryResponse}
+            isCreating={isCreating || isCreationBlocked || !!deliveryResponse}
             onCountChange={setPackageCount}
             maxCount={getLabelCarrier(integration.provider) === 'negev' ? 20 : 99}
           />
@@ -88,6 +90,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             deliveryResponse={deliveryResponse}
             isCreating={isCreating}
             isCompleting={isCompleting}
+            isCreationBlocked={isCreationBlocked}
             onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString())}
             onComplete={onComplete}
             packNum={deliveryResponse?.package_count ?? packageCount.toString()}

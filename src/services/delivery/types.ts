@@ -48,3 +48,10 @@ export interface DeliveryTaskResponse {
   task_id?: string | number;
   DeliveryNumber?: string | number;
 }
+
+export interface ShipmentState {
+  state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected';
+  blocked: boolean;
+  message: string;
+  response: DeliveryTaskResponse | null;
+}

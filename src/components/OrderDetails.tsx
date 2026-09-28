@@ -116,6 +116,10 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     isCreating,
     createDelivery,
     deliveryResponse,
+    isChecking,
+    isCreationBlocked,
+    shipmentMessage,
+    checkShipment,
     clearDeliveryResponse,
   } = useDeliveryCreation({
     order,
@@ -192,6 +196,16 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             }}
           />
           <CompanyPrintDocuments order={order} print={companyPrint} />
+          {shipmentMessage && (
+            <div role="status" className="my-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              {shipmentMessage}
+              {!deliveryResponse && (
+                <button className="mr-2 font-semibold underline" onClick={checkShipment} disabled={isChecking}>
+                  {isChecking ? "בודק משלוח…" : "בדוק מצב משלוח"}
+                </button>
+              )}
+            </div>
+          )}
           {shipmentStatusError && (
             <div role="alert" className="my-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
               המשלוח כבר נוצר, אך סטטוס ההזמנה לא עודכן. אין ליצור משלוח נוסף.
@@ -261,6 +275,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 customerId={order.customer_id}
                 isLocalPickup={isLocalPickup}
                 isCreating={isCreating || isUpdatingShipment}
+                isCreationBlocked={isCreationBlocked}
                 onCreateDelivery={(packNum, deliveryType) => createDelivery(packNum, deliveryType)}
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}

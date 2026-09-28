@@ -1,5 +1,7 @@
 import { ApiError } from '../../api/types';
 import { BASE_URL } from '../../auth/woo-auth.ts';
+import { auth } from '../../../config/firebase';
+import type { ShipmentState } from '../types';
 
 import type { 
   DeliveryTaskRequest, 
@@ -11,6 +13,31 @@ import { isValidDeliveryTaskResponse } from '../validation/response';
 const requestHeaders = {
   'Content-Type': 'application/json',
   Accept: 'application/json',
+};
+
+export class ShipmentBlockedError extends Error {
+  constructor(public shipment: ShipmentState) {
+    super(shipment.message);
+    this.name = 'ShipmentBlockedError';
+  }
+}
+
+const authHeaders = async () => {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('יש להתחבר מחדש לליקוטיל לפני יצירת משלוח.');
+  return { ...requestHeaders, Authorization: `Bearer ${token}` };
+};
+
+export const getShipmentState = async (orderId: string, userId: string): Promise<ShipmentState> => {
+  const query = new URLSearchParams({ orderId, userId });
+  const response = await fetch(`${BASE_URL}/api/delivery-status?${query}`, {
+    headers: await authHeaders(), cache: 'no-store',
+  });
+  const data = await response.json();
+  if (!response.ok || typeof data.blocked !== 'boolean') {
+    throw new Error(typeof data.detail === 'string' ? data.detail : 'לא ניתן לבדוק אם כבר קיים משלוח. יצירה נוספת חסומה עד לחידוש החיבור.');
+  }
+  return data;
 };
 
 export const createDeliveryTask = async (
@@ -31,7 +58,7 @@ export const createDeliveryTask = async (
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: requestHeaders,
+      headers: await authHeaders(),
       body: JSON.stringify(request),
     });
 
@@ -45,6 +72,10 @@ export const createDeliveryTask = async (
     }
 
     if (!response.ok) {
+      const detail = data && typeof data === 'object' ? (data as Record<string, unknown>).detail : null;
+      if (detail && typeof detail === 'object' && (detail as ShipmentState).blocked) {
+        throw new ShipmentBlockedError(detail as ShipmentState);
+      }
       throw new ApiError({
         requestUrl: safeUrl,
         requestMethod: 'POST',
@@ -52,7 +83,7 @@ export const createDeliveryTask = async (
         requestBody: safeRequestBody,
         responseStatus: response.status,
         responseStatusText: response.statusText,
-        responseBody: data,
+        responseBody: typeof detail === 'string' ? { message: detail } : data,
       });
     }
 

@@ -20,6 +20,7 @@ interface DeliverySelectorProps {
   customerId: number | null;
   isLocalPickup?: boolean;
   isCreating: boolean;
+  isCreationBlocked?: boolean;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
@@ -35,6 +36,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   customerId,
   isLocalPickup,
   isCreating,
+  isCreationBlocked,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
@@ -94,6 +96,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
           integration={selectedIntegration}
           apiKey={savedData[selectedIntegration.provider]?.key}
           isCreating={isCreating}
+          isCreationBlocked={isCreationBlocked}
           onCreateDelivery={onCreateDelivery}
           deliveryResponse={deliveryResponse}
           onComplete={onComplete}

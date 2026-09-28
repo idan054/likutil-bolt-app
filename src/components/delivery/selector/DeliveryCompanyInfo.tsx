@@ -11,6 +11,7 @@ interface DeliveryCompanyInfoProps {
   integration: DeliveryIntegration;
   apiKey?: string;
   isCreating: boolean;
+  isCreationBlocked?: boolean;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;

@@ -1,5 +1,6 @@
 import { ApiError } from '../../api/types';
 import { BASE_URL } from '../../auth/woo-auth.ts';
+import { auth } from '../../../config/firebase';
 import { DeliveryTestRequest } from '../../../types/delivery';
 import {
   isSuccessfulDeliveryResponse,
@@ -53,11 +54,14 @@ export const testDeliveryConnection = async (
     });
     const url = `${BASE_URL}/api/create-delivery?${query.toString()}`;
     const safeUrl = `${BASE_URL}/api/create-delivery?provider=${encodeURIComponent(provider)}&isConnectionTest=true`;
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('יש להתחבר מחדש לליקוטיל.');
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(createTestRequest()),
     });

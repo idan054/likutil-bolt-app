@@ -13,6 +13,7 @@ interface ActionButtonsProps {
   provider: string;
   deliveryResponse: DeliveryTaskResponse | null;
   isCreating: boolean;
+  isCreationBlocked?: boolean;
   isCompleting: boolean;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   onComplete: () => Promise<void>;
@@ -26,6 +27,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   provider,
   deliveryResponse,
   isCreating,
+  isCreationBlocked,
   isCompleting,
   onCreateDelivery,
   onComplete,
@@ -34,9 +36,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onStatusChanged,
 }) => {
   const sentCity = getDeliveryCity(order);
-  const reprintUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider, sentCity);
+  const labelProvider = deliveryResponse?.provider || provider;
+  const reprintUrl = getReprintLabelUrl(order.s3_label_url, order.id, labelProvider, sentCity);
   const signedPrintUrl = deliveryResponse
-    ? getShipmentLabelUrl(order.s3_label_url, order.id, provider, deliveryResponse, packNum, sentCity)
+    ? getShipmentLabelUrl(order.s3_label_url, order.id, labelProvider, deliveryResponse, packNum, sentCity)
     : null;
   const handlePrintLabel = (printLabel: string) => {
     const source = getPrintLabelSource(printLabel);
@@ -73,7 +76,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         <div className="flex flex-1 flex-col gap-2">
           <button
             onClick={() => onCreateDelivery(packNum, deliveryType)}
-            disabled={isCreating}
+            disabled={isCreating || isCreationBlocked}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreating ? <Loader2 className="animate-spin" size={20} /> : <Rocket size={20} />}

@@ -51,7 +51,11 @@ before(async () => {
     let body = "";
     request.on("data", (chunk) => { body += chunk; });
     request.on("end", () => {
-      requests.push({ method: request.method, url: request.url, body: body ? JSON.parse(body) : null });
+      requests.push({ method: request.method, url: request.url, headers: request.headers, body: body ? JSON.parse(body) : null });
+      if (request.url.startsWith('/api/delivery-status')) {
+        if (fixture.shipmentStatus) return fixture.shipmentStatus(request, response);
+        return json(response, {state:'none',blocked:false,message:'',response:null});
+      }
       respond(request, response, body ? JSON.parse(body) : null);
     });
   });
@@ -75,7 +79,7 @@ before(async () => {
         if (id === "\0printing:react-hot-toast") return `
           const record = message => globalThis.__orderPrintingTest.messages.push(message);
           export const toast = { success: record, error: record };`;
-        if (path.endsWith("/config/firebase.ts")) return `export const auth = { currentUser: {uid:'test-user'} };`;
+        if (path.endsWith("/config/firebase.ts")) return `export const auth = { currentUser: {uid:'test-user',getIdToken:async()=>'test-token'} };`;
         if (path.endsWith("/services/auth/woo-auth.ts")) return `export const BASE_URL = globalThis.__orderPrintingTest.baseUrl;`;
         if (path.endsWith("/services/api/config.ts")) return `export const getApiConfig = () => globalThis.__orderPrintingTest.config;`;
         if (path.endsWith("/services/settings/index.ts")) return `export const settingsStorage = { get: () => ({authType:'woo',storeUrl:globalThis.__orderPrintingTest.storeUrl}) };`;
@@ -107,6 +111,7 @@ beforeEach(async () => {
   renderer = null;
   requests = []; tabs = []; resets = 0; completions = 0; fixture.messages = [];
   savedResponses.clear(); fixture.storeUrl = 'test.invalid';
+  fixture.shipmentStatus = null;
   fixture.config = { ...fixture.config, baseUrl: fixture.baseUrl + '/' + Math.random() };
   respond = (request, response, body) => {
     if (request.url.startsWith("/api/create-delivery")) json(response, delivery);
@@ -135,6 +140,8 @@ const mount = async (currentOrder = order) => {
   await act(async () => { renderer = create(React.createElement(OrderDetails, {
     order: currentOrder, onReset: () => { resets++; }, onComplete: () => { completions++; },
   })); });
+  await settle(() => requests.some(({url})=>url.startsWith('/api/delivery-status')));
+  await act(async () => { await new Promise(resolve=>setTimeout(resolve,20)); });
 };
 const ship = async () => {
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
@@ -234,18 +241,18 @@ test("delivery failure closes only the reserved window and leaves the order open
     ? json(response, order) : json(response, {message:'unavailable'}, 503);
   await mount();
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
+  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
   assert.equal(resets, 0);
   assert.equal(labelLinks().length, 0);
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, 3);
 });
 
 test("an old open order cannot create a shipment after approval was revoked", async () => {
   respond = (_request, response) => json(response, {...order,status:'rfq-sent'});
   await mount();
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
-  assert.equal(requests.length, 1);
+  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
+  assert.equal(requests.length, 2);
   assert.equal(requests[0].method, 'GET');
   assert.equal(labelLinks().length, 0);
   assert.equal(fixture.messages.some(message => /הצעת מחיר/.test(message)), true);
@@ -262,8 +269,8 @@ test("an approval read failure sends no request to the carrier", async () => {
   respond = (_request, response) => json(response, {message:'unavailable'}, 503);
   await mount();
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
-  assert.equal(requests.length, 1);
+  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
+  assert.equal(requests.length, 2);
   assert.equal(requests[0].method, 'GET');
 });
 
@@ -312,7 +319,7 @@ test("a saved shipment cannot be reused for the same order number in another sto
   await mount();
   assert.ok(button('שגר משלוח בטיל!'));
   assert.equal(labelLinks().length,0);
-  assert.equal(requests.length,prior);
+  assert.equal(requests.length,prior+1);
 });
 
 test("a lost status response is reconciled by reading without recreating or repeating the shipment", async () => {
@@ -367,4 +374,69 @@ test("switching stores during shipment status validation cannot write to the new
   assert.equal(completions,0);
   assert.equal(requests.filter(({body})=>body?.status).length,0);
   assert.equal(renderer.root.findAllByProps({role:'alert'}).length,1);
+});
+
+test('another browser restores the existing carrier label and cannot create a second shipment', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'created',blocked:true,message:'כבר קיים משלוח',
+    response:{...delivery,provider:'negevExpress',package_count:'3'}});
+  await mount();
+  await settle(()=>completions===1 && labelLinks().length===1);
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  const url=new URL(labelLinks()[0].props.href);
+  assert.equal(url.searchParams.get('c'),'negev','The label belongs to the stored carrier, even when another is selected');
+  assert.equal(url.searchParams.get('n'),'3');
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  assert.equal(requests.find(({url})=>url.startsWith('/api/delivery-status')).headers.authorization,'Bearer test-token');
+});
+
+test('server rejects a race after preflight and returns the existing label without a retry', async () => {
+  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
+    ? json(response,{detail:{state:'created',blocked:true,message:'כבר קיים משלוח',response:{...delivery,provider:'mahirLi'}}},409)
+    : json(response,{...order,status:body?.status ?? order.status});
+  await mount();
+  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  await settle(()=>labelLinks().length===1 && completions===1);
+  assert.equal(tabs[0].closed,true);
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
+});
+
+test('an uncertain carrier result remains blocked after refresh with no browser storage', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'uncertain',blocked:true,message:'יש לבדוק עם המשרד',response:null});
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  await act(async()=>renderer.unmount()); savedResponses.clear();
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+});
+
+test('a failed shipment check blocks creation and its retry only checks the server', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{detail:'לא ניתן לבדוק משלוח'},503);
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  fixture.shipmentStatus=null;
+  await act(async()=>button('בדוק מצב משלוח').props.onClick());
+  await settle(()=>!button('שגר משלוח בטיל!').props.disabled);
+  assert.equal(requests.length,2);
+  assert.equal(requests.every(({method,url})=>method==='GET' && url.startsWith('/api/delivery-status')),true);
+});
+
+test('creation stays disabled while the server checks for an existing shipment', async () => {
+  let finish;
+  fixture.shipmentStatus=(_request,response)=>{finish=()=>json(response,{state:'none',blocked:false,message:'',response:null});};
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  assert.equal(tabs.length,0);
+  await act(async()=>finish());
+  await settle(()=>!button('שגר משלוח בטיל!').props.disabled);
+});
+
+test('corrupt browser cache does not bypass or break the server shipment check', async () => {
+  savedResponses.set(JSON.stringify(['shipment-result','test-user','woo','test.invalid',undefined,1]),'{broken');
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,false);
+  assert.equal(requests.length,1);
 });

@@ -17,6 +17,7 @@ import { getReprintLabelUrl, getShipmentLabelUrl } from "../utils/shippingLabel"
 import { getDeliveryCity } from "../services/delivery/mappers";
 import { settingsStorage } from "../services/settings";
 import { isValidDeliveryTaskResponse } from "../services/delivery/validation/response";
+import { getShipmentState, ShipmentBlockedError } from "../services/delivery/api/delivery";
 
 interface UseDeliveryCreationProps {
   order?: OrderDetails;
@@ -30,33 +31,65 @@ export const useDeliveryCreation = ({
   onSuccess,
 }: UseDeliveryCreationProps) => {
   const [isCreating, setIsCreating] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [shipmentBlocked, setShipmentBlocked] = useState(false);
+  const [shipmentMessage, setShipmentMessage] = useState("");
+  const [checkVersion, setCheckVersion] = useState(0);
   const creatingRef = useRef(false);
   const [deliveryResponse, setDeliveryResponse] =
     useState<DeliveryTaskResponse | null>(null);
   const { activeIntegrations } =
     useDeliveryIntegrations();
   const [user] = useAuthState(auth);
+  const userId = user?.uid ?? "";
   const settings = settingsStorage.get();
   const orderId = order?.id;
-  const responseKey = JSON.stringify(["shipment-result", user?.uid, settings?.authType,
-    settings?.storeUrl, settings?.myShopifyUrl, orderId, provider]);
+  const responseKey = JSON.stringify(["shipment-result", userId, settings?.authType,
+    settings?.storeUrl, settings?.myShopifyUrl, orderId]);
+  const checkEnabled = Boolean(orderId && userId && provider);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
 
   useEffect(() => {
+    let cancelled = false;
     setDeliveryResponse(null);
-    if (!orderId || !provider) return;
+    setShipmentBlocked(false);
+    setShipmentMessage("");
+    setIsChecking(checkEnabled);
+    if (!checkEnabled) return;
     try {
       const saved = JSON.parse(sessionStorage.getItem(responseKey) || "null");
       if (isValidDeliveryTaskResponse(saved)) {
         setDeliveryResponse(saved);
-        void onSuccessRef.current(false);
       }
     } catch { /* An unavailable/corrupt browser cache must not break loading. */ }
-  }, [responseKey, orderId, provider]);
+    void getShipmentState(String(orderId), userId).then((state) => {
+      if (cancelled) return;
+      setShipmentBlocked(state.blocked);
+      setShipmentMessage(state.message);
+      if (isValidDeliveryTaskResponse(state.response)) {
+        setDeliveryResponse(state.response);
+        try { sessionStorage.setItem(responseKey, JSON.stringify(state.response)); } catch { /* Optional cache. */ }
+        void onSuccessRef.current(false);
+      } else {
+        // A response confirmed in this browser remains usable even if its legacy
+        // metadata has not reached the store yet. It must not enable a second send.
+        try {
+          const saved = sessionStorage.getItem(responseKey);
+          if (saved && isValidDeliveryTaskResponse(JSON.parse(saved))) void onSuccessRef.current(false);
+        } catch { /* Optional cache. */ }
+      }
+    }).catch((error) => {
+      if (!cancelled) {
+        setShipmentBlocked(true);
+        setShipmentMessage(error instanceof Error ? error.message : "לא ניתן לבדוק את מצב המשלוח. נסו לבדוק שוב.");
+      }
+    }).finally(() => { if (!cancelled) setIsChecking(false); });
+    return () => { cancelled = true; };
+  }, [responseKey, orderId, userId, checkEnabled, checkVersion]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
-    if (creatingRef.current || deliveryResponse) return;
+    if (creatingRef.current || isChecking || shipmentBlocked || deliveryResponse) return;
     if (!order) {
       toast.error("לא נבחרה הזמנה");
       return;
@@ -73,7 +106,6 @@ export const useDeliveryCreation = ({
     }
     
     const keys = getKeysByProgramType(selectedIntegration);
-    const userId = user?.uid ?? "";
     
     // Will skip look for keys if UPS
     const isUpsDelivery = selectedIntegration.programType === DeliveryProgramType.UPS;
@@ -159,6 +191,19 @@ export const useDeliveryCreation = ({
       await onSuccess(labelOpened);
     } catch (error) {
       labelTab?.close();
+      if (error instanceof ShipmentBlockedError) {
+        setShipmentBlocked(true);
+        setShipmentMessage(error.message);
+        if (isValidDeliveryTaskResponse(error.shipment.response)) {
+          setDeliveryResponse(error.shipment.response);
+          try { sessionStorage.setItem(responseKey, JSON.stringify(error.shipment.response)); } catch { /* Optional cache. */ }
+          await onSuccess(false);
+        }
+      } else {
+        // A lost HTTP response is not proof that the carrier rejected the task.
+        setShipmentBlocked(true);
+        setShipmentMessage("לא התקבל אישור סופי. יש לבדוק את מצב המשלוח לפני ניסיון נוסף.");
+      }
       showErrorToast(error);
     } finally {
       creatingRef.current = false;
@@ -173,6 +218,10 @@ export const useDeliveryCreation = ({
 
   return {
     isCreating,
+    isCreationBlocked: isChecking || shipmentBlocked,
+    isChecking,
+    shipmentMessage,
+    checkShipment: () => setCheckVersion((version) => version + 1),
     createDelivery: createDeliveryTask,
     deliveryResponse,
     clearDeliveryResponse,
