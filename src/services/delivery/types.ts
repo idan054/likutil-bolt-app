@@ -3,6 +3,7 @@ export interface DeliveryRequestParams {
   userId: string;
   provider: string;
   keys: string;
+  additionalShipmentRevision?: string;
 }
 
 // Update existing types
@@ -50,6 +51,9 @@ export interface DeliveryTaskResponse {
 }
 
 export interface ShipmentState {
+  revision?: string;
+  can_additional?: boolean;
+  shipments?: DeliveryTaskResponse[];
   state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected';
   blocked: boolean;
   message: string;

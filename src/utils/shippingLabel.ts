@@ -54,7 +54,8 @@ export const getShipmentLabelUrl = (
   provider: string,
   response: DeliveryTaskResponse,
   packageCount: string,
-  sentCity?: string
+  sentCity?: string,
+  reprint = false
 ): string | null => {
   const url = getBaseUrl(labelUrl, orderId);
   const carrier = getLabelCarrier(provider);
@@ -63,6 +64,8 @@ export const getShipmentLabelUrl = (
 
   url.searchParams.set("c", carrier);
   url.searchParams.set("d", shipmentNumber);
+  if (reprint) url.searchParams.set("reprint", "1");
+  else url.searchParams.delete("reprint");
   url.searchParams.delete("n");
   url.searchParams.delete("city");
   if (carrier === "negev") {
@@ -85,6 +88,7 @@ export const getReprintLabelUrl = (
   if (!url || !carrier) return null;
   url.searchParams.set("c", carrier);
   url.searchParams.delete("d");
+  url.searchParams.set("reprint", "1");
   url.searchParams.delete("n");
   url.searchParams.delete("city");
   if (carrier === "negev" && sentCity) url.searchParams.set("city", sentCity);

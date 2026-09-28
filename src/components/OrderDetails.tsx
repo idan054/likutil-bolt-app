@@ -7,6 +7,7 @@ import { OrderItems } from "./order/OrderItems";
 import { OrderSummary } from "./order/OrderSummary";
 import { CustomerSection } from "./customer/CustomerSection";
 import { DeliverySelector } from "./delivery/DeliverySelector";
+import { ExistingShipments } from "./delivery/ExistingShipments";
 import { OrderNotes } from "./order/notes/OrderNotes";
 import { FastDeliveryDecisionCard } from "./fastDelivery/FastDeliveryDecisionCard";
 import { LocalPickupAlert } from "./ui/LocalPickupAlert";
@@ -119,6 +120,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     isChecking,
     isCreationBlocked,
     shipmentMessage,
+    previousShipments,
+    canRequestAdditional,
+    isAdditional,
+    requestAdditional,
+    cancelAdditional,
     checkShipment,
     clearDeliveryResponse,
   } = useDeliveryCreation({
@@ -198,9 +204,16 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           <CompanyPrintDocuments order={order} print={companyPrint} />
           {shipmentMessage && (
             <div role="status" className="my-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              {shipmentMessage}
-              {!deliveryResponse && (
-                <button className="mr-2 font-semibold underline" onClick={checkShipment} disabled={isChecking}>
+              <p>{isAdditional ? "הזמנת משלוח נוסף: בחרו חברת משלוחים וכמות חבילות, ואז לחצו על שיגור המשלוח. המשלוח הקודם לא יבוטל אוטומטית." : shipmentMessage}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {canRequestAdditional && !isAdditional && (
+                  <button onClick={requestAdditional} disabled={isCreating || isUpdatingShipment} className="rounded-md bg-amber-800 px-3 py-2 font-semibold text-white disabled:opacity-50">הזמן משלוח נוסף</button>
+                )}
+                {isAdditional && <button onClick={cancelAdditional} disabled={isCreating} className="rounded-md border border-amber-500 px-3 py-2 font-semibold disabled:opacity-50">ביטול משלוח נוסף</button>}
+                <ExistingShipments order={order} shipments={previousShipments} />
+              </div>
+              {!isAdditional && (
+                <button className="mr-2 font-semibold underline" onClick={checkShipment} disabled={isChecking || isCreating}>
                   {isChecking ? "בודק משלוח…" : "בדוק מצב משלוח"}
                 </button>
               )}

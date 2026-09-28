@@ -12,6 +12,7 @@ interface CreateDeliveryParams {
   packNum?: string;
   deliveryType?: string;
   requestedAt?: string;
+  additionalShipmentRevision?: string;
 }
 
 export const createDelivery = async ({
@@ -21,7 +22,8 @@ export const createDelivery = async ({
   keys,
   packNum = "1",
   deliveryType = "client",
-  requestedAt
+  requestedAt,
+  additionalShipmentRevision
 }: CreateDeliveryParams): Promise<DeliveryTaskResponse> => {
   if (!order) {
     throw new Error('לא ניתן ליצור משלוח: לא נבחרה הזמנה');
@@ -43,7 +45,8 @@ export const createDelivery = async ({
   return createDeliveryTask(request, {
     userId,
     provider,
-    keys: keys
+    keys: keys,
+    additionalShipmentRevision
   });
 };
 

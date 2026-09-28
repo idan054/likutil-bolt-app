@@ -8,7 +8,7 @@ import {
 import { showErrorToast } from "../utils/error";
 import { successMessages } from "../config/messages/success";
 // import type { OrderDetails } from '../types/order';
-import type { DeliveryTaskResponse } from "../services/delivery/types";
+import type { DeliveryTaskResponse, ShipmentState } from "../services/delivery/types";
 import { OrderDetails } from "../types/order";
 import { DeliveryProgramType } from "../components/settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -35,6 +35,8 @@ export const useDeliveryCreation = ({
   const [shipmentBlocked, setShipmentBlocked] = useState(false);
   const [shipmentMessage, setShipmentMessage] = useState("");
   const [checkVersion, setCheckVersion] = useState(0);
+  const [shipmentState, setShipmentState] = useState<ShipmentState | null>(null);
+  const [additionalRevision, setAdditionalRevision] = useState<string | null>(null);
   const creatingRef = useRef(false);
   const [deliveryResponse, setDeliveryResponse] =
     useState<DeliveryTaskResponse | null>(null);
@@ -53,6 +55,8 @@ export const useDeliveryCreation = ({
   useEffect(() => {
     let cancelled = false;
     setDeliveryResponse(null);
+    setShipmentState(null);
+    setAdditionalRevision(null);
     setShipmentBlocked(false);
     setShipmentMessage("");
     setIsChecking(checkEnabled);
@@ -65,6 +69,7 @@ export const useDeliveryCreation = ({
     } catch { /* An unavailable/corrupt browser cache must not break loading. */ }
     void getShipmentState(String(orderId), userId).then((state) => {
       if (cancelled) return;
+      setShipmentState(state);
       setShipmentBlocked(state.blocked);
       setShipmentMessage(state.message);
       if (isValidDeliveryTaskResponse(state.response)) {
@@ -89,7 +94,7 @@ export const useDeliveryCreation = ({
   }, [responseKey, orderId, userId, checkEnabled, checkVersion]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
-    if (creatingRef.current || isChecking || shipmentBlocked || deliveryResponse) return;
+    if (creatingRef.current || isChecking || ((shipmentBlocked || deliveryResponse) && !additionalRevision)) return;
     if (!order) {
       toast.error("לא נבחרה הזמנה");
       return;
@@ -146,7 +151,8 @@ export const useDeliveryCreation = ({
         keys,
         packNum,
         deliveryType,
-        requestedAt
+        requestedAt,
+        additionalShipmentRevision: additionalRevision ?? undefined,
       });
 
       const result: DeliveryTaskResponse = {
@@ -157,6 +163,12 @@ export const useDeliveryCreation = ({
       };
 
       setDeliveryResponse(result);
+      setAdditionalRevision(null);
+      // A new confirmation must be read from the server before another intentional send.
+      setShipmentState((previous) => ({ state: 'created', blocked: true, message: '', response: result,
+        shipments: [...(previous?.shipments ?? []), result] }));
+      setShipmentBlocked(true);
+      setShipmentMessage("המשלוח נוצר. ניתן להדפיס שוב את המדבקה או לבדוק מצב משלוח להזמנה נוספת.");
       // Keep the confirmed carrier result across refreshes. This contains no
       // API keys and is scoped to user, store, order and carrier.
       try { sessionStorage.setItem(responseKey, JSON.stringify(result)); } catch { /* Printing still works. */ }
@@ -191,7 +203,10 @@ export const useDeliveryCreation = ({
       await onSuccess(labelOpened);
     } catch (error) {
       labelTab?.close();
+      setAdditionalRevision(null);
+      setShipmentState(null);
       if (error instanceof ShipmentBlockedError) {
+        setShipmentState(error.shipment);
         setShipmentBlocked(true);
         setShipmentMessage(error.message);
         if (isValidDeliveryTaskResponse(error.shipment.response)) {
@@ -218,12 +233,21 @@ export const useDeliveryCreation = ({
 
   return {
     isCreating,
-    isCreationBlocked: isChecking || shipmentBlocked,
+    isCreationBlocked: isChecking || (shipmentBlocked && !additionalRevision),
     isChecking,
     shipmentMessage,
-    checkShipment: () => setCheckVersion((version) => version + 1),
+    checkShipment: () => { if (!creatingRef.current) setCheckVersion((version) => version + 1); },
     createDelivery: createDeliveryTask,
-    deliveryResponse,
+    deliveryResponse: additionalRevision ? null : deliveryResponse,
+    previousShipments: shipmentState?.shipments ?? [],
+    canRequestAdditional: !isChecking && !isCreating && Boolean(shipmentState?.can_additional && shipmentState.revision),
+    isAdditional: Boolean(additionalRevision),
+    requestAdditional: () => {
+      if (!creatingRef.current && !isChecking && shipmentState?.can_additional && shipmentState.revision) {
+        setAdditionalRevision(shipmentState.revision);
+      }
+    },
+    cancelAdditional: () => { if (!creatingRef.current) setAdditionalRevision(null); },
     clearDeliveryResponse,
   };
 };

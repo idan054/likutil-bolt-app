@@ -92,7 +92,7 @@ before(async () => {
         if (path.endsWith("/hooks/settings/useDeliveryIntegrations.ts")) return `
           const integration = {provider:'mahirLi', name:'Carrier', isConnected:true, programType:'LION_WHEEL'};
           export const getKeysByProgramType = () => 'test-key';
-          export const useDeliveryIntegrations = () => ({activeIntegrations:[integration],integrations:[integration],savedData:{}});`;
+          export const useDeliveryIntegrations = () => ({activeIntegrations:[integration,{...integration,provider:"negevExpress"}],integrations:[integration,{...integration,provider:"negevExpress"}],savedData:{}});`;
         if (path.endsWith("/AddDeliveryCompanyCard.tsx")) return `export const DeliveryProgramType = {UPS:'UPS'};`;
         if (path.endsWith("/utils/error.ts")) return `export const showErrorToast = error => globalThis.__orderPrintingTest.messages.push(error.message);`;
         for (const name of ["ShippingMethod", "CustomerNote", "OrderItems", "OrderSummary", "CustomerSection", "OrderNotes",
@@ -439,4 +439,87 @@ test('corrupt browser cache does not bypass or break the server shipment check',
   await mount();
   assert.equal(button('שגר משלוח בטיל!').props.disabled,false);
   assert.equal(requests.length,1);
+});
+
+const confirmedShipment = (revision = 'first') => ({state:'created',blocked:true,message:'כבר הוזמן משלוח. האם להזמין נוסף?',
+  revision,can_additional:true,response:{...delivery,provider:'mahirLi'},shipments:[{...delivery,provider:'mahirLi'}]});
+
+test('additional shipment needs explicit choice, preserves reprint, and sends confirmation once', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount(); await settle(()=>Boolean(button('הזמן משלוח נוסף')));
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  const reprint=()=>renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס שוב מדבקה שיצרנו');
+  const original=reprint().props.href;
+  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,false);
+  assert.equal(reprint().props.href,original);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  await act(async()=>button('ביטול משלוח נוסף').props.onClick());
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  let finish;
+  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
+    ? finish=()=>json(response,{...delivery,provider:'mahirLi',track_number:'5678'})
+    : json(response,{...order,status:body?.status ?? 's3-packed'});
+  let pending;
+  await act(async()=>{const click=button('שגר משלוח בטיל!').props.onClick;pending=click();click();});
+  await settle(()=>Boolean(finish));
+  assert.equal(button('ביטול משלוח נוסף').props.disabled,true);
+  await act(async()=>{finish();await pending;});
+  const creates=requests.filter(({url})=>url.startsWith('/api/create-delivery'));
+  assert.equal(creates.length,1);
+  assert.equal(new URL(creates[0].url,fixture.baseUrl).searchParams.get('additionalShipmentRevision'),'first');
+  assert.equal(button('הזמן משלוח נוסף'),undefined,'A fresh server revision is required for another send');
+  const history=renderer.root.findAllByType('a').filter(node=>String(node.props.children).startsWith('הדפס שוב מדבקה'));
+  assert.equal(history.length,2);
+  assert.equal(new URL(history[0].props.href).searchParams.get('d'),'1234');
+  assert.equal(new URL(history[1].props.href).searchParams.get('d'),'5678');
+});
+
+test('refresh discards unsent additional confirmation and stale confirmation recovers the newer label', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();
+  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  await act(async()=>renderer.unmount());
+  await mount();
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  respond=(request,response)=>request.url.startsWith('/api/create-delivery')
+    ? json(response,{detail:{...confirmedShipment('second'),response:{...delivery,provider:'mahirLi',track_number:'5678'}}},409)
+    : json(response,{...order,status:'s3-packed'});
+  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  await settle(()=>Boolean(button('הזמן משלוח נוסף')) && !button('שגר משלוח בטיל!'));
+  assert.equal(new URL(labelLinks()[0].props.href).searchParams.get('d'),'5678');
+  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
+});
+
+test('uncertain additional shipment retains previous labels without offering another shipment', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{...confirmedShipment(),state:'uncertain',response:null,can_additional:false});
+  await mount();
+  assert.equal(button('הזמן משלוח נוסף'),undefined);
+  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  assert.ok(renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס שוב מדבקה שיצרנו'));
+});
+
+
+test('carrier selection stays locked until explicit additional choice, then can change carrier', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();
+  const carousel=()=>renderer.root.find(node=>node.type?.name==='DeliveryCarousel');
+  await act(async()=>carousel().props.onSelect('negevExpress'));
+  assert.equal(carousel().props.selectedProvider,'mahirLi');
+  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  await act(async()=>carousel().props.onSelect('negevExpress'));
+  assert.equal(carousel().props.selectedProvider,'negevExpress');
+  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
+    ? json(response,{...delivery,provider:'negevExpress',track_number:'5678'})
+    : json(response,{...order,status:body?.status ?? 's3-packed'});
+  await ship();
+  const sent=requests.find(({url})=>url.startsWith('/api/create-delivery'));
+  assert.equal(new URL(sent.url,fixture.baseUrl).searchParams.get('provider'),'negevExpress');
+  assert.equal(new URL(tabs[0].url).searchParams.get('c'),'negev');
+  const old=renderer.root.findAllByType('a').find(node=>String(node.props.children)==='הדפס שוב מדבקה 1234');
+  assert.equal(new URL(old.props.href).searchParams.get('c'),'mahirli');
+  assert.equal(new URL(old.props.href).searchParams.get('reprint'),'1');
+  assert.equal(new URL(tabs[0].url).searchParams.has('reprint'),false);
 });
