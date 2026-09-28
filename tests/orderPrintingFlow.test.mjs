@@ -77,7 +77,7 @@ before(async () => {
         if (path.endsWith("/services/api/config.ts")) return `export const getApiConfig = () => globalThis.__orderPrintingTest.config;`;
         if (path.endsWith("/services/settings/index.ts")) return `export const settingsStorage = { get: () => ({authType:'woo',storeUrl:'test.invalid'}) };`;
         if (path.endsWith("/hooks/useSettings.ts")) return `export const useSettings = () => ({orderStatuses: [
-          {slug:'processing', name:'Processing'}, {slug:'s3-packed', name:'Packed'}, {slug:'completed', name:'Completed'}]});`;
+          {slug:'processing', name:'Processing'}, {slug:'s3-packed', name:'Packed'}, {slug:'completed', name:'Completed'}, {slug:'on-hold', name:'Hold'}]});`;
         if (path.endsWith("/hooks/useCustomerDetails.ts")) return `export const useCustomerDetails = () => ({});`;
         if (path.endsWith("/hooks/useOrderFastDeliveryDecision.ts")) return `export const useOrderFastDeliveryDecision = () => ({decision:{deliveryType:'fast'}});`;
         if (path.endsWith("/store/useMessagingStore.ts")) return `const reset = () => {}; export const useMessagingStore = () => ({reset});`;
@@ -127,19 +127,19 @@ after(async () => {
   delete globalThis.__orderPrintingTest;
 });
 
-const mount = async () => {
+const mount = async (currentOrder = order) => {
   await act(async () => { renderer = create(React.createElement(OrderDetails, {
-    order, onReset: () => { resets++; }, onComplete: () => { completions++; },
+    order: currentOrder, onReset: () => { resets++; }, onComplete: () => { completions++; },
   })); });
 };
 const ship = async () => {
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
   await settle(() => labelLinks().length === 1 && !button("סיום").props.disabled);
 };
-const changeStatus = async () => {
+const changeStatus = async (label = 'Packed') => {
   const badge = renderer.root.findAllByType("button").find(({ props }) => props.className?.includes("rounded-full text-sm font-medium"));
   await act(async () => badge.props.onClick());
-  await act(async () => renderer.root.findAllByProps({ role: "menuitem" }).find(({ props }) => props.children === "Packed").props.onClick());
+  await act(async () => renderer.root.findAllByProps({ role: "menuitem" }).find(({ props }) => props.children === label).props.onClick());
 };
 
 test("changing status keeps the order and its existing label available until explicit finish", async () => {
@@ -203,7 +203,8 @@ test("a failed status update preserves the label and never closes the order", as
 test("a failed finish preserves the created shipment for printing and retrying completion", async () => {
   await mount();
   await ship();
-  respond = (_request, response) => json(response, {message:'unavailable'}, 503);
+  respond = (request, response) => request.method === 'GET'
+    ? json(response, order) : json(response, {message:'unavailable'}, 503);
   await act(async () => button("סיום").props.onClick());
   assert.equal(resets, 0);
   assert.equal(completions, 0);
@@ -217,11 +218,51 @@ test("a failed finish preserves the created shipment for printing and retrying c
 });
 
 test("delivery failure closes only the reserved window and leaves the order open", async () => {
-  respond = (_request, response) => json(response, {message:'unavailable'}, 503);
+  respond = (request, response) => request.method === 'GET'
+    ? json(response, order) : json(response, {message:'unavailable'}, 503);
   await mount();
   await act(async () => button("שגר משלוח בטיל!").props.onClick());
   await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
   assert.equal(resets, 0);
   assert.equal(labelLinks().length, 0);
+  assert.equal(requests.length, 2);
+});
+
+test("an old open order cannot create a shipment after approval was revoked", async () => {
+  respond = (_request, response) => json(response, {...order,status:'rfq-sent'});
+  await mount();
+  await act(async () => button("שגר משלוח בטיל!").props.onClick());
+  await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
   assert.equal(requests.length, 1);
+  assert.equal(requests[0].method, 'GET');
+  assert.equal(labelLinks().length, 0);
+  assert.equal(fixture.messages.some(message => /הצעת מחיר/.test(message)), true);
+});
+
+test("putting an order on hold closes the picking view even when company documents were not printed", async () => {
+  await mount({...order, s3_print:{quote_id:100,invoices:[]}});
+  await changeStatus('Hold');
+  assert.equal(resets, 1);
+  assert.equal(completions, 0);
+});
+
+test("an approval read failure sends no request to the carrier", async () => {
+  respond = (_request, response) => json(response, {message:'unavailable'}, 503);
+  await mount();
+  await act(async () => button("שגר משלוח בטיל!").props.onClick());
+  await settle(() => tabs[0]?.closed && !button("שגר משלוח בטיל!").props.disabled);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].method, 'GET');
+});
+
+test("a revoked approval cannot be bypassed by finishing an existing shipment", async () => {
+  await mount();
+  await ship();
+  const before = requests.length;
+  respond = (_request, response) => json(response, {...order,status:'on-hold'});
+  await act(async () => button("סיום").props.onClick());
+  assert.equal(resets, 0);
+  assert.equal(completions, 0);
+  assert.equal(labelLinks().length, 1);
+  assert.deepEqual(requests.slice(before).map(({method})=>method), ['GET']);
 });

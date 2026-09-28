@@ -8,6 +8,7 @@ import type {
 import { JSONPath } from "jsonpath-plus";
 import { getApiConfig } from "../api/config";
 import { settingsStorage } from "../settings";
+import { assertOrderReady, getOrderBlockReason, isPickingStatus, OrderNotReadyError } from "./eligibility";
 
 // Cache configuration
 const ITEMS_PER_PAGE = 15;
@@ -326,7 +327,7 @@ const mapOrder = (
       typeof order.is_vip_member === "boolean"
         ? order.is_vip_member
         : undefined,
-    status: order.status || "processing",
+    status: order.status || "unknown",
     total: order.total || "0",
     customer_id: order.customer_id || null,
     date_created: ensureUtcSuffix(order.date_created_gmt),
@@ -508,8 +509,10 @@ export const getOrderById = async (orderId: string, forceRefresh = false): Promi
     const response = await apiClient<any>({
       method: "GET",
       path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
+      cache: forceRefresh ? "no-store" : undefined,
     });
 
+    assertOrderReady(response, platform);
     return mapOrder(response, platform) as OrderDetails;
   };
 
@@ -542,6 +545,9 @@ export const getFilteredOrdersPage = async (
   if (status === "init")
     status = JSON.parse(localStorage.getItem("selectedOrderStatus") ?? "null");
   status = status && status !== "null" ? status : null;
+  if (status && !isPickingStatus(status, platform)) {
+    return { orders: [], total: 0, status };
+  }
   console.log("Cache status:", status);
 
   const cacheKey = orderCacheKey("orders", JSON.stringify([
@@ -579,37 +585,53 @@ export const getFilteredOrdersPage = async (
       }
     }
     let responseTotal: number | null = null;
-    const response = await apiClient<any>({
-      method: "GET",
-      path: `${PLATFORM_ENDPOINTS[platform].orders}?${params.toString()}`,
-      signal: requestOptions.signal,
-      cache: "no-store",
-      onResponse: ({ headers }) => {
-        const value = headers.get("X-WP-Total");
-        if (value !== null && /^\d+$/.test(value)) {
-          responseTotal = Number(value);
+    let hasMore = true;
+    let excluded = false;
+    let scanned = 0;
+    const eligibleOrders: OrderSummary[] = [];
+    const seen = new Set<number>();
+    // Filtering only page one can falsely report an empty warehouse queue.
+    // Woo supports page pagination; bound reads and never report a partial scan as empty.
+    const maxPages = platform === "woo" ? 5 : 1;
+    for (let page = 1; page <= maxPages && hasMore && eligibleOrders.length < ITEMS_PER_PAGE; page++) {
+      if (page > 1) params.set("page", String(page));
+      const response = await apiClient<any>({
+        method: "GET",
+        path: `${PLATFORM_ENDPOINTS[platform].orders}?${params.toString()}`,
+        signal: requestOptions.signal,
+        cache: "no-store",
+        onResponse: ({ headers }) => {
+          const value = headers.get("X-WP-Total");
+          if (value !== null && /^\d+$/.test(value)) responseTotal = Number(value);
+        },
+      });
+      const rawOrders = platform === "shopify" && Array.isArray(response?.orders)
+        ? response.orders : response;
+      if (!Array.isArray(rawOrders)) {
+        throw new Error("לא התקבלה רשימת הזמנות תקינה מהחנות. יש לנסות לרענן שוב.");
+      }
+      const bodyTotal = response?.total_count ?? response?.total;
+      const parsedTotal = bodyTotal == null ? NaN : Number(bodyTotal);
+      if (responseTotal === null && Number.isSafeInteger(parsedTotal) && parsedTotal >= rawOrders.length) {
+        responseTotal = parsedTotal;
+      }
+      scanned += rawOrders.length;
+      hasMore = rawOrders.length === ITEMS_PER_PAGE && (responseTotal === null || scanned < responseTotal);
+      for (const rawOrder of rawOrders) {
+        if (getOrderBlockReason(rawOrder, platform)) {
+          excluded = true;
+          continue;
         }
-      },
-    });
-
-    // Handle different response formats
-    let orders: OrderSummary[] = [];
-
-    if (platform === "shopify" && Array.isArray(response?.orders)) {
-      // Shopify returns { orders: [...] }
-      orders = response.orders.map(
-        (order: any) => mapOrder(order, platform) as OrderSummary
-      );
-      
-
-    } else if (Array.isArray(response)) {
-      // WooCommerce returns an array
-      orders = response.map(
-        (order) => mapOrder(order, platform) as OrderSummary
-      );
-    } else {
-      throw new Error("לא התקבלה רשימת הזמנות תקינה מהחנות. יש לנסות לרענן שוב.");
+        if (!seen.has(rawOrder.id)) {
+          seen.add(rawOrder.id);
+          eligibleOrders.push(mapOrder(rawOrder, platform) as OrderSummary);
+        }
+      }
     }
+    if (!eligibleOrders.length && hasMore) {
+      throw new Error("הבדיקה טרם הגיעה להזמנות מאושרות. בחרו בסינון בטיפול כדי לטעון את תור הליקוט.");
+    }
+    const orders = eligibleOrders.slice(0, ITEMS_PER_PAGE);
 
     console.log(
       `[orders.service] Retrieved ${orders.length} orders for status: ${
@@ -620,21 +642,10 @@ export const getFilteredOrdersPage = async (
     const mappedOrders = metadataConfigs?.length
       ? processMultiOrdersMetadata(orders, metadataConfigs, platform)
       : orders;
-    const bodyTotal = response?.total_count ?? response?.total;
-    const parsedBodyTotal = bodyTotal == null ? NaN : Number(bodyTotal);
-    const reportedTotal = (
-      responseTotal !== null &&
-      Number.isSafeInteger(responseTotal) &&
-      responseTotal >= orders.length
-    ) ? responseTotal : (
-      Number.isSafeInteger(parsedBodyTotal) && parsedBodyTotal >= orders.length
-        ? parsedBodyTotal
-        : null
-    );
-
     return {
       orders: mappedOrders,
-      total: reportedTotal ?? (orders.length < ITEMS_PER_PAGE ? orders.length : null),
+      total: !hasMore ? eligibleOrders.length :
+        (status && !excluded && platform === "woo" ? responseTotal : null),
       status,
     };
   }, CACHE_EXPIRATION, requestOptions.forceRefresh);
@@ -669,12 +680,11 @@ export const searchOrderById = async (
           
           if (platform === "shopify") {
           console.log(`B`);
-            order = (await getFilteredOrders('null',undefined, orderId) as OrderDetails[])[0];
+            order = (await getFilteredOrdersPage(null, undefined, orderId, { forceRefresh: true })).orders[0] as OrderDetails;
           } else {
-              
-              order = await getOrderById(orderId);
+              order = await getOrderById(orderId, true);
             }
-            
+      if (!order) throw new OrderNotReadyError(orderId, "לא נמצאה הזמנה מאושרת לליקוט. יש לפנות למשרד.");
       return processOrderMetadata(order, metadataConfigs || [], platform);
     } catch (error) {
       console.error(
@@ -683,7 +693,7 @@ export const searchOrderById = async (
       );
       throw error;
     }
-  });
+  }, CACHE_EXPIRATION, true);
 };
 
 /**
@@ -776,6 +786,8 @@ export const updateOrderStatus = async (
 
   // Standard WooCommerce/Shopify API call
   try {
+    // Picker controls must never turn an unapproved quote/order into an approved one.
+    await getOrderById(orderId, true);
     const response = await apiClient<any>({
       method: platform === "shopify" ? "PUT" : "POST",
       path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,

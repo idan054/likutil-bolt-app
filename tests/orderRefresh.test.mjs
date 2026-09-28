@@ -11,6 +11,7 @@ let service;
 let apiClient;
 let useProcessingOrders;
 let OrdersDashboard;
+let useOrderSearch;
 let renderer;
 let latest;
 let requests;
@@ -93,7 +94,7 @@ before(async () => {
           export const settingsStorage = { get: () => globalThis.__ordersRefreshTest.settings };`;
         if (path.endsWith("/hooks/useSettings.ts")) return `
           export const useSettings = () => ({ settings: globalThis.__ordersRefreshTest.settings,
-            user: globalThis.__ordersRefreshTest.user, orderStatuses: [] });`;
+            user: globalThis.__ordersRefreshTest.user, orderStatuses: globalThis.__ordersRefreshTest.statuses ?? [] });`;
         if (path.endsWith("/hooks/useGetFirebaseMetadata.ts")) return `
           export const useGetFirebaseMetadata = () => ({ options: globalThis.__ordersRefreshTest.options });`;
         if (path.endsWith("/utils/error.ts")) return `export const showErrorToast = () => {};`;
@@ -104,6 +105,7 @@ before(async () => {
   ({ apiClient } = await vite.ssrLoadModule("/src/services/api/client.ts"));
   ({ useProcessingOrders } = await vite.ssrLoadModule("/src/hooks/useProcessingOrders.ts"));
   ({ OrdersDashboard } = await vite.ssrLoadModule("/src/components/dashboard/OrdersDashboard.tsx"));
+  ({ useOrderSearch } = await vite.ssrLoadModule("/src/hooks/orders/useOrderSearch.ts"));
 });
 
 beforeEach(async () => {
@@ -114,6 +116,7 @@ beforeEach(async () => {
   storage.set("selectedOrderStatus", '"processing"');
   fixture.settings = { authType: "woo", storeUrl: `tenant-${++tenant}.invalid` };
   fixture.user = { uid: `user-${tenant}` };
+  fixture.statuses = [];
   document.visibilityState = "visible";
   navigator.onLine = true;
   fixture.config = {
@@ -148,7 +151,7 @@ test("forced refresh reads the server even inside the 30-second cache window", a
 test("confirmed status changes invalidate the real list and detail cache keys", async () => {
   await service.getFilteredOrdersPage("processing");
   respond = (request, response) => json(response,
-    request.method === "POST" ? order(1, "s3-packed") : []);
+    request.method === "POST" ? order(1, "s3-packed") : request.url.endsWith('/orders/1') ? order(1) : []);
   const saved = await service.updateOrderStatus("1", "s3-packed");
   assert.equal(saved.status, "s3-packed");
   assert.equal((await service.getFilteredOrdersPage("processing")).orders.length, 0);
@@ -216,7 +219,7 @@ test("a status write with a lost reply is reconciled by a read without repeating
   await service.getFilteredOrdersPage("processing");
   respond = (request, response) => {
     if (request.method === "POST") request.socket.destroy();
-    else json(response, []);
+    else json(response, request.url.endsWith('/orders/1') ? order(1) : []);
   };
   await assert.rejects(service.updateOrderStatus("1", "s3-packed"));
   assert.equal((await service.getFilteredOrdersPage("processing")).orders.length, 0);
@@ -284,7 +287,7 @@ test("Shopify stores sharing one API keep separate order caches", async () => {
   fixture.config.platform = "shopify";
   fixture.settings = { ...fixture.settings, authType: "shopify", myShopifyUrl: "shop-a.myshopify.com" };
   storage.set("wc_settings", JSON.stringify(fixture.settings));
-  respond = (_request, response) => json(response, { orders: [order(1)], total: 1 });
+  respond = (_request, response) => json(response, { orders: [{...order(1), financial_status: 'paid'}], total: 1 });
   const first = await service.getFilteredOrdersPage("pending");
   fixture.settings = { ...fixture.settings, myShopifyUrl: "shop-b.myshopify.com" };
   storage.set("wc_settings", JSON.stringify(fixture.settings));
@@ -434,4 +437,103 @@ test("initial connection failure is not displayed as all orders having been hand
   await act(async () => window.dispatchEvent(new Event("online")));
   await settle(() => listedIds().includes(2));
   assert.equal(renderer.root.findAllByProps({ role: "alert" }).length, 0);
+});
+
+test("all statuses exclude quote documents, unpaid drafts and frozen orders before mapping", async () => {
+  respond = (_request, response) => json(response, [
+    order(85765, 'rfq-sent'), order(2, 'pending'), order(3, 'checkout-draft'), order(4, 'on-hold'),
+    {...order(5, 'completed'), meta_data:[{key:'_s3rfq',value:'1'}]},
+    {...order(6), meta_data:[{key:'_s3rfq_frozen',value:1}]}, order(7),
+    {...order(8), status:undefined},
+  ]);
+  const page = await service.getFilteredOrdersPage(null);
+  assert.deepEqual(page.orders.map(({id}) => id), [7]);
+  assert.equal(page.total, 1);
+});
+
+test("approved B2B picking children and cash-on-delivery orders do not require prepaid funds", async () => {
+  respond = (_request, response) => json(response, [
+    {...order(1), payment_method:'cod', date_paid:null},
+    {...order(2), payment_method:'other', date_paid:null, meta_data:[{key:'_s3rfq',value:1},{key:'_s3rfq_child',value:1},{key:'_s3rfq_parent',value:85765}]},
+    order(3, 's3-packed'), order(4, 'acounting'),
+  ]);
+  assert.deepEqual((await service.getFilteredOrdersPage(null)).orders.map(({id})=>id), [1,2,3,4]);
+});
+
+test("filtering a page of proposals continues to actual picking orders on the next page", async () => {
+  respond = (request, response) => {
+    response.setHeader('X-WP-Total', '16');
+    json(response, request.url.includes('page=2') ? [order(16)] : Array.from({length:15}, (_,i)=>order(i+1,'rfq-sent')));
+  };
+  const page = await service.getFilteredOrdersPage(null);
+  assert.deepEqual(page.orders.map(({id})=>id), [16]);
+  assert.equal(page.total, 1);
+  assert.equal(requests.length, 2);
+});
+
+test("a bounded incomplete scan never claims there are no orders to pick", async () => {
+  respond = (_request, response) => json(response, Array.from({length:15},(_,i)=>order(i+1,'rfq-sent')));
+  await assert.rejects(service.getFilteredOrdersPage(null), /הבדיקה טרם הגיעה/);
+  assert.equal(requests.length, 5);
+});
+
+test("search rechecks approval instead of returning a previously cached eligible order", async () => {
+  respond = (_request, response) => json(response, order(1));
+  assert.equal((await service.searchOrderById('1')).id, 1);
+  respond = (_request, response) => json(response, order(1, 'rfq-sent'));
+  await assert.rejects(service.searchOrderById('1'), error=>error.name==='OrderNotReadyError' && /הצעת מחיר/.test(error.message));
+});
+
+test("direct detail access cannot open unpaid orders or paid RFQ parent documents", async () => {
+  for (const raw of [order(1,'pending'), {...order(2,'completed'),meta_data:[{key:'_s3rfq',value:'1'}]}]) {
+    respond = (_request,response)=>json(response,raw);
+    await assert.rejects(service.getOrderById(String(raw.id), true), error=>error.name==='OrderNotReadyError');
+  }
+});
+
+test("picker status controls cannot approve a proposal or a pending payment order", async () => {
+  for (const status of ['rfq-sent','pending']) {
+    respond = (_request,response)=>json(response,order(1,status));
+    await assert.rejects(service.updateOrderStatus('1','processing'), error=>error.name==='OrderNotReadyError');
+  }
+  assert.deepEqual(requests.map(({method})=>method), ['GET','GET']);
+});
+
+test("a blocked saved filter is migrated and unapproved filters are absent from the picker", async () => {
+  storage.set('selectedOrderStatus', '"rfq-sent"');
+  fixture.statuses = ['processing','completed','rfq-sent','rfq-order','pending','on-hold'].map(slug=>({slug,name:slug}));
+  await mountDashboard();
+  const filter = renderer.root.findByType('StatusFilter').props;
+  assert.equal(filter.selectedStatus, 'processing');
+  assert.deepEqual(filter.statuses.map(({slug})=>slug), ['processing','completed']);
+});
+
+test("blocked searches show a persistent explanation and no order data", async () => {
+  storage.set('wc_settings', JSON.stringify(fixture.settings));
+  function Search() { latest = useOrderSearch(); return null; }
+  await act(async () => { renderer = create(React.createElement(Search)); });
+  respond = (_request,response)=>json(response,order(85765,'rfq-sent'));
+  let result;
+  await act(async () => { result = await latest.searchOrder('85765'); });
+  assert.equal(result, undefined);
+  assert.equal(latest.order, null);
+  assert.match(latest.error, /הצעת מחיר/);
+  assert.equal(latest.isLoading, false);
+  respond = (_request,response)=>json(response,order(1));
+  await act(async () => { await latest.searchOrder('1'); });
+  assert.equal(latest.error, null);
+  assert.equal(latest.order.id, 1);
+});
+
+test("Shopify payment approval is checked before pending is mapped to the picking UI", async () => {
+  fixture.config.platform = 'shopify';
+  respond = (_request,response)=>json(response,{orders:[
+    {...order(1),financial_status:'pending'},
+    {...order(2),financial_status:'paid'},
+    {...order(3),financial_status:'pending',confirmed:true,payment_terms:{payment_terms_type:'net',due_in_days:30}},
+    {...order(4),financial_status:'paid',cancelled_at:'2026-09-28'},
+  ]});
+  const page = await service.getFilteredOrdersPage('pending');
+  assert.deepEqual(page.orders.map(({id})=>id), [2,3]);
+  assert.equal(page.orders[0].status, 'pending');
 });

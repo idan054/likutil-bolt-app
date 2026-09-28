@@ -2,16 +2,17 @@ import React from 'react';
 import { OrderSearchInput } from './search/OrderSearchInput';
 import { useOrderSearch } from '../hooks/orders/useOrderSearch';
 import { OrderDetails } from '../types/order';
-import { useAppState } from '../hooks/useAppState';
 
 interface OrderSearchProps {
   onSearch: (orderId: OrderDetails) => void;
+  onSearchStart?: () => void;
 }
 
-export const OrderSearch: React.FC<OrderSearchProps> = ({ onSearch }) => {
-  const { searchOrder, isLoading } = useOrderSearch();
+export const OrderSearch: React.FC<OrderSearchProps> = ({ onSearch, onSearchStart }) => {
+  const { searchOrder, isLoading, error } = useOrderSearch();
 
     const handleSearch = async (orderId: string) => {
+    onSearchStart?.();
     const result = await searchOrder(orderId);
     if (result) {
       onSearch(result);
@@ -25,6 +26,7 @@ export const OrderSearch: React.FC<OrderSearchProps> = ({ onSearch }) => {
         onSearch={handleSearch}
         isLoading={isLoading}
       />
+      {error && <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
     </div>
   );
 };

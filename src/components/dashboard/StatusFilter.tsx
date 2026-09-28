@@ -25,7 +25,7 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
         whileTap={{ scale: 0.98 }}
       >
         <span className="font-medium">
-          {selectedStatus ? translateOrderStatus(selectedStatus) : 'כל הסטטוסים'}
+          {selectedStatus ? translateOrderStatus(selectedStatus) : 'כל ההזמנות המאושרות'}
         </span>
         <ChevronDown
           size={16}
@@ -54,7 +54,7 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
                 whileHover={{ backgroundColor: !selectedStatus ? 'rgb(239 246 255)' : 'rgb(249 250 251)' }}
                 whileTap={{ scale: 0.98 }}
               >
-                כל הסטטוסים
+                כל ההזמנות המאושרות
               </motion.button>
               {statuses.map((status) => (
                 <motion.button

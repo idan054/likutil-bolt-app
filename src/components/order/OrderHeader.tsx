@@ -20,6 +20,7 @@ interface OrderHeaderProps {
   customerId: number | null;
   onReset: () => void;
   beforeStatusChange?: (newStatus: string) => boolean;
+  onStatusUpdate?: (newStatus: string) => void;
 }
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ 
@@ -32,6 +33,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
   customerId,
   onReset,
   beforeStatusChange,
+  onStatusUpdate,
 }) => {
   const { customer, isLoading } = useCustomerDetails(order.customer_id);
   const billingDetails = order.billing
@@ -62,7 +64,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
             isVipMember={order.is_vip_member ?? customer?.is_vip_member}
             isLoading={isLoading}
           />
-          <StatusBadge status={status} orderId={order.id.toString()} beforeStatusChange={beforeStatusChange} />
+          <StatusBadge status={status} orderId={order.id.toString()} beforeStatusChange={beforeStatusChange} onStatusUpdate={onStatusUpdate} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>
 

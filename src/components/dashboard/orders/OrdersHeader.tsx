@@ -13,12 +13,12 @@ interface OrdersHeaderProps {
 export const OrdersHeader: React.FC<OrdersHeaderProps> = ({ count, total, isLoading, icon: Icon, selectedStatus }) => {
   const statusLabel = selectedStatus
     ? `במצב ${translateOrderStatus(selectedStatus)}`
-    : 'בכל הסטטוסים';
+    : 'המאושרות לליקוט';
   const countLabel = isLoading
     ? 'מעדכן הזמנות...'
     : total !== null && total > count
       ? `${count} מתוך ${total} הזמנות ${statusLabel}`
-      : total === null && count >= 15
+      : total === null
         ? `${count} הזמנות מוצגות ${statusLabel}; הסך הכולל אינו זמין`
         : `${count} הזמנות ${statusLabel}`;
 

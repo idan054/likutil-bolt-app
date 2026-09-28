@@ -4,29 +4,19 @@ import { ApiError } from '../../services/api/types';
 import type { OrderDetails } from '../../types/order';
 import { searchOrderById } from '../../services/orders/orders.service';
 import { useGetFirebaseMetadata } from '../useGetFirebaseMetadata';
-import { useAppState } from '../useAppState';
-import { useSettings } from '../useSettings';
+import { OrderNotReadyError } from '../../services/orders/eligibility';
 
 export const useOrderSearch = () => {
-  const { orders,  } = useAppState();
-  const { settings: userSettings } = useSettings();
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { options } = useGetFirebaseMetadata();
 
 
   const searchOrder = async (orderId: string) => {
     orderId = orderId.trim().replace('#', '');
-    let isShopify = userSettings?.authType;
-
-    console.log('Available order IDs:', orders.map(order => order.id).join(', '));
-    console.log('Available order IDs:', orders.map(order => order.order_number).join(', '));
-
-    const orderExists = orders.find(order => (isShopify ? order.order_number?.toString() : order.id?.toString()) === orderId);
-    if(orderExists){
-      setOrder(orderExists); 
-      return orderExists;
-    }
+    setError(null);
+    setOrder(null);
 
     if (!orderId.trim()) return;
 
@@ -54,7 +44,9 @@ export const useOrderSearch = () => {
     } catch (error) {
       console.error('[orders.search] Failed to find order:', error);
       
-      if (error instanceof ApiError) {
+      if (error instanceof OrderNotReadyError) {
+        setError(error.message);
+      } else if (error instanceof ApiError) {
         if (error.details.responseStatus === 404) {
           toast.error('הזמנה לא נמצאה');
         } else if (error.details.responseStatus === 401) {
@@ -76,6 +68,7 @@ export const useOrderSearch = () => {
     searchOrder,
     isLoading,
     order,
-    clearOrder: () => setOrder(null)
+    error,
+    clearOrder: () => { setOrder(null); setError(null); }
   };
 };

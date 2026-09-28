@@ -17,6 +17,7 @@ import type { OrderDetails as OrderData } from "../../types/order";
 import { AnimatePresence, motion } from "framer-motion";
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { analytics } from "../../services/analytics";
+import { isPickingStatus } from "../../services/orders/eligibility";
 
 
 export const OrdersDashboard: React.FC = () => {
@@ -25,7 +26,14 @@ export const OrdersDashboard: React.FC = () => {
   // Initialize selectedStatus from localStorage
   const [selectedStatus, setSelectedStatus] = useState<string | null>(() => {
     const cached = localStorage.getItem('selectedOrderStatus');
-    return cached ? JSON.parse(cached) : null;
+    const defaultStatus = settings?.authType === "shopify" ? "pending" : "processing";
+    try {
+      const saved = cached ? JSON.parse(cached) : defaultStatus;
+      return saved === null || (typeof saved === "string" && isPickingStatus(saved, settings?.authType))
+        ? saved : defaultStatus;
+    } catch {
+      return defaultStatus;
+    }
   });
   const { orders, orderPage, isLoading, isRefetching, ordersError, setOrders, refetchOrders, cancelOrdersRefresh } = useAppState(selectedStatus);
 
@@ -194,7 +202,7 @@ export const OrdersDashboard: React.FC = () => {
         />
         {ordersError && (
           <div role="alert" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            רשימת ההזמנות לא מעודכנת. לא הצלחנו לקבל נתונים מהחנות.
+            רשימת ההזמנות לא מעודכנת. {ordersError.message}
             {!selectedOrderId && " ננסה שוב אוטומטית."}
             {" אפשר ללחוץ על רענון ההזמנות או לרענן את העמוד."}
           </div>
@@ -202,9 +210,9 @@ export const OrdersDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-1 mt-6">
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
             <div className="space-y-2 mb-2">
-              <OrderSearch onSearch={handleSearchOrdered}/>
+              <OrderSearch onSearch={handleSearchOrdered} onSearchStart={() => handleBackToList(false)}/>
               <StatusFilter
-                statuses={orderStatuses}
+                statuses={orderStatuses.filter(({ slug }) => isPickingStatus(slug, settings?.authType))}
                 selectedStatus={selectedStatus}
                 onStatusChange={handleSelectedStatus}
               />

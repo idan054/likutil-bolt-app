@@ -24,6 +24,8 @@ import {
 import { OrderStatusOverrideMenu } from "./order/OrderStatusOverrideMenu";
 import { CompanyPrintDocuments } from "./order/CompanyPrintDocuments";
 import { useCompanyPrintDocuments } from "../hooks/useCompanyPrintDocuments";
+import { isPickingStatus } from "../services/orders/eligibility";
+import { settingsStorage } from "../services/settings";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -150,6 +152,10 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             beforeStatusChange={(newStatus) =>
               newStatus !== "completed" || !companyPrint.isBlocked
             }
+            onStatusUpdate={(newStatus) => {
+              // Revoking fulfillment ends the workflow even if documents remain unprinted.
+              if (!isPickingStatus(newStatus, settingsStorage.get()?.authType)) onReset();
+            }}
           />
           <CompanyPrintDocuments order={order} print={companyPrint} />
           <FastDeliveryDecisionCard order={order} />

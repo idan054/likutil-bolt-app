@@ -2,7 +2,7 @@ import { OrderDetails } from '../../types/order';
 import { createDeliveryTask } from './api/delivery';
 import { mapOrderToDeliveryTask } from './mappers';
 import type { DeliveryTaskResponse } from './types';
-import { updateOrderMeta } from '../orders/orders.service';
+import { getOrderById, updateOrderMeta } from '../orders/orders.service';
 
 interface CreateDeliveryParams {
   userId: string;
@@ -26,6 +26,10 @@ export const createDelivery = async ({
   if (!order) {
     throw new Error('לא ניתן ליצור משלוח: לא נבחרה הזמנה');
   }
+
+  // Revalidate approval on the server before any carrier request, even for an old open screen.
+  // A failed read stops here; shipment creation is never retried automatically.
+  await getOrderById(String(order.id), true);
 
   console.log('[delivery.service] Creating delivery:', { 
     orderId: order.id,
