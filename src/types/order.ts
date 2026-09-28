@@ -60,6 +60,7 @@ export interface OrderSummary {
   id: number;
   order_number: number;
   status: string;
+  shipment_created_status?: string;
   total: string;
   line_items: LineItem[];
   billing: {

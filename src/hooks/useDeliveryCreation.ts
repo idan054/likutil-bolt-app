@@ -15,11 +15,13 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../config/firebase";
 import { getReprintLabelUrl, getShipmentLabelUrl } from "../utils/shippingLabel";
 import { getDeliveryCity } from "../services/delivery/mappers";
+import { settingsStorage } from "../services/settings";
+import { isValidDeliveryTaskResponse } from "../services/delivery/validation/response";
 
 interface UseDeliveryCreationProps {
   order?: OrderDetails;
   provider: string;
-  onSuccess: () => void;
+  onSuccess: (labelOpened: boolean) => void | Promise<void>;
 }
 
 export const useDeliveryCreation = ({
@@ -34,13 +36,27 @@ export const useDeliveryCreation = ({
   const { activeIntegrations } =
     useDeliveryIntegrations();
   const [user] = useAuthState(auth);
+  const settings = settingsStorage.get();
+  const orderId = order?.id;
+  const responseKey = JSON.stringify(["shipment-result", user?.uid, settings?.authType,
+    settings?.storeUrl, settings?.myShopifyUrl, orderId, provider]);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
 
   useEffect(() => {
-    clearDeliveryResponse();
-  }, [order?.id, provider]);
+    setDeliveryResponse(null);
+    if (!orderId || !provider) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(responseKey) || "null");
+      if (isValidDeliveryTaskResponse(saved)) {
+        setDeliveryResponse(saved);
+        void onSuccessRef.current(false);
+      }
+    } catch { /* An unavailable/corrupt browser cache must not break loading. */ }
+  }, [responseKey, orderId, provider]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
-    if (creatingRef.current) return;
+    if (creatingRef.current || deliveryResponse) return;
     if (!order) {
       toast.error("לא נבחרה הזמנה");
       return;
@@ -91,7 +107,7 @@ export const useDeliveryCreation = ({
 
     try {
       const requestedAt = new Date().toISOString();
-      const result = await createDelivery({
+      const response = await createDelivery({
         userId,
         order,
         provider,
@@ -101,9 +117,20 @@ export const useDeliveryCreation = ({
         requestedAt
       });
 
+      const result: DeliveryTaskResponse = {
+        print_label: response.print_label, control_panel_link: response.control_panel_link,
+        provider: response.provider, track_number: response.track_number,
+        id: response.id, task_id: response.task_id, public_id: response.public_id,
+        barcode: response.barcode, DeliveryNumber: response.DeliveryNumber, package_count: packNum,
+      };
+
       setDeliveryResponse(result);
+      // Keep the confirmed carrier result across refreshes. This contains no
+      // API keys and is scoped to user, store, order and carrier.
+      try { sessionStorage.setItem(responseKey, JSON.stringify(result)); } catch { /* Printing still works. */ }
       toast.success(successMessages.deliveryCreated);
 
+      let labelOpened = false;
       if (signedLabelUrl) {
         const printUrl = getShipmentLabelUrl(
           order.s3_label_url, order.id, provider, result, packNum, sentCity
@@ -116,6 +143,7 @@ export const useDeliveryCreation = ({
         } else {
           try {
             labelTab.location.replace(printUrl);
+            labelOpened = true;
           } catch {
             labelTab.close();
             toast.error("המשלוח הוקם. לא ניתן לפתוח את המדבקה אוטומטית; לחצו על הדפסת מדבקה.");
@@ -128,7 +156,7 @@ export const useDeliveryCreation = ({
         await persistMahirliMetaToOrder(order, result, requestedAt);
       }
 
-      onSuccess();
+      await onSuccess(labelOpened);
     } catch (error) {
       labelTab?.close();
       showErrorToast(error);
@@ -140,6 +168,7 @@ export const useDeliveryCreation = ({
 
   const clearDeliveryResponse = () => {
     setDeliveryResponse(null);
+    try { sessionStorage.removeItem(responseKey); } catch { /* Optional browser cache. */ }
   };
 
   return {

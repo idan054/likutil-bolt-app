@@ -90,7 +90,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             isCompleting={isCompleting}
             onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString())}
             onComplete={onComplete}
-            packNum={packageCount.toString()} 
+            packNum={deliveryResponse?.package_count ?? packageCount.toString()}
             deliveryType={deliveryType.toString()} 
             onStatusChanged={onStatusChanged}
           />

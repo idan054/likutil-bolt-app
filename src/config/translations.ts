@@ -29,6 +29,7 @@ export const translations = {
 
   
   orderStatus: {
+    's3-packed': 'נארז וממתין לשליח',
     processing: 'בטיפול',
     completed: 'הושלם',
     fulfilled: 'הושלם',

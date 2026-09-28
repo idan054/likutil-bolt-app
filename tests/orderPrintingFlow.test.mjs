@@ -9,6 +9,7 @@ import { act, create } from "react-test-renderer";
 // Only external account data and unrelated presentation components are replaced.
 let vite, http, OrderDetails, renderer, requests, respond, tabs, resets, completions;
 const fixture = { messages: [] };
+const savedResponses = new Map();
 const globals = Object.fromEntries(["window", "document", "localStorage", "sessionStorage", "status"]
   .map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
 globalThis.__orderPrintingTest = fixture;
@@ -18,6 +19,7 @@ const json = (response, body, status = 200) => {
 };
 const order = {
   id: 1, status: "processing", date_created: "2026-09-28T06:00:00",
+  shipment_created_status: 's3-packed',
   line_items: [], shipping_lines: [], customer_id: 0, payment_method: "card",
   billing: { email: "test@example.invalid", phone: "0501234567" },
   shipping: { first_name: "Test", last_name: "Customer", city: "City", address_1: "Street 1" },
@@ -43,7 +45,8 @@ before(async () => {
   // window.status exists in browsers (the pre-existing status menu references it).
   globalThis.status = "";
   globalThis.localStorage = { getItem: () => null, setItem() {} };
-  globalThis.sessionStorage = { getItem: () => null, setItem() {} };
+  globalThis.sessionStorage = { getItem: key => savedResponses.get(key) ?? null,
+    setItem: (key,value) => savedResponses.set(key,value), removeItem: key => savedResponses.delete(key) };
   http = createHttpServer((request, response) => {
     let body = "";
     request.on("data", (chunk) => { body += chunk; });
@@ -75,7 +78,7 @@ before(async () => {
         if (path.endsWith("/config/firebase.ts")) return `export const auth = { currentUser: {uid:'test-user'} };`;
         if (path.endsWith("/services/auth/woo-auth.ts")) return `export const BASE_URL = globalThis.__orderPrintingTest.baseUrl;`;
         if (path.endsWith("/services/api/config.ts")) return `export const getApiConfig = () => globalThis.__orderPrintingTest.config;`;
-        if (path.endsWith("/services/settings/index.ts")) return `export const settingsStorage = { get: () => ({authType:'woo',storeUrl:'test.invalid'}) };`;
+        if (path.endsWith("/services/settings/index.ts")) return `export const settingsStorage = { get: () => ({authType:'woo',storeUrl:globalThis.__orderPrintingTest.storeUrl}) };`;
         if (path.endsWith("/hooks/useSettings.ts")) return `export const useSettings = () => ({orderStatuses: [
           {slug:'processing', name:'Processing'}, {slug:'s3-packed', name:'Packed'}, {slug:'completed', name:'Completed'}, {slug:'on-hold', name:'Hold'}]});`;
         if (path.endsWith("/hooks/useCustomerDetails.ts")) return `export const useCustomerDetails = () => ({});`;
@@ -103,6 +106,7 @@ beforeEach(async () => {
   if (renderer) await act(async () => renderer.unmount());
   renderer = null;
   requests = []; tabs = []; resets = 0; completions = 0; fixture.messages = [];
+  savedResponses.clear(); fixture.storeUrl = 'test.invalid';
   fixture.config = { ...fixture.config, baseUrl: fixture.baseUrl + '/' + Math.random() };
   respond = (request, response, body) => {
     if (request.url.startsWith("/api/create-delivery")) json(response, delivery);
@@ -142,27 +146,30 @@ const changeStatus = async (label = 'Packed') => {
   await act(async () => renderer.root.findAllByProps({ role: "menuitem" }).find(({ props }) => props.children === label).props.onClick());
 };
 
-test("changing status keeps the order and its existing label available until explicit finish", async () => {
+test("carrier success immediately advances the store's shipment status after opening its independent label tab", async () => {
   await mount();
   await ship();
   const label = labelLinks()[0].props.href;
-  await changeStatus();
-  assert.equal(resets, 0, "A status change must not close the printing workflow");
-  assert.equal(completions, 0);
+  assert.equal(resets, 1);
+  assert.equal(completions, 1);
   assert.equal(labelLinks()[0].props.href, label);
   assert.equal(tabs.length, 1);
   assert.equal(new URL(tabs[0].url).searchParams.get("d"), "1234");
+  assert.equal(tabs[0].closed, false);
+  assert.deepEqual(requests.filter(({body})=>body?.status).map(({body})=>body.status), ['s3-packed']);
+  // Finishing a retained print view must not send a second "completed" write.
   await act(async () => button("סיום").props.onClick());
-  assert.equal(resets, 1);
+  assert.equal(resets, 2);
   assert.equal(completions, 1);
+  assert.equal(requests.filter(({body})=>body?.status).length, 1);
   assert.equal(requests.filter(({ url }) => url.startsWith("/api/create-delivery")).length, 1);
 });
 
 test("slow delivery reserves its label window immediately and repeated clicks send only once", async () => {
   let finish;
-  respond = (request, response) => {
+  respond = (request, response, body) => {
     if (request.url.startsWith("/api/create-delivery")) finish = () => json(response, delivery);
-    else json(response, order);
+    else json(response, {...order,status:body?.status ?? order.status});
   };
   await mount();
   let pending;
@@ -192,6 +199,7 @@ test("a blocked popup keeps a manual label link and the active order", async () 
 });
 
 test("a failed status update preserves the label and never closes the order", async () => {
+  window.open = () => null;
   await mount();
   await ship();
   respond = (_request, response) => json(response, {message:'unavailable'}, 503);
@@ -201,16 +209,20 @@ test("a failed status update preserves the label and never closes the order", as
 });
 
 test("a failed finish preserves the created shipment for printing and retrying completion", async () => {
+  respond = (request,response,body) => {
+    if (request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if (body?.status) return json(response,{message:'unavailable'},503);
+    json(response,order);
+  };
   await mount();
   await ship();
-  respond = (request, response) => request.method === 'GET'
-    ? json(response, order) : json(response, {message:'unavailable'}, 503);
+  assert.equal(renderer.root.findAllByProps({role:'alert'}).length,1);
   await act(async () => button("סיום").props.onClick());
   assert.equal(resets, 0);
   assert.equal(completions, 0);
   assert.equal(labelLinks().length, 1);
   assert.equal(button("שגר משלוח בטיל!"), undefined);
-  respond = (_request, response) => json(response, { ...order, status: 'completed' });
+  respond = (_request, response) => json(response, { ...order, status: 's3-packed' });
   await act(async () => button("סיום").props.onClick());
   assert.equal(resets, 1);
   assert.equal(completions, 1);
@@ -256,6 +268,11 @@ test("an approval read failure sends no request to the carrier", async () => {
 });
 
 test("a revoked approval cannot be bypassed by finishing an existing shipment", async () => {
+  respond = (request,response,body) => {
+    if (request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if (body?.status) return json(response,{message:'unavailable'},503);
+    json(response,order);
+  };
   await mount();
   await ship();
   const before = requests.length;
@@ -265,4 +282,89 @@ test("a revoked approval cannot be bypassed by finishing an existing shipment", 
   assert.equal(completions, 0);
   assert.equal(labelLinks().length, 1);
   assert.deepEqual(requests.slice(before).map(({method})=>method), ['GET']);
+});
+
+test("refresh recovers a confirmed shipment and retries only its status update", async () => {
+  respond = (request,response,body) => {
+    if (request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if (body?.status) return json(response,{message:'unavailable'},503);
+    json(response,order);
+  };
+  await mount(); await ship();
+  assert.equal(resets,0);
+  const prior = requests.length;
+  await act(async () => renderer.unmount());
+  respond = (_request,response,body)=>json(response,{...order,status:body?.status ?? order.status});
+  await mount();
+  await settle(()=>completions===1);
+  assert.equal(resets,0,'The restored print link must remain available');
+  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  assert.equal(labelLinks().length,1);
+  assert.equal(requests.slice(prior).some(({url})=>url.startsWith('/api/create-delivery')),false);
+  assert.deepEqual(requests.slice(prior).filter(({body})=>body?.status).map(({body})=>body.status),['s3-packed']);
+});
+
+test("a saved shipment cannot be reused for the same order number in another store", async () => {
+  await mount(); await ship();
+  await act(async()=>renderer.unmount());
+  fixture.storeUrl='another.invalid';
+  const prior=requests.length;
+  await mount();
+  assert.ok(button('שגר משלוח בטיל!'));
+  assert.equal(labelLinks().length,0);
+  assert.equal(requests.length,prior);
+});
+
+test("a lost status response is reconciled by reading without recreating or repeating the shipment", async () => {
+  let stored=order;
+  respond=(request,response,body)=>{
+    if(request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if(body?.status){stored={...order,status:body.status}; response.destroy();return;}
+    json(response,stored);
+  };
+  await mount(); await ship();
+  assert.equal(resets,1);
+  assert.equal(completions,1);
+  assert.equal(requests.filter(({body})=>body?.status).length,1);
+  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
+});
+
+test("legacy stores retain their existing completion policy", async () => {
+  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
+    ? json(response,delivery) : json(response,{...order,shipment_created_status:undefined,status:body?.status ?? 'processing'});
+  await mount({...order,shipment_created_status:undefined}); await ship();
+  assert.deepEqual(requests.filter(({body})=>body?.status).map(({body})=>body.status),['completed']);
+});
+
+test("an advanced shipment status is preserved when a saved result is reopened", async () => {
+  respond=(request,response)=>request.url.startsWith('/api/create-delivery')
+    ? json(response,delivery) : json(response,{...order,status:'s3-in-transit',shipment_created_status:'s3-in-transit'});
+  await mount(); await ship();
+  assert.equal(completions,1);
+  assert.equal(requests.filter(({body})=>body?.status).length,0);
+});
+
+test("another worker advancing the shipment during validation cannot be overwritten", async () => {
+  let reads=0;
+  respond=(request,response)=>{
+    if(request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if(request.method==='GET') reads++;
+    json(response, reads >= 3 ? {...order,status:'s3-in-transit',shipment_created_status:'s3-in-transit'} : order);
+  };
+  await mount(); await ship();
+  assert.equal(completions,1);
+  assert.equal(requests.filter(({body})=>body?.status).length,0);
+});
+
+test("switching stores during shipment status validation cannot write to the new store", async () => {
+  let reads=0;
+  respond=(request,response)=>{
+    if(request.url.startsWith('/api/create-delivery')) return json(response,delivery);
+    if(request.method==='GET' && ++reads===3) fixture.config={...fixture.config,baseUrl:fixture.baseUrl+'/other'};
+    json(response,order);
+  };
+  await mount(); await ship();
+  assert.equal(completions,0);
+  assert.equal(requests.filter(({body})=>body?.status).length,0);
+  assert.equal(renderer.root.findAllByProps({role:'alert'}).length,1);
 });

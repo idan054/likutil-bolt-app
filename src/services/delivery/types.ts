@@ -36,6 +36,7 @@ export interface DeliveryTaskResponse {
   control_panel_link: string;
   provider: string;
   track_number: string;
+  package_count?: string;
   error_text?: string;
 
   // Mahir Li (Lionwheel) task fields returned by the create-delivery API.

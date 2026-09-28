@@ -234,6 +234,7 @@ const mapOrder = (
       id: order.id,
       order_number: order.order_number,
       status: status,
+      shipment_created_status: order.shipment_created_status,
       total: order.total_price || order.total || "0",
       customer_id: order.customer?.id || null,
       date_created: order.created_at || order.date_created,
@@ -328,6 +329,7 @@ const mapOrder = (
         ? order.is_vip_member
         : undefined,
     status: order.status || "unknown",
+    shipment_created_status: order.shipment_created_status,
     total: order.total || "0",
     customer_id: order.customer_id || null,
     date_created: ensureUtcSuffix(order.date_created_gmt),
@@ -772,7 +774,8 @@ export const getOrdersStatuses = async (): Promise<OrderStatus[]> => {
 export const updateOrderStatus = async (
   orderId: string,
   status: string,
-  note?: string
+  note?: string,
+  expectedStatus?: string,
 ): Promise<OrderDetails> => {
   const config = getApiConfig();
   const platform = config.platform;
@@ -787,7 +790,13 @@ export const updateOrderStatus = async (
   // Standard WooCommerce/Shopify API call
   try {
     // Picker controls must never turn an unapproved quote/order into an approved one.
-    await getOrderById(orderId, true);
+    const current = await getOrderById(orderId, true);
+    const currentConfig = getApiConfig();
+    if (scope !== orderCacheScope(currentConfig.platform, currentConfig.baseUrl)) {
+      throw new Error("החנות הוחלפה במהלך העדכון. יש לחזור לחנות המקורית ולנסות שוב.");
+    }
+    // A second worker may already have advanced the shipment while we were reading.
+    if (expectedStatus && current.status !== expectedStatus) return current;
     const response = await apiClient<any>({
       method: platform === "shopify" ? "PUT" : "POST",
       path: `${PLATFORM_ENDPOINTS[platform].orders}/${orderId}`,
@@ -799,6 +808,40 @@ export const updateOrderStatus = async (
     // A lost response can follow a committed write. Reconcile by reading, never
     // automatically repeat the mutation, and discard reads started during it.
     invalidateOrderCaches(scope, orderId);
+  }
+};
+
+/** Advance a confirmed shipment using the store's policy, without recreating it. */
+export const markOrderShipmentCreated = async (orderId: string): Promise<OrderDetails> => {
+  const config = getApiConfig();
+  const scope = orderCacheScope(config.platform, config.baseUrl);
+  const fresh = await getOrderById(orderId, true);
+  const target = fresh.shipment_created_status || "completed";
+  if (!isPickingStatus(target, config.platform) || ["processing", "pending"].includes(target)) {
+    throw new Error("לא הוגדר בחנות סטטוס תקין לאחר יצירת משלוח. יש לפנות למשרד.");
+  }
+  const currentConfig = getApiConfig();
+  if (scope !== orderCacheScope(currentConfig.platform, currentConfig.baseUrl)) {
+    throw new Error("החנות הוחלפה במהלך העדכון. יש לחזור לחנות המקורית ולנסות שוב.");
+  }
+  if (fresh.status === target) return fresh;
+  const isSaved = (order: OrderDetails) => order.status === target ||
+    (order.status === order.shipment_created_status && !["processing", "pending"].includes(order.status));
+  try {
+    const updated = await updateOrderStatus(orderId, target, undefined, fresh.status);
+    if (!isSaved(updated)) throw new Error("החנות לא אישרה את שינוי סטטוס המשלוח.");
+    return updated;
+  } catch (error) {
+    // The write may have succeeded even when its reply was lost. Read once;
+    // retrying this operation must never call the carrier again.
+    const latestConfig = getApiConfig();
+    if (scope === orderCacheScope(latestConfig.platform, latestConfig.baseUrl)) {
+      try {
+        const saved = await getOrderById(orderId, true);
+        if (isSaved(saved)) return saved;
+      } catch { /* Keep the original failure. */ }
+    }
+    throw error;
   }
 };
 

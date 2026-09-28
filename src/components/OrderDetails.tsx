@@ -26,6 +26,7 @@ import { CompanyPrintDocuments } from "./order/CompanyPrintDocuments";
 import { useCompanyPrintDocuments } from "../hooks/useCompanyPrintDocuments";
 import { isPickingStatus } from "../services/orders/eligibility";
 import { settingsStorage } from "../services/settings";
+import { markOrderShipmentCreated } from "../services/orders/orders.service";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
@@ -57,6 +58,34 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
   // Get fast delivery decision for auto-selecting mahirLi
   const { decision } = useOrderFastDeliveryDecision(order);
+  const [shipmentOrder, setShipmentOrder] = useState<OrderDetailType | null>(null);
+  const [shipmentStatusError, setShipmentStatusError] = useState(false);
+  const [isUpdatingShipment, setIsUpdatingShipment] = useState(false);
+  const updatingShipment = useRef(false);
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
+
+  const syncShipmentStatus = async (closeAfterSuccess = false) => {
+    if (updatingShipment.current) return;
+    updatingShipment.current = true;
+    setIsUpdatingShipment(true);
+    setShipmentStatusError(false);
+    try {
+      const updated = await markOrderShipmentCreated(String(order.id));
+      if (!active.current) return;
+      setShipmentOrder(updated);
+      onComplete(updated);
+      if (closeAfterSuccess && !companyPrint.isBlocked) onReset();
+    } catch {
+      if (active.current) setShipmentStatusError(true);
+    } finally {
+      updatingShipment.current = false;
+      if (active.current) setIsUpdatingShipment(false);
+    }
+  };
 
   const { isCompleting, completeOrder } = useOrderCompletion({
     orderId: order.id,
@@ -68,6 +97,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
   const handleComplete = async () => {
     if (companyPrint.isBlocked) return;
+    if (deliveryResponse) {
+      if (shipmentOrder) onReset();
+      else await syncShipmentStatus(true);
+      return;
+    }
     await completeOrder();
     // Success closes this view through onSuccess. On failure keep the existing
     // shipment and label available, so retrying completion cannot recreate it.
@@ -86,7 +120,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   } = useDeliveryCreation({
     order,
     provider: selectedDeliveryProvider!,
-    onSuccess: () => {},
+    onSuccess: syncShipmentStatus,
   });
 
   useEffect(() => {
@@ -138,11 +172,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
           dir="rtl"
         >
           <OrderHeader
-            key={order.id}
+            key={`${order.id}:${shipmentOrder?.status ?? order.status}`}
             order={order}
             id={order.id}
             order_number={order.order_number}
-            status={order.status}
+            status={shipmentOrder?.status ?? order.status}
             dateCreated={order.date_created}
             isLocalPickup={isLocalPickup}
             customerId={order.customer_id}
@@ -158,6 +192,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
             }}
           />
           <CompanyPrintDocuments order={order} print={companyPrint} />
+          {shipmentStatusError && (
+            <div role="alert" className="my-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              המשלוח כבר נוצר, אך סטטוס ההזמנה לא עודכן. אין ליצור משלוח נוסף.
+              <button className="mr-2 font-semibold underline" onClick={() => void syncShipmentStatus(false)} disabled={isUpdatingShipment}>
+                נסה לעדכן סטטוס שוב
+              </button>
+            </div>
+          )}
           <FastDeliveryDecisionCard order={order} />
 
           <CustomerNote note={order.customer_note} />
@@ -195,7 +237,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 </div>
                 <OrderStatusOverrideMenu
                   order={order}
-                  isDisabled={isCompleting || isCreating}
+                  isDisabled={isCompleting || isCreating || isUpdatingShipment}
                   onStatusChanged={handleStatusChanged}
                 />
               </div>
@@ -206,7 +248,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 order={order}
                 paymentMethod={order.payment_method_title}
                 showCashWarning={shouldWarnForCashPickup}
-                isCompleting={isCompleting}
+                isCompleting={isCompleting || isUpdatingShipment}
                 onComplete={handleComplete}
                 onSendAnyway={() => setShowLocalPickup(false)}
                 onStatusChanged={handleStatusChanged}
@@ -218,11 +260,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 selectedProvider={selectedDeliveryProvider}
                 customerId={order.customer_id}
                 isLocalPickup={isLocalPickup}
-                isCreating={isCreating}
+                isCreating={isCreating || isUpdatingShipment}
                 onCreateDelivery={(packNum, deliveryType) => createDelivery(packNum, deliveryType)}
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}
-                isCompleting={isCompleting}
+                isCompleting={isCompleting || isUpdatingShipment}
                 onStatusChanged={handleStatusChanged}
               />
             )}
