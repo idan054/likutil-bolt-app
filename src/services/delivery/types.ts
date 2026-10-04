@@ -41,6 +41,7 @@ export interface DeliveryTaskResponse {
   package_count?: string;
   cancelled?: boolean;
   can_cancel?: boolean;
+  delivered?: boolean;
   status_checked?: boolean;
   error_text?: string;
 

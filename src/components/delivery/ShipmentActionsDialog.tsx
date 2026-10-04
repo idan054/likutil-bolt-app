@@ -89,7 +89,7 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
             </div>
             <button onClick={() => setConfirmCancel(true)} disabled={busy || !selected.can_cancel}
               className="flex w-full items-center gap-3 rounded-xl border border-red-200 p-4 text-right text-red-700 hover:bg-red-50 disabled:opacity-50">
-              <Trash2 size={22} /><span><strong className="block">ביטול המשלוח שהוזמן</strong><span className="mt-1 block text-sm">{selected.can_cancel ? `משלוח #${selected.track_number} בלבד · יידרש אישור` : 'לא ניתן לבטל משלוח זה מתוך ליקוטיל כעת'}</span></span>
+              <Trash2 size={22} /><span><strong className="block">ביטול המשלוח שהוזמן</strong><span className="mt-1 block text-sm">{selected.can_cancel ? `משלוח #${selected.track_number} בלבד · יידרש אישור` : selected.delivered ? 'המשלוח כבר נמסר ולכן חברת המשלוחים אינה מאפשרת ביטול' : 'לא ניתן לבטל משלוח זה מתוך ליקוטיל כעת'}</span></span>
             </button>
           </div>}
         </>}
