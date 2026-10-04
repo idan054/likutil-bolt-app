@@ -18,6 +18,7 @@ interface ConnectedCompanyProps {
   apiKey?: string;
   isCreating: boolean;
   isCreationBlocked?: boolean;
+  replacementLabel?: string;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
@@ -31,6 +32,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   apiKey,
   isCreating,
   isCreationBlocked,
+  replacementLabel,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
@@ -91,6 +93,7 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             isCreating={isCreating}
             isCompleting={isCompleting}
             isCreationBlocked={isCreationBlocked}
+            replacementLabel={replacementLabel}
             onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString())}
             onComplete={onComplete}
             packNum={deliveryResponse?.package_count ?? packageCount.toString()}

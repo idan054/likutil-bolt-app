@@ -120,6 +120,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     isChecking,
     isCreationBlocked,
     shipmentMessage,
+    replacementLabel,
     previousShipments,
     canRequestAdditional,
     isAdditional,
@@ -289,6 +290,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 isLocalPickup={isLocalPickup}
                 isCreating={isCreating || isUpdatingShipment}
                 isCreationBlocked={isCreationBlocked}
+                replacementLabel={replacementLabel}
                 onCreateDelivery={(packNum, deliveryType) => createDelivery(packNum, deliveryType)}
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}

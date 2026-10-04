@@ -21,6 +21,7 @@ interface DeliverySelectorProps {
   isLocalPickup?: boolean;
   isCreating: boolean;
   isCreationBlocked?: boolean;
+  replacementLabel?: string;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
@@ -37,6 +38,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   isLocalPickup,
   isCreating,
   isCreationBlocked,
+  replacementLabel,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
@@ -59,13 +61,13 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   );
 
   // Find selected integration
-  const displayedProvider = deliveryResponse?.provider || selectedProvider;
+  const displayedProvider = selectedProvider || deliveryResponse?.provider || null;
   const selectedIntegration = integrations.find(
     integration => integration.provider === displayedProvider
   ) ?? integrations.find(integration => integration.provider === selectedProvider);
   const selectProvider = React.useCallback((provider: string) => {
-    if (!isCreating && !isCreationBlocked && !deliveryResponse) onSelect(provider);
-  }, [isCreating, isCreationBlocked, deliveryResponse, onSelect]);
+    if (!isCreating) onSelect(provider);
+  }, [isCreating, onSelect]);
 
 
   return (
@@ -98,6 +100,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
           apiKey={savedData[selectedIntegration.provider]?.key}
           isCreating={isCreating}
           isCreationBlocked={isCreationBlocked}
+          replacementLabel={replacementLabel}
           onCreateDelivery={onCreateDelivery}
           deliveryResponse={deliveryResponse}
           onComplete={onComplete}

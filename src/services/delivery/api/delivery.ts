@@ -50,6 +50,7 @@ export const createDeliveryTask = async (
     keys: params.keys,
   });
   if (params.additionalShipmentRevision) query.set('additionalShipmentRevision', params.additionalShipmentRevision);
+  if (params.replacementShipmentRevision) query.set('replacementShipmentRevision', params.replacementShipmentRevision);
   const url = `${BASE_URL}/api/create-delivery?${query.toString()}`;
   const safeUrl = `${BASE_URL}/api/create-delivery?provider=${encodeURIComponent(params.provider)}`;
   const safeRequestBody = { orderId: request.id, provider: params.provider };

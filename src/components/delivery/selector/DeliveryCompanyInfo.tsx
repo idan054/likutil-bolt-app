@@ -12,6 +12,7 @@ interface DeliveryCompanyInfoProps {
   apiKey?: string;
   isCreating: boolean;
   isCreationBlocked?: boolean;
+  replacementLabel?: string;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;

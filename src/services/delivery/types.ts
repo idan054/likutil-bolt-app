@@ -4,6 +4,7 @@ export interface DeliveryRequestParams {
   provider: string;
   keys: string;
   additionalShipmentRevision?: string;
+  replacementShipmentRevision?: string;
 }
 
 // Update existing types
@@ -38,6 +39,7 @@ export interface DeliveryTaskResponse {
   provider: string;
   track_number: string;
   package_count?: string;
+  cancelled?: boolean;
   error_text?: string;
 
   // Mahir Li (Lionwheel) task fields returned by the create-delivery API.
@@ -53,6 +55,7 @@ export interface DeliveryTaskResponse {
 export interface ShipmentState {
   revision?: string;
   can_additional?: boolean;
+  can_replace?: boolean;
   shipments?: DeliveryTaskResponse[];
   state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected';
   blocked: boolean;

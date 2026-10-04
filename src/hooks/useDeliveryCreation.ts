@@ -51,6 +51,13 @@ export const useDeliveryCreation = ({
   const checkEnabled = Boolean(orderId && userId && provider);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
+  const replacement = !additionalRevision && Boolean(shipmentState?.can_replace && shipmentState.revision &&
+    deliveryResponse && (deliveryResponse.provider !== provider || deliveryResponse.cancelled));
+  const selectedName = activeIntegrations.find(integration => integration.provider === provider)?.name || provider;
+  const previousName = activeIntegrations.find(integration => integration.provider === deliveryResponse?.provider)?.name || deliveryResponse?.provider || 'חברת המשלוחים הקודמת';
+  const replacementLabel = replacement
+    ? deliveryResponse?.cancelled ? `כן, הפק ב${selectedName}` : `כן, בטל והפק ב${selectedName}`
+    : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -75,13 +82,16 @@ export const useDeliveryCreation = ({
       if (isValidDeliveryTaskResponse(state.response)) {
         setDeliveryResponse(state.response);
         try { sessionStorage.setItem(responseKey, JSON.stringify(state.response)); } catch { /* Optional cache. */ }
-        void onSuccessRef.current(false);
+        if (!state.response.cancelled) void onSuccessRef.current(false);
+      } else if (state.state === 'creating' || state.state === 'uncertain') {
+        setDeliveryResponse(null);
+        try { sessionStorage.removeItem(responseKey); } catch { /* Optional cache. */ }
       } else {
         // A response confirmed in this browser remains usable even if its legacy
         // metadata has not reached the store yet. It must not enable a second send.
         try {
           const saved = sessionStorage.getItem(responseKey);
-          if (saved && isValidDeliveryTaskResponse(JSON.parse(saved))) void onSuccessRef.current(false);
+          if (saved && isValidDeliveryTaskResponse(JSON.parse(saved)) && !JSON.parse(saved).cancelled) void onSuccessRef.current(false);
         } catch { /* Optional cache. */ }
       }
     }).catch((error) => {
@@ -94,7 +104,7 @@ export const useDeliveryCreation = ({
   }, [responseKey, orderId, userId, checkEnabled, checkVersion]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
-    if (creatingRef.current || isChecking || ((shipmentBlocked || deliveryResponse) && !additionalRevision)) return;
+    if (creatingRef.current || isChecking || ((shipmentBlocked || deliveryResponse) && !additionalRevision && !replacement)) return;
     if (!order) {
       toast.error("לא נבחרה הזמנה");
       return;
@@ -153,6 +163,7 @@ export const useDeliveryCreation = ({
         deliveryType,
         requestedAt,
         additionalShipmentRevision: additionalRevision ?? undefined,
+        replacementShipmentRevision: replacement ? shipmentState?.revision : undefined,
       });
 
       const result: DeliveryTaskResponse = {
@@ -166,7 +177,8 @@ export const useDeliveryCreation = ({
       setAdditionalRevision(null);
       // A new confirmation must be read from the server before another intentional send.
       setShipmentState((previous) => ({ state: 'created', blocked: true, message: '', response: result,
-        shipments: [...(previous?.shipments ?? []), result] }));
+        shipments: [...(previous?.shipments ?? []).map((shipment, index, all) =>
+          replacement && index === all.length - 1 ? {...shipment, cancelled: true} : shipment), result] }));
       setShipmentBlocked(true);
       setShipmentMessage("המשלוח נוצר. ניתן להדפיס שוב את המדבקה או לבדוק מצב משלוח להזמנה נוספת.");
       // Keep the confirmed carrier result across refreshes. This contains no
@@ -212,7 +224,10 @@ export const useDeliveryCreation = ({
         if (isValidDeliveryTaskResponse(error.shipment.response)) {
           setDeliveryResponse(error.shipment.response);
           try { sessionStorage.setItem(responseKey, JSON.stringify(error.shipment.response)); } catch { /* Optional cache. */ }
-          await onSuccess(false);
+          if (!error.shipment.response.cancelled) await onSuccess(false);
+        } else {
+          setDeliveryResponse(null);
+          try { sessionStorage.removeItem(responseKey); } catch { /* Optional cache. */ }
         }
       } else {
         // A lost HTTP response is not proof that the carrier rejected the task.
@@ -233,12 +248,17 @@ export const useDeliveryCreation = ({
 
   return {
     isCreating,
-    isCreationBlocked: isChecking || (shipmentBlocked && !additionalRevision),
+    isCreationBlocked: isChecking || (shipmentBlocked && !additionalRevision && !replacement),
     isChecking,
-    shipmentMessage,
+    shipmentMessage: replacement
+      ? deliveryResponse?.cancelled
+        ? `המשלוח ב${previousName} כבר בוטל. להפיק משלוח ב${selectedName}?`
+        : `כבר יצאה מדבקה בחברת ${previousName}. לבטל את המשלוח הקודם ולהפיק ב${selectedName}?`
+      : shipmentMessage,
+    replacementLabel,
     checkShipment: () => { if (!creatingRef.current) setCheckVersion((version) => version + 1); },
     createDelivery: createDeliveryTask,
-    deliveryResponse: additionalRevision ? null : deliveryResponse,
+    deliveryResponse: additionalRevision || replacement ? null : deliveryResponse,
     previousShipments: shipmentState?.shipments ?? [],
     canRequestAdditional: !isChecking && !isCreating && Boolean(shipmentState?.can_additional && shipmentState.revision),
     isAdditional: Boolean(additionalRevision),
