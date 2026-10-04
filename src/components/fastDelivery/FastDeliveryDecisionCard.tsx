@@ -50,7 +50,10 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
                 badgeType
               )}`}
               title={(decision?.checks || [])
-                .map((c) => `${c.ok ? "✔" : "✖"} ${c.label}`)
+                .map(
+                  (c) =>
+                    `${c.ok ? "✔" : "✖"} ${c.label}${c.detail ? ` — ${c.detail}` : ""}`
+                )
                 .join("\n")}
             >
               <span>{label}</span>

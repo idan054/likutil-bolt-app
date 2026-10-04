@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test:fast-delivery": "node --test tests/fastDeliveryDecision.test.mjs tests/productCategoriesService.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -23,6 +23,11 @@ export interface LineItem {
     sku: string;
     price: number;
     stock_quantity?: number;
+    categories?: Array<{
+      id?: number;
+      name: string;
+      slug?: string;
+    }>;
   };
   // meta_data?: Array<
   // {

@@ -15,7 +15,7 @@ export const useFastDeliveryRules = () => {
     try {
       const r = await getFastDeliveryRules(settings.storeUrl);
       setRules(r);
-    } catch (e: any) {
+    } catch {
       toast.error("שגיאה בטעינת כללי מהיר לי");
     } finally {
       setIsLoading(false);
@@ -27,7 +27,17 @@ export const useFastDeliveryRules = () => {
   }, [load]);
 
   const save = useCallback(
-    async (next: Pick<FastDeliveryRules, "cities" | "blockedKeywords" | "vipRoles">) => {
+    async (
+      next: Pick<
+        FastDeliveryRules,
+        | "cities"
+        | "blockedKeywords"
+        | "blockedProductIds"
+        | "blockedCategoryIds"
+        | "blockedPriceThreshold"
+        | "vipRoles"
+      >
+    ) => {
       if (!settings?.storeUrl) return;
       setIsLoading(true);
       try {
@@ -37,7 +47,7 @@ export const useFastDeliveryRules = () => {
         });
         setRules(updated);
         toast.success("הכללים נשמרו");
-      } catch (e: any) {
+      } catch {
         toast.error("שמירת כללים נכשלה");
       } finally {
         setIsLoading(false);

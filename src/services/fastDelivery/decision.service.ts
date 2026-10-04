@@ -25,6 +25,10 @@ export const getOrderDeliveryDecision = async (
     checks: Array.isArray(data.checks) ? data.checks : [],
     wooSyncError: !!data.wooSyncError,
     wooLastSyncAt: typeof data.wooLastSyncAt === "string" ? data.wooLastSyncAt : undefined,
+    rulesUpdatedAt:
+      typeof data.rulesUpdatedAt === "string" ? data.rulesUpdatedAt : undefined,
+    inputFingerprint:
+      typeof data.inputFingerprint === "string" ? data.inputFingerprint : undefined,
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : new Date().toISOString(),
   };
 };
@@ -50,6 +54,12 @@ export const upsertOrderDeliveryDecision = async (
 
   if (typeof decision.wooLastSyncAt === "string") {
     next.wooLastSyncAt = decision.wooLastSyncAt;
+  }
+  if (typeof decision.rulesUpdatedAt === "string") {
+    next.rulesUpdatedAt = decision.rulesUpdatedAt;
+  }
+  if (typeof decision.inputFingerprint === "string") {
+    next.inputFingerprint = decision.inputFingerprint;
   }
 
   await setDoc(

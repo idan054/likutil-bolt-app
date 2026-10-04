@@ -1,20 +1,76 @@
-import type { DeliveryCheck, DeliveryDecisionState, DeliveryType, FastDeliveryRules } from "../../types/fastDelivery";
-import type { OrderDetails, OrderSummary } from "../../types/order";
+import type {
+  DeliveryCheck,
+  DeliveryDecisionState,
+  DeliveryType,
+  FastDeliveryLineItem,
+  FastDeliveryRules,
+  OrderDeliveryDecision,
+} from "../../types/fastDelivery";
 import { normalizeForMatch } from "../../utils/storeKey";
 
-const containsAny = (haystack: string, needles: string[]) => {
-  const h = normalizeForMatch(haystack);
-  return needles.some((n) => {
-    const nn = normalizeForMatch(n);
-    return nn && h.includes(nn);
+const normalizeMatchText = (value: string | null | undefined) =>
+  normalizeForMatch((value || "").normalize("NFKC"))
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const containsKeyword = (value: string, keywords: string[]) => {
+  const normalizedValue = normalizeMatchText(value);
+  return keywords.find((keyword) => {
+    const normalizedKeyword = normalizeMatchText(keyword);
+    return normalizedKeyword && normalizedValue.includes(normalizedKeyword);
   });
+};
+
+const getCityCandidates = (city: string) => {
+  const candidates = new Set<string>();
+  const addCandidate = (value: string) => {
+    const normalized = normalizeMatchText(value);
+    if (normalized) candidates.add(normalized);
+  };
+
+  addCandidate(city);
+  city.split(/\s+[–—-]\s+|[,;]/u).forEach(addCandidate);
+  return candidates;
+};
+
+const getBlockedProduct = (
+  item: FastDeliveryLineItem,
+  rules: FastDeliveryRules
+) => {
+  if (item.productId && rules.blockedProductIds.includes(item.productId)) {
+    return `מזהה מוצר ${item.productId} מוגדר כחסום`;
+  }
+
+  const blockedCategory = item.categories.find((category) =>
+    category.id ? rules.blockedCategoryIds.includes(category.id) : false
+  );
+  if (blockedCategory) {
+    return `קטגוריה חסומה: ${blockedCategory.name}`;
+  }
+
+  // Configured category IDs are authoritative when category data is available.
+  // Otherwise use a conservative name + price fallback.
+  if (rules.blockedCategoryIds.length === 0 || !item.categoryDataComplete) {
+    const keyword = containsKeyword(item.name, rules.blockedKeywords);
+    const price = Number(item.unitPrice);
+    if (
+      keyword &&
+      Number.isFinite(price) &&
+      price >= rules.blockedPriceThreshold
+    ) {
+      return `שם המוצר תואם לכלל "${keyword}" ומחירו ${price.toLocaleString()} במטבע החנות`;
+    }
+  }
+
+  return null;
 };
 
 export interface DecideFastDeliveryInput {
   isVipMember?: boolean | null;
   customerRole?: string | null;
   city?: string | null;
-  lineItemNames: string[];
+  lineItems: FastDeliveryLineItem[];
   rules: FastDeliveryRules;
 }
 
@@ -24,32 +80,125 @@ export interface DecideFastDeliveryResult {
   checks: DeliveryCheck[];
 }
 
-export const decideFastDelivery = (input: DecideFastDeliveryInput): DecideFastDeliveryResult => {
+export const buildFastDeliveryInputFingerprint = (
+  input: Omit<DecideFastDeliveryInput, "rules">
+) => {
+  const items = input.lineItems
+    .map((item) => ({
+      productId: item.productId ?? null,
+      variationId: item.variationId ?? null,
+      sku: item.sku || "",
+      name: normalizeMatchText(item.name),
+      unitPrice: Number.isFinite(Number(item.unitPrice))
+        ? Number(item.unitPrice)
+        : null,
+      categoryDataComplete: item.categoryDataComplete,
+      categories: item.categories
+        .map((category) => ({
+          id: category.id ?? null,
+          name: normalizeMatchText(category.name),
+          slug: normalizeMatchText(category.slug),
+        }))
+        .sort((left, right) =>
+          `${left.id}:${left.name}:${left.slug}`.localeCompare(
+            `${right.id}:${right.name}:${right.slug}`
+          )
+        ),
+    }))
+    .sort((left, right) =>
+      `${left.productId}:${left.variationId}:${left.name}`.localeCompare(
+        `${right.productId}:${right.variationId}:${right.name}`
+      )
+    );
+
+  return JSON.stringify({
+    isVipMember:
+      typeof input.isVipMember === "boolean" ? input.isVipMember : null,
+    customerRole: (input.customerRole || "").trim(),
+    city: normalizeMatchText(input.city),
+    items,
+  });
+};
+
+export const shouldRecalculateAutomaticDecision = (input: {
+  existing: OrderDeliveryDecision | null;
+  rulesUpdatedAt: string;
+  inputFingerprint: string;
+}) => {
+  const { existing, rulesUpdatedAt, inputFingerprint } = input;
+  if (!existing) return true;
+  if (existing.override || existing.decisionState === "manual") return false;
+
+  return (
+    existing.rulesUpdatedAt !== rulesUpdatedAt ||
+    existing.inputFingerprint !== inputFingerprint
+  );
+};
+
+export const decideFastDelivery = (
+  input: DecideFastDeliveryInput
+): DecideFastDeliveryResult => {
   const role = (input.customerRole || "").trim();
   const city = (input.city || "").trim();
   const rules = input.rules;
 
   const hasVipFlag = typeof input.isVipMember === "boolean";
-  const isRoleKnown = !!role;
-  const isCityKnown = !!city;
+  const isRoleKnown = Boolean(role);
+  const isCityKnown = Boolean(city);
   const isVipKnown = hasVipFlag || isRoleKnown;
-  const isVip = hasVipFlag ? Boolean(input.isVipMember) : (role ? rules.vipRoles.includes(role) : false);
+  const isVip = hasVipFlag
+    ? Boolean(input.isVipMember)
+    : role
+      ? rules.vipRoles.includes(role)
+      : false;
 
-  const cityMatch = city ? rules.cities.map(normalizeForMatch).includes(normalizeForMatch(city)) : false;
+  const cityCandidates = getCityCandidates(city);
+  const matchedCity = rules.cities.find((ruleCity) =>
+    cityCandidates.has(normalizeMatchText(ruleCity))
+  );
+  const cityMatch = Boolean(matchedCity);
 
-  const hasBlockedItem = input.lineItemNames.some((name) => containsAny(name, rules.blockedKeywords));
+  let blockedItem: FastDeliveryLineItem | null = null;
+  let blockedReason: string | null = null;
+  for (const item of input.lineItems) {
+    const reason = getBlockedProduct(item, rules);
+    if (!reason) continue;
+    blockedItem = item;
+    blockedReason = reason;
+    break;
+  }
+
+  const categoryRulesActive = rules.blockedCategoryIds.length > 0;
+  const incompleteCategoryItem = categoryRulesActive
+    ? input.lineItems.find((item) => !item.categoryDataComplete)
+    : undefined;
 
   const checks: DeliveryCheck[] = [
     { label: "לקוח VIP", ok: isVip },
-    { label: "עיר זכאית מהיום להיום", ok: cityMatch },
-    { label: "אין מוצר חסום", ok: !hasBlockedItem },
+    {
+      label: "עיר זכאית מהיום להיום",
+      ok: cityMatch,
+      detail: cityMatch
+        ? `העיר התאימה לכלל "${matchedCity}"`
+        : city
+          ? `לא נמצאה התאמה עבור "${city}"`
+          : "עיר חסרה",
+    },
+    {
+      label: "אין מוצר חסום",
+      ok: !blockedItem,
+      detail:
+        blockedItem && blockedReason
+          ? `${blockedItem.name}: ${blockedReason}`
+          : undefined,
+    },
   ];
 
-  // Needs review if core data is missing
   const needsReview =
     !isVipKnown ||
     !isCityKnown ||
-    input.lineItemNames.length === 0;
+    input.lineItems.length === 0 ||
+    (!blockedItem && Boolean(incompleteCategoryItem));
 
   if (needsReview) {
     return {
@@ -57,12 +206,18 @@ export const decideFastDelivery = (input: DecideFastDeliveryInput): DecideFastDe
       decisionState: "needs_review",
       checks: [
         ...checks,
-        { label: "חסר מידע מלא (בדיקה ידנית)", ok: false },
+        {
+          label: "חסר מידע מלא (בדיקה ידנית)",
+          ok: false,
+          detail: incompleteCategoryItem
+            ? `לא ניתן לאמת קטגוריה עבור "${incompleteCategoryItem.name}"`
+            : undefined,
+        },
       ],
     };
   }
 
-  const eligible = isVip && cityMatch && !hasBlockedItem;
+  const eligible = isVip && cityMatch && !blockedItem;
 
   return {
     deliveryType: eligible ? "fast" : "regular",

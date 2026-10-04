@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import type { OrderDetails, OrderSummary } from "../types/order";
-import type { OrderDeliveryDecision, DeliveryType } from "../types/fastDelivery";
+import type {
+  FastDeliveryLineItem,
+  FastDeliveryProductCategory,
+  FastDeliveryRules,
+  OrderDeliveryDecision,
+  DeliveryType,
+} from "../types/fastDelivery";
 import { useSettings } from "./useSettings";
 import { useFastDeliveryRules } from "./useFastDeliveryRules";
 import { getOrderDeliveryDecision, upsertOrderDeliveryDecision } from "../services/fastDelivery/decision.service";
 import {
+  buildFastDeliveryInputFingerprint,
   decideFastDelivery,
+  shouldRecalculateAutomaticDecision,
   type DecideFastDeliveryResult,
 } from "../services/fastDelivery/decide";
+import { getProductCategoriesByIds } from "../services/fastDelivery/product-categories.service";
 import { getCustomerById } from "../services/customers/customers.service";
 import { createOrderNote } from "../services/orders/notes.service";
 import { hasSelectedFastShipping } from "../utils/shippingMethod";
@@ -19,6 +28,62 @@ const decisionListeners = new Map<
   Set<(decision: OrderDeliveryDecision | null) => void>
 >();
 const decisionCacheRevisions = new Map<string, number>();
+const automaticDecisionRequests = new Map<string, Promise<void>>();
+
+const buildDecisionLineItems = async (input: {
+  order: OrderDetails;
+  rules: FastDeliveryRules;
+  storeUrl: string;
+  platform: "woo" | "shopify" | undefined;
+}): Promise<FastDeliveryLineItem[]> => {
+  const { order, rules, storeUrl, platform } = input;
+  const categoryRulesActive = rules.blockedCategoryIds.length > 0;
+
+  const productIdsMissingCategories = categoryRulesActive
+    ? order.line_items
+        .filter((item) => !(item.product_data?.categories?.length))
+        .map((item) => Number(item.product_id))
+        .filter((productId) => Number.isInteger(productId) && productId > 0)
+    : [];
+
+  let categoriesByProductId = new Map<
+    number,
+    FastDeliveryProductCategory[] | null
+  >();
+  if (
+    categoryRulesActive &&
+    platform !== "shopify" &&
+    productIdsMissingCategories.length > 0
+  ) {
+    try {
+      categoriesByProductId = await getProductCategoriesByIds(
+        storeUrl,
+        productIdsMissingCategories
+      );
+    } catch (error) {
+      console.error("[FastDelivery] Product category lookup failed:", error);
+    }
+  }
+
+  return order.line_items.map((item) => {
+    const embeddedCategories = item.product_data?.categories ?? [];
+    const fetchedCategories = categoriesByProductId.get(Number(item.product_id));
+    const categories = embeddedCategories.length
+      ? embeddedCategories
+      : fetchedCategories ?? [];
+
+    return {
+      productId: Number(item.product_id) || undefined,
+      variationId: Number(item.variation_id) || undefined,
+      sku: item.sku || undefined,
+      name: item.name,
+      unitPrice: Number.isFinite(Number(item.price)) ? Number(item.price) : undefined,
+      categories,
+      categoryDataComplete:
+        !categoryRulesActive || embeddedCategories.length > 0 || categories.length > 0,
+    };
+  });
+};
 
 const publishDecision = (
   cacheKey: string,
@@ -132,7 +197,18 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
 
     setDecisionError(null);
     setIsLoading(true);
-    try {
+    const inFlightRequest = automaticDecisionRequests.get(cacheKey);
+    if (inFlightRequest) {
+      try {
+        await inFlightRequest;
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    const request = (async () => {
+      try {
       const existing = await getOrderDeliveryDecision(
         settings.storeUrl,
         Number(order.id)
@@ -141,38 +217,57 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         (order as OrderDetails).shipping_lines
       );
 
-      // Preserve intentional manual choices. Automatic/needs-review decisions
-      // may be repaired when WooCommerce already contains an explicit fast
-      // shipping service.
+      // Manual choices are always authoritative and are never recalculated.
       if (existing?.override || existing?.decisionState === "manual") {
         publishDecision(cacheKey, existing);
         return;
       }
 
-      const shouldRepairExisting = Boolean(
-        existing &&
-        hasExplicitFastShipping &&
-        (existing.deliveryType !== "fast" ||
-          existing.decisionState === "needs_review")
-      );
-
-      if (existing && !shouldRepairExisting) {
-        publishDecision(cacheKey, existing);
-        return;
-      }
-
-      if (!rules && !hasExplicitFastShipping) return;
-
       let res: DecideFastDeliveryResult;
+      let rulesUpdatedAt: string;
+      let inputFingerprint: string;
+
       if (hasExplicitFastShipping) {
+        rulesUpdatedAt = "woo-shipping-selection";
+        inputFingerprint = JSON.stringify(
+          (order as OrderDetails).shipping_lines.map((line) => ({
+            methodId: line.method_id,
+            methodTitle: line.method_title,
+            instanceId: line.instance_id ?? null,
+          }))
+        );
+
+        if (
+          !shouldRecalculateAutomaticDecision({
+            existing,
+            rulesUpdatedAt,
+            inputFingerprint,
+          })
+        ) {
+          publishDecision(cacheKey, existing);
+          return;
+        }
+
         res = {
           deliveryType: "fast" as const,
           decisionState: "auto" as const,
           checks: [
-            { label: "שיטת משלוח מהיר נקבעה בחנות", ok: true },
+            {
+              label: "שיטת משלוח מהיר נקבעה בחנות",
+              ok: true,
+              detail: (order as OrderDetails).shipping_lines
+                .map((line) => line.method_title)
+                .filter(Boolean)
+                .join(", "),
+            },
           ],
         };
       } else {
+        if (!rules) {
+          if (existing) publishDecision(cacheKey, existing);
+          return;
+        }
+
         // Prefer explicit VIP membership flag from order/customers API.
         let isVipMember: boolean | null =
           typeof (order as OrderDetails).is_vip_member === "boolean"
@@ -197,13 +292,35 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         }
 
         const city = (order as OrderDetails).shipping?.city || (order as OrderDetails).billing?.city || "";
-        const lineItemNames = (order as OrderDetails).line_items?.map((li) => li.name).filter(Boolean) ?? [];
+        const lineItems = await buildDecisionLineItems({
+          order: order as OrderDetails,
+          rules,
+          storeUrl: settings.storeUrl,
+          platform: settings.authType,
+        });
 
-        res = decideFastDelivery({
+        const decisionInput = {
           isVipMember,
           customerRole: role,
           city,
-          lineItemNames,
+          lineItems,
+        };
+        rulesUpdatedAt = rules.updatedAt;
+        inputFingerprint = buildFastDeliveryInputFingerprint(decisionInput);
+
+        if (
+          !shouldRecalculateAutomaticDecision({
+            existing,
+            rulesUpdatedAt,
+            inputFingerprint,
+          })
+        ) {
+          publishDecision(cacheKey, existing);
+          return;
+        }
+
+        res = decideFastDelivery({
+          ...decisionInput,
           rules: rules!,
         });
       }
@@ -217,6 +334,8 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         checks: res.checks,
         wooSyncError: false,
         wooLastSyncAt: undefined,
+        rulesUpdatedAt,
+        inputFingerprint,
       };
 
       const saved = await persist(toSave);
@@ -242,17 +361,26 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
           wooLastSyncAt: now,
         });
       }
-    } catch (e) {
-      console.error('[FastDelivery] autoDecideIfNeeded error:', e);
-      setDecisionError("שמירת סוג המשלוח נכשלה");
+      } catch (e) {
+        console.error('[FastDelivery] autoDecideIfNeeded error:', e);
+        setDecisionError("שמירת סוג המשלוח נכשלה");
+      }
+    })();
+
+    automaticDecisionRequests.set(cacheKey, request);
+    try {
+      await request;
     } finally {
+      if (automaticDecisionRequests.get(cacheKey) === request) {
+        automaticDecisionRequests.delete(cacheKey);
+      }
       setIsLoading(false);
     }
-  }, [settings?.storeUrl, rules, order, persist, trySyncWooNote, cacheKey]);
+  }, [settings?.storeUrl, settings?.authType, rules, order, persist, trySyncWooNote, cacheKey]);
 
   const manualOverride = useCallback(
     async (type: DeliveryType) => {
-      if (!settings?.storeUrl || !rules) return;
+      if (!settings?.storeUrl) return;
 
       // Need order details for note
       if (!("shipping" in order)) return;
@@ -269,6 +397,8 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
           checks: decision?.checks ?? [],
           wooSyncError: false,
           wooLastSyncAt: undefined,
+          rulesUpdatedAt: decision?.rulesUpdatedAt,
+          inputFingerprint: decision?.inputFingerprint,
         };
 
         const saved = await persist(next);
@@ -297,7 +427,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         setIsLoading(false);
       }
     },
-    [settings?.storeUrl, rules, order, decision?.checks, persist, trySyncWooNote]
+    [settings?.storeUrl, order, decision, persist, trySyncWooNote]
   );
 
   const retryWooSync = useCallback(async () => {
