@@ -14,12 +14,16 @@ import { title } from 'framer-motion/client';
 interface DeliveryCarouselProps {
   selectedProvider: string | null;
   onSelect: (provider: string) => void;
+  onAutoSelect?: (provider: string) => void;
+  isDisabled?: boolean;
   connectedProviders: Set<string>;
 }
 
 export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   selectedProvider,
   onSelect,
+  onAutoSelect,
+  isDisabled,
   connectedProviders,
 }) => {
   const { scrollRef, scrollLeft, scrollRight } = useHorizontalScroll(240);
@@ -31,9 +35,9 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   // Auto-select single company
   useEffect(() => {
     if (companies.length === 1 && !selectedProvider) {
-      onSelect(companies[0].provider as string);
+      (onAutoSelect ?? onSelect)(companies[0].provider as string);
     }
-  }, [companies, selectedProvider, onSelect]);
+  }, [companies, selectedProvider, onSelect, onAutoSelect]);
 
   if (isLoading) {
     return (
@@ -65,10 +69,6 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
     );
   }
 
-  // Don't show carousel if only one company
-  if (companies.length === 1) {
-    return null;
-  }
 
   // const sortedCompanies = sortCompaniesByConnection(companies, connectedProviders);
   const sortedCompanies = getConnectedCompanies(companies, connectedProviders);
@@ -106,6 +106,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
             name={integration.name}
             logoUrl={integration.logoUrl}
             isSelected={selectedProvider === integration.provider}
+            disabled={isDisabled}
             isConnected={connectedProviders.has(integration.provider)}
             onClick={() => onSelect(integration.provider as string)}
           />

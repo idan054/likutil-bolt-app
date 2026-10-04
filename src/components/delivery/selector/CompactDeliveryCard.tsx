@@ -8,6 +8,7 @@ interface CompactDeliveryCardProps {
   logoUrl: string;
   isSelected: boolean;
   isConnected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }
 
@@ -16,12 +17,17 @@ export const CompactDeliveryCard: React.FC<CompactDeliveryCardProps> = ({
   logoUrl,
   isSelected,
   isConnected,
+  disabled,
   onClick,
 }) => (
-  <div
+  <button
+    type="button"
+    aria-label={`משלוחים ב${name}`}
+    aria-pressed={isSelected}
+    disabled={disabled}
     onClick={onClick}
     className={`
-      relative flex flex-col items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 min-w-[120px] max-w-[120px]
+      relative flex flex-col items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-wait min-w-[120px] max-w-[120px]
       ${isSelected 
         ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-white shadow-lg' 
         : isConnected
@@ -54,5 +60,5 @@ export const CompactDeliveryCard: React.FC<CompactDeliveryCardProps> = ({
     ) : (
       <span className="text-xs text-blue-600 mt-1 font-medium">נבחר</span>
     )}
-  </div>
+  </button>
 );

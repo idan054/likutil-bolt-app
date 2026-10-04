@@ -13,7 +13,9 @@ interface ActionButtonsProps {
   deliveryResponse: DeliveryTaskResponse | null;
   isCreating: boolean;
   isCreationBlocked?: boolean;
-  replacementLabel?: string;
+  createLabel: string;
+  isAdditional: boolean;
+  onCancelAdditional: () => void;
   isCompleting: boolean;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   onComplete: () => Promise<void>;
@@ -28,7 +30,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   deliveryResponse,
   isCreating,
   isCreationBlocked,
-  replacementLabel,
+  createLabel, isAdditional, onCancelAdditional,
   isCompleting,
   onCreateDelivery,
   onComplete,
@@ -54,18 +56,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreating ? <Loader2 className="animate-spin" size={20} /> : <Rocket size={20} />}
-            <span>{isCreating && replacementLabel ? 'מאמת ביטול ומפיק משלוח…' : replacementLabel || 'שגר משלוח בטיל!'}</span>
+            <span>{isCreating ? 'מפיק משלוח…' : createLabel}</span>
           </button>
-          {reprintUrl && !isCreating && !replacementLabel && (
-            <a
-              href={reprintUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-center text-sm font-semibold text-blue-700 underline underline-offset-2"
-            >
-              כבר הוקם משלוח? הדפס מדבקה שוב
-            </a>
-          )}
+          {isAdditional && <div className="text-center text-sm text-slate-600">
+            המשלוחים הקיימים יישארו פעילים.
+            <button onClick={onCancelAdditional} disabled={isCreating} className="mr-2 font-semibold text-blue-700 underline">חזרה למשלוחים הקיימים</button>
+          </div>}
         </div>
       ) : (
         <>

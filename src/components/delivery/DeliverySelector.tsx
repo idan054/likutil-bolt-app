@@ -11,6 +11,7 @@ import { Ban, CheckCheck, CheckCircle, Loader2, Tag, Tags } from 'lucide-react';
 import { updateOrderStatus } from '../../services/orders/orders.service';
 import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
 import { OrderDetails } from '../../types/order';
+import { ShipmentActionsDialog } from './ShipmentActionsDialog';
 
 
 interface DeliverySelectorProps {
@@ -21,7 +22,15 @@ interface DeliverySelectorProps {
   isLocalPickup?: boolean;
   isCreating: boolean;
   isCreationBlocked?: boolean;
-  replacementLabel?: string;
+  shipments: DeliveryTaskResponse[];
+  isChecking: boolean;
+  shipmentMessage: string;
+  canRequestAdditional: boolean;
+  isAdditional: boolean;
+  onRequestAdditional: () => void;
+  onCancelAdditional: () => void;
+  onCancelShipment: (shipment: DeliveryTaskResponse) => Promise<boolean>;
+  onCheckShipment: () => void;
   onCreateDelivery: (packNum: string, deliveryType: string) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
@@ -38,7 +47,8 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   isLocalPickup,
   isCreating,
   isCreationBlocked,
-  replacementLabel,
+  shipments, isChecking, shipmentMessage, canRequestAdditional, isAdditional,
+  onRequestAdditional, onCancelAdditional, onCancelShipment, onCheckShipment,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
@@ -50,7 +60,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
 
   const { customer, isLoading: isLoadingCustomer } = useCustomerDetails(customerId);
   const { companies } = useDeliveryCompanies();
-  const [selectedStatus, setSelectedStatus] = React.useState('');
+  const [actionsProvider, setActionsProvider] = React.useState<string | null>(null);
   const { integrations, savedData } = useDeliveryIntegrations();
   
   // Create a set of connected provider IDs
@@ -66,8 +76,16 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
     integration => integration.provider === displayedProvider
   ) ?? integrations.find(integration => integration.provider === selectedProvider);
   const selectProvider = React.useCallback((provider: string) => {
-    if (!isCreating) onSelect(provider);
-  }, [isCreating, onSelect]);
+    if (isCreating) return;
+    onSelect(provider);
+    setActionsProvider(provider);
+    onCheckShipment();
+  }, [isCreating, onSelect, onCheckShipment]);
+  const companyShipments = shipments.filter(shipment => shipment.provider === actionsProvider && !shipment.cancelled);
+  const actionsCompany = integrations.find(integration => integration.provider === actionsProvider);
+  React.useEffect(() => {
+    if (!isChecking && !shipmentMessage && companyShipments.length === 0) setActionsProvider(null);
+  }, [isChecking, shipmentMessage, companyShipments.length]);
 
 
   return (
@@ -89,8 +107,22 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
       <DeliveryCarousel
         selectedProvider={displayedProvider}
         onSelect={selectProvider}
+        onAutoSelect={onSelect}
+        isDisabled={isCreating}
         connectedProviders={connectedProviders}
       />
+
+      {actionsProvider && actionsCompany && <ShipmentActionsDialog
+        key={`actions:${order.id}:${actionsProvider}`} order={order} companyName={actionsCompany.name}
+        shipments={companyShipments} isChecking={isChecking} isBusy={isCreating}
+        message={shipmentMessage} canRequestAdditional={canRequestAdditional}
+        onAdditional={() => { onRequestAdditional(); setActionsProvider(null); }}
+        onCancelShipment={onCancelShipment} onCheck={onCheckShipment} onClose={() => setActionsProvider(null)}
+      />}
+      {!actionsProvider && (isChecking || shipmentMessage) && <div role="status" className="my-3 rounded-lg bg-slate-50 p-3 text-sm">
+        {isChecking ? 'בודק מצב משלוחים…' : shipmentMessage}
+        {!isChecking && <button onClick={onCheckShipment} disabled={isCreating} className="mr-2 font-semibold text-blue-700 underline">בדוק מצב משלוח</button>}
+      </div>}
 
       {selectedIntegration && (
         <DeliveryCompanyInfo
@@ -100,7 +132,12 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
           apiKey={savedData[selectedIntegration.provider]?.key}
           isCreating={isCreating}
           isCreationBlocked={isCreationBlocked}
-          replacementLabel={replacementLabel}
+          createLabel={`${isAdditional ? 'הזמן משלוח נוסף' : 'הפק משלוח'} ב${selectedIntegration.name}`}
+          isAdditional={isAdditional}
+          onCancelAdditional={() => {
+            onCancelAdditional();
+            if (selectedProvider) selectProvider(selectedProvider);
+          }}
           onCreateDelivery={onCreateDelivery}
           deliveryResponse={deliveryResponse}
           onComplete={onComplete}

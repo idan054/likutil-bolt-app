@@ -40,6 +40,8 @@ export interface DeliveryTaskResponse {
   track_number: string;
   package_count?: string;
   cancelled?: boolean;
+  can_cancel?: boolean;
+  status_checked?: boolean;
   error_text?: string;
 
   // Mahir Li (Lionwheel) task fields returned by the create-delivery API.
@@ -57,7 +59,7 @@ export interface ShipmentState {
   can_additional?: boolean;
   can_replace?: boolean;
   shipments?: DeliveryTaskResponse[];
-  state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected';
+  state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected' | 'cancelling';
   blocked: boolean;
   message: string;
   response: DeliveryTaskResponse | null;

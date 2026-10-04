@@ -40,6 +40,27 @@ export const getShipmentState = async (orderId: string, userId: string): Promise
   return data;
 };
 
+export const cancelDeliveryShipment = async (
+  orderId: string, userId: string, shipment: DeliveryTaskResponse, revision: string
+): Promise<ShipmentState> => {
+  const query = new URLSearchParams({orderId, userId, provider: shipment.provider,
+    trackNumber: String(shipment.track_number), revision});
+  const response = await fetch(`${BASE_URL}/api/cancel-delivery?${query}`, {
+    method: 'POST', headers: await authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    if (data.detail && typeof data.detail === 'object' && data.detail.blocked) {
+      throw new ShipmentBlockedError(data.detail);
+    }
+    throw new Error(typeof data.detail === 'string' ? data.detail : 'לא התקבל אישור ביטול. יש לבדוק מצב משלוח.');
+  }
+  if (typeof data.blocked !== 'boolean' || !Array.isArray(data.shipments)) {
+    throw new Error('לא התקבל אישור ביטול תקין. יש לבדוק מצב משלוח.');
+  }
+  return data;
+};
+
 export const createDeliveryTask = async (
   request: DeliveryTaskRequest,
   params: DeliveryRequestParams

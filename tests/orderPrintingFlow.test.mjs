@@ -34,9 +34,9 @@ const settle = async (predicate) => {
   }
 };
 const button = (text) => renderer.root.findAllByType("button").find((node) =>
-  node.findAllByType("span").some(({ children }) => children.includes(text)) || node.props.children === text);
+  node.findAll(node=>node.type==="span" || node.type==="strong").some(({ children }) => children.filter(child=>typeof child==='string').join('') === text) || node.props.children === text);
 const labelLinks = () => renderer.root.findAllByType("a").filter((node) =>
-  node.findAllByType("span").some(({ children }) => children.includes("הדפסת מדבקה")));
+  node.findAll(node=>node.type==="span" || node.type==="strong").some(({ children }) => children.includes("הדפסת מדבקה")));
 
 before(async () => {
   globalThis.window = new EventTarget();
@@ -144,7 +144,7 @@ const mount = async (currentOrder = order) => {
   await act(async () => { await new Promise(resolve=>setTimeout(resolve,20)); });
 };
 const ship = async () => {
-  await act(async () => button("שגר משלוח בטיל!").props.onClick());
+  await act(async () => button("הפק משלוח בCarrier").props.onClick());
   await settle(() => labelLinks().length === 1 && !button("סיום").props.disabled);
 };
 const changeStatus = async (label = 'Packed') => {
@@ -181,14 +181,14 @@ test("slow delivery reserves its label window immediately and repeated clicks se
   await mount();
   let pending;
   await act(async () => {
-    const click = button("שגר משלוח בטיל!").props.onClick;
+    const click = button("הפק משלוח בCarrier").props.onClick;
     pending = click();
     click();
     assert.equal(tabs.length, 1);
     assert.equal(tabs[0].url, undefined);
   });
   await settle(() => Boolean(finish));
-  assert.equal(button("שגר משלוח בטיל!").props.disabled, true);
+  assert.equal(button("מפיק משלוח…").props.disabled, true);
   assert.equal(resets, 0);
   await act(async () => { finish(); await pending; });
   await settle(() => Boolean(tabs[0].url));
@@ -228,7 +228,7 @@ test("a failed finish preserves the created shipment for printing and retrying c
   assert.equal(resets, 0);
   assert.equal(completions, 0);
   assert.equal(labelLinks().length, 1);
-  assert.equal(button("שגר משלוח בטיל!"), undefined);
+  assert.equal(button("הפק משלוח בCarrier"), undefined);
   respond = (_request, response) => json(response, { ...order, status: 's3-packed' });
   await act(async () => button("סיום").props.onClick());
   assert.equal(resets, 1);
@@ -240,8 +240,8 @@ test("delivery failure closes only the reserved window and leaves the order open
   respond = (request, response) => request.method === 'GET'
     ? json(response, order) : json(response, {message:'unavailable'}, 503);
   await mount();
-  await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
+  await act(async () => button("הפק משלוח בCarrier").props.onClick());
+  await settle(() => tabs[0]?.closed && button("הפק משלוח בCarrier").props.disabled);
   assert.equal(resets, 0);
   assert.equal(labelLinks().length, 0);
   assert.equal(requests.length, 3);
@@ -250,8 +250,8 @@ test("delivery failure closes only the reserved window and leaves the order open
 test("an old open order cannot create a shipment after approval was revoked", async () => {
   respond = (_request, response) => json(response, {...order,status:'rfq-sent'});
   await mount();
-  await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
+  await act(async () => button("הפק משלוח בCarrier").props.onClick());
+  await settle(() => tabs[0]?.closed && button("הפק משלוח בCarrier").props.disabled);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].method, 'GET');
   assert.equal(labelLinks().length, 0);
@@ -268,8 +268,8 @@ test("putting an order on hold closes the picking view even when company documen
 test("an approval read failure sends no request to the carrier", async () => {
   respond = (_request, response) => json(response, {message:'unavailable'}, 503);
   await mount();
-  await act(async () => button("שגר משלוח בטיל!").props.onClick());
-  await settle(() => tabs[0]?.closed && button("שגר משלוח בטיל!").props.disabled);
+  await act(async () => button("הפק משלוח בCarrier").props.onClick());
+  await settle(() => tabs[0]?.closed && button("הפק משלוח בCarrier").props.disabled);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].method, 'GET');
 });
@@ -299,13 +299,14 @@ test("refresh recovers a confirmed shipment and retries only its status update",
   };
   await mount(); await ship();
   assert.equal(resets,0);
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'created',blocked:true,message:'',response:{...delivery,provider:'mahirLi'},shipments:[{...delivery,provider:'mahirLi'}]});
   const prior = requests.length;
   await act(async () => renderer.unmount());
   respond = (_request,response,body)=>json(response,{...order,status:body?.status ?? order.status});
   await mount();
   await settle(()=>completions===1);
   assert.equal(resets,0,'The restored print link must remain available');
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  assert.equal(button('הפק משלוח בCarrier'),undefined);
   assert.equal(labelLinks().length,1);
   assert.equal(requests.slice(prior).some(({url})=>url.startsWith('/api/create-delivery')),false);
   assert.deepEqual(requests.slice(prior).filter(({body})=>body?.status).map(({body})=>body.status),['s3-packed']);
@@ -317,7 +318,7 @@ test("a saved shipment cannot be reused for the same order number in another sto
   fixture.storeUrl='another.invalid';
   const prior=requests.length;
   await mount();
-  assert.ok(button('שגר משלוח בטיל!'));
+  assert.ok(button('הפק משלוח בCarrier'));
   assert.equal(labelLinks().length,0);
   assert.equal(requests.length,prior+1);
 });
@@ -376,17 +377,13 @@ test("switching stores during shipment status validation cannot write to the new
   assert.equal(renderer.root.findAllByProps({role:'alert'}).length,1);
 });
 
-test('another browser restores the existing carrier label and cannot create a second shipment', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,{state:'created',blocked:true,message:'כבר קיים משלוח',
-    response:{...delivery,provider:'negevExpress',package_count:'3'}});
-  await mount();
-  await settle(()=>completions===1 && labelLinks().length===1);
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
-  const url=new URL(labelLinks()[0].props.href);
-  assert.equal(url.searchParams.get('c'),'negev','The label belongs to the stored carrier, even when another is selected');
-  assert.equal(url.searchParams.get('n'),'3');
+test('a shipment from another carrier never supplies the selected carrier label', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'created',blocked:true,message:'',revision:'v1',can_additional:true,
+    response:{...delivery,provider:'negevExpress',package_count:'3'},shipments:[{...delivery,provider:'negevExpress',package_count:'3'}]});
+  await mount();await settle(()=>completions===1);
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,false);
+  assert.equal(labelLinks().length,0);
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
-  assert.equal(requests.find(({url})=>url.startsWith('/api/delivery-status')).headers.authorization,'Bearer test-token');
 });
 
 test('server rejects a race after preflight and returns the existing label without a retry', async () => {
@@ -394,31 +391,31 @@ test('server rejects a race after preflight and returns the existing label witho
     ? json(response,{detail:{state:'created',blocked:true,message:'כבר קיים משלוח',response:{...delivery,provider:'mahirLi'}}},409)
     : json(response,{...order,status:body?.status ?? order.status});
   await mount();
-  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  await act(async()=>button('הפק משלוח בCarrier').props.onClick());
   await settle(()=>labelLinks().length===1 && completions===1);
   assert.equal(tabs[0].closed,true);
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
+  assert.equal(button('הפק משלוח בCarrier'),undefined);
   assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
 });
 
 test('an uncertain carrier result remains blocked after refresh with no browser storage', async () => {
   fixture.shipmentStatus=(_request,response)=>json(response,{state:'uncertain',blocked:true,message:'יש לבדוק עם המשרד',response:null});
   await mount();
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
-  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
+  await act(async()=>button('הפק משלוח בCarrier').props.onClick());
   await act(async()=>renderer.unmount()); savedResponses.clear();
   await mount();
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
 });
 
 test('a failed shipment check blocks creation and its retry only checks the server', async () => {
   fixture.shipmentStatus=(_request,response)=>json(response,{detail:'לא ניתן לבדוק משלוח'},503);
   await mount();
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
   fixture.shipmentStatus=null;
   await act(async()=>button('בדוק מצב משלוח').props.onClick());
-  await settle(()=>!button('שגר משלוח בטיל!').props.disabled);
+  await settle(()=>!button('הפק משלוח בCarrier').props.disabled);
   assert.equal(requests.length,2);
   assert.equal(requests.every(({method,url})=>method==='GET' && url.startsWith('/api/delivery-status')),true);
 });
@@ -427,158 +424,137 @@ test('creation stays disabled while the server checks for an existing shipment',
   let finish;
   fixture.shipmentStatus=(_request,response)=>{finish=()=>json(response,{state:'none',blocked:false,message:'',response:null});};
   await mount();
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
-  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
+  await act(async()=>button('הפק משלוח בCarrier').props.onClick());
   assert.equal(tabs.length,0);
   await act(async()=>finish());
-  await settle(()=>!button('שגר משלוח בטיל!').props.disabled);
+  await settle(()=>!button('הפק משלוח בCarrier').props.disabled);
 });
 
 test('corrupt browser cache does not bypass or break the server shipment check', async () => {
   savedResponses.set(JSON.stringify(['shipment-result','test-user','woo','test.invalid',undefined,1]),'{broken');
   await mount();
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,false);
+  assert.equal(button('הפק משלוח בCarrier').props.disabled,false);
   assert.equal(requests.length,1);
 });
 
-const confirmedShipment = (revision = 'first') => ({state:'created',blocked:true,message:'כבר הוזמן משלוח. האם להזמין נוסף?',
-  revision,can_additional:true,response:{...delivery,provider:'mahirLi'},shipments:[{...delivery,provider:'mahirLi'}]});
+const confirmedShipment = (revision = 'first', shipments = [{...delivery,provider:'mahirLi',can_cancel:true,status_checked:true}]) => ({
+  state:'created',blocked:true,message:'',revision,can_additional:true,response:shipments.at(-1),shipments});
+const carousel = () => renderer.root.find(node=>node.type?.name==='DeliveryCarousel');
+const openActions = async (provider='mahirLi') => {
+  await settle(()=>!renderer.root.find(node=>node.type?.name==='DeliverySelector').props.isCreating);
+  await act(async()=>carousel().props.onSelect(provider));
+  await settle(()=>button('הזמנת משלוח נוסף בCarrier')?.props.disabled === false);
+};
 
-test('switching carrier offers explicit cancel-and-create, preserves old reprint and sends one replacement', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,{...confirmedShipment(),can_replace:true});
-  await mount(); await settle(()=>completions===1);
-  const carousel=()=>renderer.root.find(node=>node.type?.name==='DeliveryCarousel');
-  await act(async()=>carousel().props.onSelect('negevExpress'));
-  assert.equal(carousel().props.selectedProvider,'negevExpress');
-  assert.ok(button('כן, בטל והפק בCarrier'));
+test('no banner or automatic dialog; clicking the same carrier opens all three actions', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();await settle(()=>completions===1);
+  assert.equal(renderer.root.findAllByType('dialog').length,0);
+  assert.equal(button('הזמן משלוח נוסף'),undefined);
+  await openActions();
+  assert.ok(button('הזמנת משלוח נוסף בCarrier'));
+  assert.ok(button('ביטול המשלוח שהוזמן'));
   assert.ok(renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier'));
-  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')||url.startsWith('/api/cancel-delivery')),false);
+});
+
+test('additional shipment requires explicit choice and uses the clicked carrier', async () => {
+  const negev={...delivery,provider:'negevExpress',can_cancel:true,status_checked:true};
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[negev]));
+  await mount();await openActions('negevExpress');
+  await act(async()=>button('הזמנת משלוח נוסף בCarrier').props.onClick());
+  assert.equal(renderer.root.findAllByType('dialog').length,0);
+  assert.ok(button('הזמן משלוח נוסף בCarrier'));
   let finish;
   respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
     ? finish=()=>json(response,{...delivery,provider:'negevExpress',track_number:'5678'})
     : json(response,{...order,status:body?.status ?? 's3-packed'});
   let pending;
-  await act(async()=>{const click=button('כן, בטל והפק בCarrier').props.onClick;pending=click();click();});
+  await act(async()=>{const click=button('הזמן משלוח נוסף בCarrier').props.onClick;pending=click();click();});
   await settle(()=>Boolean(finish));
-  assert.equal(button('מאמת ביטול ומפיק משלוח…').props.disabled,true);
-  await act(async()=>carousel().props.onSelect('mahirLi'));
-  assert.equal(carousel().props.selectedProvider,'negevExpress');
   await act(async()=>{finish();await pending;});
-  const creates=requests.filter(({url})=>url.startsWith('/api/create-delivery'));
-  assert.equal(creates.length,1);
-  const query=new URL(creates[0].url,fixture.baseUrl).searchParams;
-  assert.equal(query.get('replacementShipmentRevision'),'first');
-  assert.equal(query.has('additionalShipmentRevision'),false);
-  assert.equal(new URL(labelLinks()[0].props.href).searchParams.get('d'),'5678');
-  assert.ok(renderer.root.findAllByType('span').find(node=>node.children.join('').includes('1234 בCarrier בוטל')));
+  const sent=requests.filter(({url})=>url.startsWith('/api/create-delivery'));
+  assert.equal(sent.length,1);
+  const query=new URL(sent[0].url,fixture.baseUrl).searchParams;
+  assert.equal(query.get('provider'),'negevExpress');assert.equal(query.get('additionalShipmentRevision'),'v1');
+  assert.equal(query.has('replacementShipmentRevision'),false);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/cancel-delivery')),false);
 });
 
-test('carrier-confirmed cancellation overrides browser cache and offers creation without reprinting cancelled label', async () => {
-  savedResponses.set(JSON.stringify(['shipment-result','test-user','woo','test.invalid',undefined,1]),JSON.stringify({...delivery,provider:'mahirLi'}));
-  const state={...confirmedShipment(),can_replace:true};
-  state.response={...state.response,cancelled:true};state.shipments=[state.response];
+test('cancellation targets the selected older shipment and never creates a new one', async () => {
+  let state=confirmedShipment('v1',[{...delivery,provider:'mahirLi',can_cancel:true,status_checked:true},
+    {...delivery,provider:'mahirLi',track_number:'5678',can_cancel:true,status_checked:true},
+    {...delivery,provider:'negevExpress',track_number:'9000',can_cancel:true,status_checked:true}]);
   fixture.shipmentStatus=(_request,response)=>json(response,state);
-  await mount();await settle(()=>Boolean(button('כן, הפק בCarrier')));
-  assert.equal(completions,0,'A cancelled shipment must not mark the order packed');
-  assert.equal(labelLinks().length,0);
-  assert.equal(button('כן, הפק בCarrier').props.disabled,false);
-  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
-  await act(async()=>renderer.unmount());await mount();
-  assert.ok(button('כן, הפק בCarrier'));
-});
-
-test('failed cancellation preserves alternatives and never retries creation automatically', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,{...confirmedShipment(),can_replace:true});
-  await mount();await settle(()=>completions===1);
-  await act(async()=>renderer.root.find(node=>node.type?.name==='DeliveryCarousel').props.onSelect('negevExpress'));
-  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
-    ? json(response,{detail:{...confirmedShipment('new-revision'),can_replace:true,message:'הביטול לא אושר'}},409)
-    : json(response,{...order,status:body?.status ?? 's3-packed'});
-  await act(async()=>button('כן, בטל והפק בCarrier').props.onClick());
-  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
-  assert.ok(button('הזמן משלוח נוסף'));
-  assert.ok(button('כן, בטל והפק בCarrier'));
-  assert.equal(tabs[0].closed,true);
-  assert.ok(fixture.messages.includes('הביטול לא אושר'));
-});
-
-test('additional shipment needs explicit choice, preserves reprint, and sends confirmation once', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
-  await mount(); await settle(()=>Boolean(button('הזמן משלוח נוסף')));
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
-  const reprint=()=>renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier');
-  const original=reprint().props.href;
-  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,false);
-  assert.equal(reprint().props.href,original);
-  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
-  await act(async()=>button('ביטול משלוח נוסף').props.onClick());
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
-  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
+  await mount();await openActions();
+  const select=renderer.root.findByProps({'aria-label':'בחירת משלוח'});
+  await act(async()=>select.props.onChange({target:{value:'1234'}}));
+  await act(async()=>button('ביטול המשלוח שהוזמן').props.onClick());
+  assert.ok(button('כן, בטל את המשלוח'));
+  assert.equal(requests.some(({url})=>url.startsWith('/api/cancel-delivery')),false);
   let finish;
-  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
-    ? finish=()=>json(response,{...delivery,provider:'mahirLi',track_number:'5678'})
+  respond=(request,response,body)=>request.url.startsWith('/api/cancel-delivery')
+    ? finish=()=>{state=confirmedShipment('v2',state.shipments.map(s=>s.track_number==='1234'?{...s,cancelled:true}:s));json(response,state);}
     : json(response,{...order,status:body?.status ?? 's3-packed'});
-  let pending;
-  await act(async()=>{const click=button('שגר משלוח בטיל!').props.onClick;pending=click();click();});
+  await act(async()=>{const click=button('כן, בטל את המשלוח').props.onClick;click();click();});
   await settle(()=>Boolean(finish));
-  assert.equal(button('ביטול משלוח נוסף').props.disabled,true);
-  await act(async()=>{finish();await pending;});
-  const creates=requests.filter(({url})=>url.startsWith('/api/create-delivery'));
-  assert.equal(creates.length,1);
-  assert.equal(new URL(creates[0].url,fixture.baseUrl).searchParams.get('additionalShipmentRevision'),'first');
-  assert.equal(button('הזמן משלוח נוסף'),undefined,'A fresh server revision is required for another send');
-  const history=renderer.root.findAllByType('a').filter(node=>String(node.props.children).startsWith('הדפס מדבקה ב'));
-  assert.equal(history.length,2);
-  assert.equal(new URL(history[0].props.href).searchParams.get('d'),'1234');
-  assert.equal(new URL(history[1].props.href).searchParams.get('d'),'5678');
-});
-
-test('refresh discards unsent additional confirmation and stale confirmation recovers the newer label', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
-  await mount();
-  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
-  await act(async()=>renderer.unmount());
-  await mount();
-  assert.equal(button('שגר משלוח בטיל!'),undefined);
-  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
-  respond=(request,response)=>request.url.startsWith('/api/create-delivery')
-    ? json(response,{detail:{...confirmedShipment('second'),response:{...delivery,provider:'mahirLi',track_number:'5678'}}},409)
-    : json(response,{...order,status:'s3-packed'});
-  await act(async()=>button('שגר משלוח בטיל!').props.onClick());
-  await settle(()=>Boolean(button('הזמן משלוח נוסף')) && !button('שגר משלוח בטיל!'));
-  assert.equal(new URL(labelLinks()[0].props.href).searchParams.get('d'),'5678');
-  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
-});
-
-test('uncertain additional shipment retains previous labels without offering another shipment', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,{...confirmedShipment(),state:'uncertain',response:null,can_additional:false});
-  await mount();
-  assert.equal(button('הזמן משלוח נוסף'),undefined);
-  assert.equal(button('שגר משלוח בטיל!').props.disabled,true);
-  assert.ok(renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier'));
-});
-
-
-test('carrier selection stays available while creation still requires explicit additional choice', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
-  await mount();
-  const carousel=()=>renderer.root.find(node=>node.type?.name==='DeliveryCarousel');
-  await act(async()=>carousel().props.onSelect('negevExpress'));
-  assert.equal(carousel().props.selectedProvider,'negevExpress');
+  assert.equal(button('מבטל ומוודא…').props.disabled,true);
+  await act(async()=>finish());await settle(()=>renderer.root.findAllByType('dialog').length===0);
+  const cancelled=requests.filter(({url})=>url.startsWith('/api/cancel-delivery'));
+  assert.equal(cancelled.length,1);
+  const query=new URL(cancelled[0].url,fixture.baseUrl).searchParams;
+  assert.equal(query.get('provider'),'mahirLi');assert.equal(query.get('trackNumber'),'1234');assert.equal(query.get('revision'),'v1');
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
-  await act(async()=>button('הזמן משלוח נוסף').props.onClick());
-  await act(async()=>carousel().props.onSelect('negevExpress'));
-  assert.equal(carousel().props.selectedProvider,'negevExpress');
-  respond=(request,response,body)=>request.url.startsWith('/api/create-delivery')
-    ? json(response,{...delivery,provider:'negevExpress',track_number:'5678'})
-    : json(response,{...order,status:body?.status ?? 's3-packed'});
+  await openActions();
+  assert.equal(renderer.root.findAllByType('select').length,0,'Only one uncancelled Mahir shipment remains');
+  const reprint=renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier');
+  assert.equal(new URL(reprint.props.href).searchParams.get('d'),'5678');
+  await act(async()=>renderer.unmount());await mount();await openActions();
+  assert.equal(renderer.root.findAllByType('select').length,0,'Cancellation survives reload');
+});
+
+test('a cancelled shipment opens normal creation without reprinting its label', async () => {
+  const cancelled={...delivery,provider:'mahirLi',cancelled:true,status_checked:true};
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[cancelled]));
+  await mount();
+  await act(async()=>carousel().props.onSelect('mahirLi'));
+  await settle(()=>renderer.root.findAllByType('dialog').length===0 && !button('הפק משלוח בCarrier').props.disabled);
+  assert.equal(labelLinks().length,0);assert.equal(completions,0);
   await ship();
-  const sent=requests.find(({url})=>url.startsWith('/api/create-delivery'));
-  assert.equal(new URL(sent.url,fixture.baseUrl).searchParams.get('provider'),'negevExpress');
-  assert.equal(new URL(tabs[0].url).searchParams.get('c'),'negev');
-  const old=renderer.root.findAllByType('a').find(node=>String(node.props.children)==='הדפס מדבקה בCarrier — 1234');
-  assert.equal(new URL(old.props.href).searchParams.get('c'),'mahirli');
-  assert.equal(new URL(old.props.href).searchParams.get('reprint'),'1');
-  assert.equal(new URL(tabs[0].url).searchParams.has('reprint'),false);
+  const query=new URL(requests.find(({url})=>url.startsWith('/api/create-delivery')).url,fixture.baseUrl).searchParams;
+  assert.equal(query.get('additionalShipmentRevision'),'v1');assert.equal(query.has('replacementShipmentRevision'),false);
+});
+
+test('another carrier with no active shipment opens normal creation without cancelling the first', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();await act(async()=>carousel().props.onSelect('negevExpress'));
+  await settle(()=>renderer.root.findAllByType('dialog').length===0 && Boolean(button('הפק משלוח בCarrier')) && !button('הפק משלוח בCarrier').props.disabled);
+  assert.equal(labelLinks().length,0);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/cancel-delivery')),false);
+});
+
+test('cancellation failure keeps the dialog recoverable and never reports success', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();await openActions();
+  respond=(request,response,body)=>request.url.startsWith('/api/cancel-delivery')
+    ? json(response,{detail:'הביטול לא אושר'},503) : json(response,{...order,status:body?.status??'s3-packed'});
+  await act(async()=>button('ביטול המשלוח שהוזמן').props.onClick());
+  await act(async()=>button('כן, בטל את המשלוח').props.onClick());
+  await settle(()=>Boolean(button('הזמנת משלוח נוסף בCarrier')));
+  assert.equal(renderer.root.findAllByType('dialog').length,1);
+  assert.equal(fixture.messages.some(message=>message.includes('המשלוח בוטל')),false);
+  assert.equal(requests.filter(({url})=>url.startsWith('/api/cancel-delivery')).length,1);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+});
+
+test('unknown carrier status prevents stale reprint and refresh clears an unsent additional choice', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[{...delivery,provider:'mahirLi',status_checked:false,can_cancel:true}]));
+  await mount();await openActions();
+  assert.equal(renderer.root.findByType('dialog').findAllByType('a').length,0);
+  await act(async()=>button('הזמנת משלוח נוסף בCarrier').props.onClick());
+  assert.ok(button('הזמן משלוח נוסף בCarrier'));
+  await act(async()=>renderer.unmount());await mount();
+  assert.equal(button('הזמן משלוח נוסף בCarrier'),undefined);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
 });
