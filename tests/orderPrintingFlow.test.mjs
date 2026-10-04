@@ -444,7 +444,7 @@ const carousel = () => renderer.root.find(node=>node.type?.name==='DeliveryCarou
 const openActions = async (provider='mahirLi') => {
   await settle(()=>!renderer.root.find(node=>node.type?.name==='DeliverySelector').props.isCreating);
   await act(async()=>carousel().props.onSelect(provider));
-  await settle(()=>button('הזמנת משלוח נוסף בCarrier')?.props.disabled === false);
+  await settle(()=>button('משלוח נוסף')?.props.disabled === false);
 };
 
 test('no banner or automatic dialog; clicking the same carrier opens all three actions', async () => {
@@ -453,9 +453,9 @@ test('no banner or automatic dialog; clicking the same carrier opens all three a
   assert.equal(renderer.root.findAllByType('dialog').length,0);
   assert.equal(button('הזמן משלוח נוסף'),undefined);
   await openActions();
-  assert.ok(button('הזמנת משלוח נוסף בCarrier'));
-  assert.ok(button('ביטול המשלוח שהוזמן'));
-  assert.ok(renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier'));
+  assert.ok(button('משלוח נוסף'));
+  assert.ok(button('בטל משלוח'));
+  assert.ok(renderer.root.findAllByType('a').find(node=>node.findAllByType('span').some(span=>span.props.children==='הדפס מדבקה')));
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')||url.startsWith('/api/cancel-delivery')),false);
 });
 
@@ -463,7 +463,7 @@ test('additional shipment requires explicit choice and uses the clicked carrier'
   const negev={...delivery,provider:'negevExpress',can_cancel:true,status_checked:true};
   fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[negev]));
   await mount();await openActions('negevExpress');
-  await act(async()=>button('הזמנת משלוח נוסף בCarrier').props.onClick());
+  await act(async()=>button('משלוח נוסף').props.onClick());
   assert.equal(renderer.root.findAllByType('dialog').length,0);
   assert.ok(button('הזמן משלוח נוסף בCarrier'));
   let finish;
@@ -490,14 +490,14 @@ test('cancellation targets the selected older shipment and never creates a new o
   await mount();await openActions();
   const select=renderer.root.findByProps({'aria-label':'בחירת משלוח'});
   await act(async()=>select.props.onChange({target:{value:'1234'}}));
-  await act(async()=>button('ביטול המשלוח שהוזמן').props.onClick());
-  assert.ok(button('כן, בטל את המשלוח'));
+  await act(async()=>button('בטל משלוח').props.onClick());
+  assert.ok(button('כן, בטל'));
   assert.equal(requests.some(({url})=>url.startsWith('/api/cancel-delivery')),false);
   let finish;
   respond=(request,response,body)=>request.url.startsWith('/api/cancel-delivery')
     ? finish=()=>{state=confirmedShipment('v2',state.shipments.map(s=>s.track_number==='1234'?{...s,cancelled:true}:s));json(response,state);}
     : json(response,{...order,status:body?.status ?? 's3-packed'});
-  await act(async()=>{const click=button('כן, בטל את המשלוח').props.onClick;click();click();});
+  await act(async()=>{const click=button('כן, בטל').props.onClick;click();click();});
   await settle(()=>Boolean(finish));
   assert.equal(button('מבטל ומוודא…').props.disabled,true);
   await act(async()=>finish());await settle(()=>renderer.root.findAllByType('dialog').length===0);
@@ -508,7 +508,7 @@ test('cancellation targets the selected older shipment and never creates a new o
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
   await openActions();
   assert.equal(renderer.root.findAllByType('select').length,0,'Only one uncancelled Mahir shipment remains');
-  const reprint=renderer.root.findAllByType('a').find(node=>node.props.children==='הדפס מדבקה בCarrier');
+  const reprint=renderer.root.findAllByType('a').find(node=>node.findAllByType('span').some(span=>span.props.children==='הדפס מדבקה'));
   assert.equal(new URL(reprint.props.href).searchParams.get('d'),'5678');
   await act(async()=>renderer.unmount());await mount();await openActions();
   assert.equal(renderer.root.findAllByType('select').length,0,'Cancellation survives reload');
@@ -539,9 +539,9 @@ test('cancellation failure keeps the dialog recoverable and never reports succes
   await mount();await openActions();
   respond=(request,response,body)=>request.url.startsWith('/api/cancel-delivery')
     ? json(response,{detail:'הביטול לא אושר'},503) : json(response,{...order,status:body?.status??'s3-packed'});
-  await act(async()=>button('ביטול המשלוח שהוזמן').props.onClick());
-  await act(async()=>button('כן, בטל את המשלוח').props.onClick());
-  await settle(()=>Boolean(button('הזמנת משלוח נוסף בCarrier')));
+  await act(async()=>button('בטל משלוח').props.onClick());
+  await act(async()=>button('כן, בטל').props.onClick());
+  await settle(()=>Boolean(button('משלוח נוסף')));
   assert.equal(renderer.root.findAllByType('dialog').length,1);
   assert.equal(fixture.messages.some(message=>message.includes('המשלוח בוטל')),false);
   assert.equal(requests.filter(({url})=>url.startsWith('/api/cancel-delivery')).length,1);
@@ -552,7 +552,7 @@ test('unknown carrier status prevents stale reprint and refresh clears an unsent
   fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[{...delivery,provider:'mahirLi',status_checked:false,can_cancel:true}]));
   await mount();await openActions();
   assert.equal(renderer.root.findByType('dialog').findAllByType('a').length,0);
-  await act(async()=>button('הזמנת משלוח נוסף בCarrier').props.onClick());
+  await act(async()=>button('משלוח נוסף').props.onClick());
   assert.ok(button('הזמן משלוח נוסף בCarrier'));
   await act(async()=>renderer.unmount());await mount();
   assert.equal(button('הזמן משלוח נוסף בCarrier'),undefined);
