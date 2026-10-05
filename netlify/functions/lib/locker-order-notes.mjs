@@ -78,8 +78,10 @@ export async function flushPendingNotes(store, saveNote = saveLockerOrderNote, n
     if (entry.noteLeaseUntil > now || entry.noteRetryAfter > now ||
         (entry.sendStatus === 'sending' && now - Date.parse(entry.preparedAt) < 10 * 60_000)) continue;
     const leased = { ...entry, noteLeaseUntil: now + LEASE_MS };
-    const claim = await store.setJSON(recordKey, leased, { onlyIfMatch: current.etag });
+    if (!current.etag) throw new Error('לא התקבל מזהה גרסת תיעוד הלוקר');
+    const claim = await store.set(recordKey, JSON.stringify(leased), { onlyIfMatch: current.etag });
     if (!claim.modified) continue;
+    if (!claim.etag) throw new Error('לא התקבל אישור נעילת תיעוד הלוקר');
     attempted++;
     try {
       const noteId = await saveNote(leased, undefined, undefined, Math.max(1, Math.min(TIMEOUT, deadline - Date.now())));

@@ -20,7 +20,7 @@ export default async function handler(req) {
     if (!message) return Response.json({ error: 'No exact provider message found' }, { status: 404 });
     const snapshot = { ...entry, message: message.caption, idMessage: message.idMessage, sendStatus: 'sent', preparedAt: entry.sentAt };
     const store = stateStore();
-    await store.setJSON(notificationKey(entry.id), snapshot, { onlyIfNew: true });
+    await store.set(notificationKey(entry.id), JSON.stringify(snapshot), { onlyIfNew: true });
     await store.set(pendingNoteKey(entry.id), String(entry.id));
     const result = await flushPendingNotes(store);
     const saved = await store.get(notificationKey(entry.id), { type: 'json' });
@@ -28,10 +28,10 @@ export default async function handler(req) {
       exactProviderText: saved.message === message.caption, containsCode: saved.message.includes(String(entry.code)) });
   }
   try { wooConnection(config); } catch { return new Response(null, { status: 400 }); }
-  const result = await configStore().setJSON('order-notes', {
+  const result = await configStore().set('order-notes', JSON.stringify({
     LOCKER_WOO_URL: config.LOCKER_WOO_URL,
     LOCKER_WOO_KEY: config.LOCKER_WOO_KEY,
     LOCKER_WOO_SECRET: config.LOCKER_WOO_SECRET,
-  }, { onlyIfNew: true });
+  }), { onlyIfNew: true });
   return Response.json({ configured: result.modified }, { status: result.modified ? 200 : 409 });
 }

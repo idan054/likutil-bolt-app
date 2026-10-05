@@ -30,8 +30,10 @@ export async function notifyRecord(rec, store, send = sendWhatsApp, at = new Dat
   const entry = { id, orderNumber: String(rec.order_number), phone: normalizePhone(rec.get_user_mobile),
     code: String(rec.pick_code), box: String(rec.box_name), address: rec.device_address,
     preparedAt: at.toISOString(), sentAt: at.toISOString(), message: buildMessage(rec, at), sendStatus: 'sending' };
-  const claimed = await store.setJSON(notificationKey(id), entry, { onlyIfNew: true });
+  // Use set: this SDK version's setJSON drops conditional-write headers.
+  const claimed = await store.set(notificationKey(id), JSON.stringify(entry), { onlyIfNew: true });
   if (!claimed.modified) return null;
+  if (!claimed.etag) throw new Error('לא התקבל אישור שמירת הודעת הלוקר');
   await store.set(pendingNoteKey(id), String(id));
   let result;
   try {

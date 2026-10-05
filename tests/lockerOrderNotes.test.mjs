@@ -15,9 +15,9 @@ function store() {
     async getWithMetadata(key) { return structuredClone(records.get(key) ?? null); },
     async setJSON(key, data, options = {}) {
       if ((options.onlyIfNew && records.has(key)) || (options.onlyIfMatch && records.get(key)?.etag !== options.onlyIfMatch)) return { modified: false };
-      records.set(key, { data: structuredClone(data), etag: String(++revision) }); return { modified: true };
+      records.set(key, { data: structuredClone(data), etag: String(++revision) }); return { modified: true, etag: String(revision) };
     },
-    async set(key, data) { return this.setJSON(key, data); },
+    async set(key, data, options) { return this.setJSON(key, key.startsWith('notifications/') ? JSON.parse(data) : data, options); },
     async delete(key) { records.delete(key); },
     async list({ prefix }) { return { blobs: [...records.keys()].filter(key => key.startsWith(prefix)).map(key => ({ key })) }; },
   };
@@ -138,4 +138,42 @@ test('unresolved variables and missing locker data cannot be sent or saved', asy
 test('missing server store configuration fails without sending credentials to another origin', () => {
   assert.throws(() => wooConnection({}), /חסר חיבור/);
   assert.throws(() => wooConnection({ LOCKER_WOO_URL: 'http://shop.invalid', LOCKER_WOO_KEY: 'key', LOCKER_WOO_SECRET: 'secret' }), /חסר חיבור/);
+});
+
+test('different locker record numbers cannot collide during duplicate detection', async () => {
+  const entry = await notifyRecord(rec, store(), async () => ({ idMessage: 'one' }), at);
+  const api = woo();
+  api.notes.push({ id: 100, customer_note: false, note: 'אסמכתא: לוקר-710' });
+  await saveLockerOrderNote(entry, connection, api.request);
+  assert.equal(api.writes.length, 1);
+});
+
+test('all Woo requests share one deadline rather than resetting the timeout per page', async () => {
+  const entry = await notifyRecord(rec, store(), async () => ({ idMessage: 'one' }), at);
+  const api = woo(); const signals = [];
+  await saveLockerOrderNote(entry, connection, async (url, options) => {
+    signals.push(options.signal);
+    return api.request(url, options);
+  });
+  assert.ok(signals.length >= 3);
+  assert.equal(new Set(signals).size, 1);
+});
+
+
+test('installed Blobs SDK sends conditional headers on the production claim path', async () => {
+  const { getStore } = await import('@netlify/blobs');
+  const values = new Map();
+  const db = getStore({ name: 'test', siteID: 'test-site', token: 'test-token', edgeURL: 'https://blob.invalid',
+    fetch: async (url, options) => {
+      const headers = new Headers(options.headers); const key = new URL(url).pathname;
+      if (headers.get('if-none-match') === '*' && values.has(key)) return new Response(null, { status: 412 });
+      if (key.endsWith('/notifications/71') && !values.has(key)) assert.equal(headers.get('if-none-match'), '*');
+      values.set(key, options.body);
+      return new Response(null, { status: 200, headers: { etag: 'stored-revision' } });
+    },
+  });
+  let sent = 0;
+  await notifyRecord(rec, db, async () => { sent++; return { idMessage: 'one' }; }, at);
+  assert.equal(await notifyRecord(rec, db, async () => { sent++; }, at), null);
+  assert.equal(sent, 1);
 });
