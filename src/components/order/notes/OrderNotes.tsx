@@ -132,6 +132,10 @@ export const OrderNotes: React.FC<OrderNotesProps> = ({
 
   const handleSubmit = async () => {
     if (!newNote.trim() || isSubmitting) return;
+    if ((isWhatsAppNote || isCustomerNote) && /\{(?:code|box|address|time|order_number)\}/.test(newNote)) {
+      toast.error('יש למלא את קוד הלוקר והפרטים החסרים לפני השליחה. אפשר להעתיק את ההודעה המלאה מהערות ההזמנה.');
+      return;
+    }
     
     // Add validation for business phone when WhatsApp reply is enabled
     if (isWhatsAppNote && isWhatsAppReplyEnabled && !businessPhone.trim()) {

@@ -25,7 +25,7 @@ function store() {
     async list({ prefix }) { return { blobs: [...records.keys()].filter(key => key.startsWith(prefix)).map(key => ({ key })) }; },
   };
 }
-function woo({ phone = rec.get_user_mobile, number = '123', id = 123, losePost = false } = {}) {
+function woo({ phone = rec.get_user_mobile, number = '123', id = 123, losePost = false, loseEmailPost = false, email = 'customer@example.test' } = {}) {
   const notes = []; const writes = []; const paths = [];
   const request = async (url, options) => {
     const path = new URL(url).pathname; paths.push(url);
@@ -34,12 +34,12 @@ function woo({ phone = rec.get_user_mobile, number = '123', id = 123, losePost =
     if (options.method === 'POST') {
       const body = JSON.parse(options.body); writes.push(body);
       notes.push({ ...body, id: notes.length + 1 });
-      if (losePost) { losePost = false; throw new TypeError('Lost response'); }
+      if (losePost || (loseEmailPost && body.customer_note)) { losePost = false; loseEmailPost = false; throw new TypeError('Lost response'); }
       return Response.json(notes.at(-1));
     }
     if (path.endsWith('/notes')) return Response.json(notes);
-    if (path.endsWith('/orders')) return Response.json([{ id, number, billing: { phone } }]);
-    return Response.json({ id, number, billing: { phone } });
+    if (path.endsWith('/orders')) return Response.json([{ id, number, billing: { phone, email } }]);
+    return Response.json({ id, number, billing: { phone, email } });
   };
   return { notes, writes, request, paths };
 }
@@ -67,7 +67,7 @@ test('parallel scheduled invocations send once and write one note', async () => 
   assert.equal(calls, 1);
   const api = woo(); const save = e => saveLockerOrderNote(e, connection, api.request);
   await Promise.all([flushPendingNotes(db, save), flushPendingNotes(db, save)]);
-  assert.equal(api.writes.length, 1);
+  assert.equal(api.writes.length, 2);
 });
 
 test('failed sends keep the complete text, explicitly marked failed, without resending', async () => {
@@ -79,7 +79,7 @@ test('failed sends keep the complete text, explicitly marked failed, without res
   assert.match(noteText(entry), /001234/);
   await notifyRecord(rec, db, send, at); assert.equal(calls, 1);
   const api = woo(); await flushPendingNotes(db, e => saveLockerOrderNote(e, connection, api.request));
-  assert.equal(api.writes.length, 1);
+  assert.equal(api.writes.length, 2);
 });
 
 test('note failure retries only the immutable note, even with a changed clock or locker record', async () => {
@@ -100,7 +100,7 @@ test('a lost Woo POST response is reconciled without duplicating the note', asyn
   await flushPendingNotes(db, save, at.getTime());
   assert.equal(api.writes.length, 1);
   await flushPendingNotes(db, save, at.getTime() + 6 * 60_000);
-  assert.equal(api.writes.length, 1); assert.equal(db.records.get('notifications/71').data.noteId, 1);
+  assert.equal(api.writes.length, 2); assert.equal(db.records.get('notifications/71').data.noteId, 1);
 });
 
 test('worker crash cannot claim a send succeeded and cannot resend the same record', async () => {
@@ -148,7 +148,7 @@ test('different locker record numbers cannot collide during duplicate detection'
   const api = woo();
   api.notes.push({ id: 100, customer_note: false, note: 'אסמכתא: לוקר-710' });
   await saveLockerOrderNote(entry, connection, api.request);
-  assert.equal(api.writes.length, 1);
+  assert.equal(api.writes.length, 2);
 });
 
 test('all Woo requests share one deadline rather than resetting the timeout per page', async () => {
@@ -180,4 +180,33 @@ test('installed Blobs SDK sends conditional headers on the production claim path
   await notifyRecord(rec, db, async () => { sent++; return { idMessage: 'one' }; }, at);
   assert.equal(await notifyRecord(rec, db, async () => { sent++; }, at), null);
   assert.equal(sent, 1);
+});
+
+
+test('the customer email contains the exact code message without private WhatsApp diagnostics', async () => {
+  const entry = await notifyRecord(rec, store(), async () => { throw new Error('Provider unavailable'); }, at);
+  const api = woo();
+  await saveLockerOrderNote(entry, connection, api.request);
+  const email = api.writes.find(n => n.customer_note);
+  assert.equal(email.note, entry.message + '\n\nאסמכתא: לוקר-71');
+  assert.match(email.note, /001234/);
+  assert.doesNotMatch(email.note, /נכשלה|972501234567|\{code\}/);
+});
+
+test('lost email-note response is retried without another email or another private note', async () => {
+  const entry = await notifyRecord(rec, store(), async () => ({ idMessage: 'one' }), at);
+  const api = woo({ loseEmailPost: true });
+  await assert.rejects(saveLockerOrderNote(entry, connection, api.request));
+  assert.equal(api.writes.length, 2);
+  await saveLockerOrderNote(entry, connection, api.request);
+  assert.equal(api.writes.length, 2);
+  assert.equal(api.writes.filter(n => n.customer_note).length, 1);
+});
+
+test('missing email preserves private evidence and leaves the email pending for a later retry', async () => {
+  const entry = await notifyRecord(rec, store(), async () => ({ idMessage: 'one' }), at);
+  const api = woo({ email: '' });
+  await assert.rejects(saveLockerOrderNote(entry, connection, api.request), /כתובת המייל/);
+  assert.equal(api.writes.length, 1);
+  assert.equal(api.writes[0].customer_note, false);
 });

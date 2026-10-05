@@ -60,16 +60,26 @@ export async function saveLockerOrderNote(entry, connection, request = fetch, ti
   const path = `/orders/${order.id}/notes`;
   const marker = `אסמכתא: לוקר-${entry.id}`;
   const hasMarker = note => new RegExp(`${marker}(?:\\s|<|$)`).test(String(note));
+  let privateNote, customerNote;
   // Read every page before creating: a lost POST response must not create a duplicate.
   for (let page = 1; page <= 20; page++) {
     const notes = await call(`${path}?per_page=100&page=${page}`);
     if (!Array.isArray(notes)) throw new Error('החנות החזירה רשימת הערות לא תקינה');
-    const found = notes.find(note => note.customer_note === false && hasMarker(note.note));
-    if (found) return found.id;
+    privateNote ||= notes.find(note => note.customer_note === false && hasMarker(note.note));
+    customerNote ||= notes.find(note => note.customer_note === true && hasMarker(note.note));
     if (notes.length < 100) {
-      const note = await call(path, { note: noteText(entry), customer_note: false });
-      if (!note?.id || note.customer_note !== false || !hasMarker(note.note)) throw new Error('החנות לא אישרה שמירת הערה פנימית');
-      return note.id;
+      if (!privateNote) {
+        privateNote = await call(path, { note: noteText(entry), customer_note: false });
+        if (!privateNote?.id || privateNote.customer_note !== false || !hasMarker(privateNote.note)) throw new Error('החנות לא אישרה שמירת הערה פנימית');
+      }
+      // Email only the customer-facing snapshot, never recipient diagnostics or internal status.
+      // WooCommerce sends customer notes through the store's existing mail provider.
+      if (!customerNote) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.billing?.email || '')) throw new Error('כתובת המייל בהזמנה חסרה או אינה תקינה');
+        customerNote = await call(path, { note: `${entry.message}\n\n${marker}`, customer_note: true });
+        if (!customerNote?.id || customerNote.customer_note !== true || !hasMarker(customerNote.note)) throw new Error('החנות לא אישרה יצירת הודעת מייל ללקוח');
+      }
+      return privateNote.id;
     }
   }
   throw new Error('יש יותר מדי הערות להזמנה; נדרשת בדיקה ידנית');
