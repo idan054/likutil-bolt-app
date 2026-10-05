@@ -7,8 +7,13 @@ export const pendingNoteKey = id => `pending-notes/${id}`;
 
 export function noteText(entry) {
   const status = entry.sendStatus === 'sent' ? 'נשלחה לוואטסאפ'
+    : entry.sendStatus === 'partial' ? 'נשלחה לחלק מהמספרים'
     : entry.sendStatus === 'failed' ? 'השליחה לוואטסאפ נכשלה' : 'לא התקבל אישור שליחה לוואטסאפ';
-  return `📱 הודעת לוקר — ${status}\n\n${entry.message}\n\nאסמכתא: לוקר-${entry.id}`;
+  const decision = entry.phoneDecision === 'corrected' ? `תוקנה טעות במספר: ${entry.lockerPhone} ← ${entry.orderPhone}` : '';
+  const recipients = (entry.deliveries || entry.recipients?.map(phone => ({ phone, sendStatus: 'unknown' })) || [])
+    .map(d => `${d.phone}: ${d.sendStatus === 'sent' ? 'התקבל אישור שליחה' : d.sendStatus === 'failed' ? 'השליחה נכשלה' : 'ללא אישור שליחה'}`).join('\n');
+  const details = [decision, recipients].filter(Boolean).join('\n');
+  return `📱 הודעת לוקר — ${status}\n\n${entry.message}\n\n${details ? `${details}\n\n` : ''}אסמכתא: לוקר-${entry.id}`;
 }
 
 export function wooConnection(env = process.env) {
@@ -18,10 +23,9 @@ export function wooConnection(env = process.env) {
   return { url: url.toString().replace(/\/$/, ''), authorization: `Basic ${Buffer.from(`${env.LOCKER_WOO_KEY}:${env.LOCKER_WOO_SECRET}`).toString('base64')}` };
 }
 
-export async function saveLockerOrderNote(entry, connection, request = fetch, timeout = TIMEOUT) {
+export async function readLockerOrder(orderNumber, connection, request = fetch, timeout = 5_000) {
   connection ||= wooConnection(await configStore().get('order-notes', { type: 'json' }) || {});
-  if (!entry.message || /\{(?:code|box|address|time|order_number)\}/.test(entry.message)) throw new Error('נוסח הודעת הלוקר אינו מלא');
-  const number = String(entry.orderNumber || '').trim();
+  const number = String(orderNumber || '').trim();
   if (!/^\d+$/.test(number)) throw new Error('מספר ההזמנה בלוקר דורש בדיקה ידנית');
   const signal = AbortSignal.timeout(timeout);
   const call = async (path, body) => {
@@ -41,7 +45,16 @@ export async function saveLockerOrderNote(entry, connection, request = fetch, ti
     if (matches.length !== 1) throw new Error('לא נמצאה הזמנה יחידה התואמת למספר בלוקר');
     order = matches[0];
   }
-  if (!/^\d+$/.test(String(order.id)) || ![order.billing?.phone, order.shipping?.phone].some(phone => phone && normalizePhone(phone) === entry.phone)) {
+  if (!/^\d+$/.test(String(order.id))) throw new Error('מזהה ההזמנה אינו תקין');
+  return { order, call };
+}
+
+export async function saveLockerOrderNote(entry, connection, request = fetch, timeout = TIMEOUT) {
+  if (!entry.message || /\{(?:code|box|address|time|order_number)\}/.test(entry.message)) throw new Error('נוסח הודעת הלוקר אינו מלא');
+  const { order, call } = await readLockerOrder(entry.orderNumber, connection, request, timeout);
+  const expectedPhone = entry.orderPhone || entry.phone;
+  if ((entry.orderId && String(order.id) !== String(entry.orderId)) ||
+      ![order.billing?.phone, order.shipping?.phone].some(phone => phone && normalizePhone(phone) === expectedPhone)) {
     throw new Error('מספר הטלפון בלוקר אינו תואם להזמנה; נדרשת בדיקה ידנית');
   }
   const path = `/orders/${order.id}/notes`;

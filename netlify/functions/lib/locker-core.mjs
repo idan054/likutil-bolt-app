@@ -120,12 +120,12 @@ export function maxRecordId(records, floor = 0) {
 // A record is messaged when it is NEWER than the last one we handled (the id is
 // anchored to the newest record at the moment the automation was switched on, so
 // this can never reach backwards), is still waiting to be collected, and has both
-// a code and a phone. No timestamp filtering — see the note at the top of the file.
+// a code. The order supplies a phone even if the locker phone is missing.
 export function selectPending(records, { lastSeenId = 0 } = {}) {
   return records
     .filter((r) => (
       Number(r.id) > lastSeenId &&
-      !r.get_time && r.pick_code && r.get_user_mobile
+      !r.get_time && r.pick_code
     ))
     .sort((a, b) => Number(a.id) - Number(b.id));
 }
@@ -148,8 +148,10 @@ export function describeRecord(rec) {
 // BetterLockers stores phones as "972" + local-with-leading-zero (e.g. 9720504685161).
 export function normalizePhone(raw) {
   let d = String(raw || '').replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
   if (d.startsWith('9720')) d = '972' + d.slice(4);
   else if (d.startsWith('0')) d = '972' + d.slice(1);
+  else if (/^5\d{8}$/.test(d)) d = '972' + d;
   return d;
 }
 

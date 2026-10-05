@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { notifyRecord } from '../netlify/functions/locker-whatsapp-notifier.mjs';
+import { notifyRecord as notifyActualRecord } from '../netlify/functions/locker-whatsapp-notifier.mjs';
+import { lockerRecipients } from '../netlify/functions/lib/locker-recipients.mjs';
 import { buildMessage } from '../netlify/functions/lib/locker-core.mjs';
 import { flushPendingNotes, saveLockerOrderNote, noteText, wooConnection } from '../netlify/functions/lib/locker-order-notes.mjs';
 
 const rec = { id: 71, order_number: '123', get_user_mobile: '0501234567', pick_code: '001234', box_name: '09', device_address: 'Test Street 1' };
 const at = new Date('2026-10-05T07:20:00Z');
 const connection = { url: 'https://shop.invalid', authorization: 'Basic test' };
+const notifyRecord = (record, db, send, when) => notifyActualRecord(record, db, send, when,
+  async r => lockerRecipients(r, { id: 123, billing: { phone: rec.get_user_mobile } }));
 // Test storage implements the external Blobs atomic-write contract, not product logic.
 function store() {
   const records = new Map(); let revision = 0;
@@ -120,7 +123,7 @@ test('notes are never added to a mismatched customer and numeric custom order nu
   await assert.rejects(saveLockerOrderNote(entry, connection, wrong.request), /אינו תואם/);
   assert.equal(wrong.writes.length, 0);
   const custom = woo({ id: 42 });
-  await saveLockerOrderNote(entry, connection, custom.request);
+  await saveLockerOrderNote({ ...entry, orderId: 42 }, connection, custom.request);
   assert.ok(custom.paths.some(path => path.includes('/orders/42/notes')));
 });
 
@@ -166,6 +169,7 @@ test('installed Blobs SDK sends conditional headers on the production claim path
   const db = getStore({ name: 'test', siteID: 'test-site', token: 'test-token', edgeURL: 'https://blob.invalid',
     fetch: async (url, options) => {
       const headers = new Headers(options.headers); const key = new URL(url).pathname;
+      if (options.method.toLowerCase() === 'get') return new Response(values.get(key) || null, { status: values.has(key) ? 200 : 404, headers: { etag: 'stored-revision' } });
       if (headers.get('if-none-match') === '*' && values.has(key)) return new Response(null, { status: 412 });
       if (key.endsWith('/notifications/71') && !values.has(key)) assert.equal(headers.get('if-none-match'), '*');
       values.set(key, options.body);

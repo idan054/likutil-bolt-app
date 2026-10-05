@@ -2,6 +2,7 @@ import {
   stateStore, readState, readRuntimeConfig, blLogin, blFetchRecent, maxRecordId,
   readHistory, selectPending, describeRecord,
 } from './lib/locker-core.mjs';
+import { resolveLockerRecipients } from './lib/locker-recipients.mjs';
 
 /**
  * On/off control for the locker → WhatsApp automation. Called by the app toggle.
@@ -80,14 +81,21 @@ export default async function handler(req) {
     // Newest record overall, rendered as a message, so the wording can be
     // reviewed even when nothing is pending.
     const newest = [...records].sort((a, b) => Number(b.id) - Number(a.id))[0];
+    const describeWithRecipients = async rec => {
+      const described = describeRecord(rec);
+      try {
+        const selection = await resolveLockerRecipients(rec);
+        return { ...described, ...selection, phone: selection.recipients.join(', ') };
+      } catch (error) { return { ...described, phone: '', recipients: [], error: error.message }; }
+    };
 
     return json({
       ...state,
       history: await readHistory(),
       preview: {
         generatedAt: new Date().toISOString(),
-        wouldSend: pending.map(describeRecord),
-        sample: newest ? describeRecord(newest) : null,
+        wouldSend: await Promise.all(pending.map(describeWithRecipients)),
+        sample: newest ? await describeWithRecipients(newest) : null,
         waitingForPickup: records.filter((r) => !r.get_time && r.pick_code).length,
       },
     });

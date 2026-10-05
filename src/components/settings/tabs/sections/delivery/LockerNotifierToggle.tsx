@@ -5,6 +5,8 @@ import { auth } from '../../../../../config/firebase';
 const CONTROL_URL = '/.netlify/functions/locker-notifier-control';
 
 interface PreviewRecord {
+  recipients?: string[];
+  error?: string;
   id: number;
   orderNumber: string;
   phone: string;
@@ -15,6 +17,8 @@ interface PreviewRecord {
 }
 
 interface HistoryEntry {
+  deliveries?: { phone: string; sendStatus: string }[];
+  sendStatus?: string;
   sentAt: string;
   orderNumber: string;
   phone: string;
@@ -223,7 +227,7 @@ export const LockerNotifierToggle: React.FC = () => {
               </span>
             ) : (
               <span className="text-green-700 font-medium">
-                היו נשלחות {preview.wouldSend.length} הודעות:
+                נמענים לשליחה: {preview.wouldSend.reduce((n, r) => n + (r.recipients?.length ?? 1), 0)}
               </span>
             )}
           </p>
@@ -233,6 +237,7 @@ export const LockerNotifierToggle: React.FC = () => {
               <div className="text-sm font-medium">
                 📱 {r.phone} · הזמנה {r.orderNumber} · תא {r.box} · קוד {r.code}
               </div>
+              {r.error && <div className="text-xs text-red-600">ממתין לבדיקה: {r.error}</div>}
               <pre className="text-xs whitespace-pre-wrap mt-1 text-gray-700 font-sans">{r.message}</pre>
             </div>
           ))}
@@ -243,6 +248,7 @@ export const LockerNotifierToggle: React.FC = () => {
                 דוגמה בלבד (על ההפקדה האחרונה, לבדיקת הניסוח — לא יישלח):
               </div>
               <div className="text-sm font-medium">📱 {preview.sample.phone} · הזמנה {preview.sample.orderNumber}</div>
+              {preview.sample.error && <div className="text-xs text-red-600">{preview.sample.error}</div>}
               <pre className="text-xs whitespace-pre-wrap mt-1 text-gray-700 font-sans">{preview.sample.message}</pre>
             </div>
           )}
@@ -266,9 +272,9 @@ export const LockerNotifierToggle: React.FC = () => {
                 <XCircle size={14} className="text-red-500 shrink-0" />
               )}
               <span className="text-gray-500 text-xs shrink-0">{formatTime(h.sentAt)}</span>
-              <span>📱 {h.phone}</span>
+              <span>📱 {h.deliveries?.map(d => `${d.phone} ${d.sendStatus === 'sent' ? '✓' : '✕'}`).join(' · ') || h.phone}</span>
               <span className="text-gray-500">· הזמנה {h.orderNumber} · קוד {h.code}</span>
-              {!h.ok && <span className="text-red-500 text-xs">נכשל</span>}
+              {!h.ok && <span className="text-red-500 text-xs">{h.sendStatus === 'partial' ? 'נשלח חלקית' : 'נכשל'}</span>}
             </div>
           ))}
         </div>
