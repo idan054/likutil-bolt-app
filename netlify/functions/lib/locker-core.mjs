@@ -162,6 +162,11 @@ export function notificationTimeText(at = new Date()) {
 }
 
 export function buildMessage(rec, at = new Date()) {
+  for (const field of ['order_number', 'device_address', 'box_name', 'pick_code']) {
+    if (rec[field] == null || !String(rec[field]).trim() || /\{[^}]+\}/.test(String(rec[field]))) {
+      throw new Error('פרטי הלוקר אינם מלאים; ההודעה לא נשלחה');
+    }
+  }
   return renderLockerMessage({
     time: notificationTimeText(at),
     order_number: rec.order_number,
@@ -186,9 +191,10 @@ export async function sendWhatsApp(phone, message) {
       fileName: 'locker-location.png',
       caption: message,
     }),
+    signal: AbortSignal.timeout(15_000),
   });
   const responseText = await res.text();
-  if (!res.ok) throw new Error(`GreenAPI media send failed (${res.status}): ${responseText}`);
+  if (!res.ok) throw new Error(`GreenAPI media send failed (${res.status})`);
 
   let response;
   try {

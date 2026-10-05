@@ -2,6 +2,7 @@ import {
   stateStore, readState, blLogin, blFetchRecent,
   selectPending, normalizePhone, buildMessage, sendWhatsApp, appendHistory,
 } from './lib/locker-core.mjs';
+import { notificationKey, pendingNoteKey } from './lib/locker-order-notes.mjs';
 
 /**
  * Scheduled job (every 5 min): if the automation is ENABLED, poll BetterLockers
@@ -22,8 +23,31 @@ import {
 
 export const config = { schedule: '*/5 * * * *' };
 
+// A durable snapshot is created before sending. Never rebuild text during note retries.
+export async function notifyRecord(rec, store, send = sendWhatsApp, at = new Date()) {
+  const id = Number(rec.id);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('מזהה רשומת לוקר אינו תקין');
+  const entry = { id, orderNumber: String(rec.order_number), phone: normalizePhone(rec.get_user_mobile),
+    code: String(rec.pick_code), box: String(rec.box_name), address: rec.device_address,
+    preparedAt: at.toISOString(), sentAt: at.toISOString(), message: buildMessage(rec, at), sendStatus: 'sending' };
+  const claimed = await store.setJSON(notificationKey(id), entry, { onlyIfNew: true });
+  if (!claimed.modified) return null;
+  await store.set(pendingNoteKey(id), String(id));
+  let result;
+  try {
+    const response = await send(entry.phone, entry.message);
+    result = { ...entry, ok: true, sendStatus: 'sent', idMessage: response.idMessage };
+  } catch (error) {
+    result = { ...entry, ok: false, sendStatus: 'failed', error: error.message };
+  }
+  // A storage failure leaves a durable unconfirmed snapshot, never a second send.
+  await store.setJSON(notificationKey(id), result);
+  return result;
+}
+
 export default async function handler() {
   const state = await readState();
+  const store = stateStore();
 
   if (!state.enabled) {
     console.log('Automation disabled — nothing sent.');
@@ -40,19 +64,9 @@ export default async function handler() {
 
   const results = [];
   const historyEntries = [];
-  const store = stateStore();
   let newLastSeen = state.lastSeenId;
   for (const rec of pending) {
     const recordId = Number(rec.id);
-    const phone = normalizePhone(rec.get_user_mobile);
-    const entry = {
-      sentAt: new Date().toISOString(),
-      id: recordId,
-      orderNumber: rec.order_number,
-      phone,
-      code: rec.pick_code,
-      box: rec.box_name,
-    };
 
     // Claim the record before contacting GreenAPI. If the request fails or the
     // function stops afterwards, this record is intentionally never sent again.
@@ -60,14 +74,14 @@ export default async function handler() {
     newLastSeen = recordId;
 
     try {
-      await sendWhatsApp(phone, buildMessage(rec));
-      console.log(`SENT → ${phone} | order ${rec.order_number} | code ${rec.pick_code}`);
-      results.push({ id: recordId, ok: true });
-      historyEntries.push({ ...entry, ok: true });
+      const entry = await notifyRecord(rec, store);
+      if (!entry) continue;
+      results.push({ id: recordId, ok: entry.ok });
+      historyEntries.push(entry);
     } catch (err) {
-      console.error(`FAILED order ${rec.order_number} → ${phone}: ${err.message}`);
+      console.error(`FAILED locker record ${recordId}`);
       results.push({ id: recordId, ok: false });
-      historyEntries.push({ ...entry, ok: false, error: err.message });
+      historyEntries.push({ id: recordId, orderNumber: rec.order_number, sentAt: new Date().toISOString(), ok: false, error: err.message });
     }
   }
 
