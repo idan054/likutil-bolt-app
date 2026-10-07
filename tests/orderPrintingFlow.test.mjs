@@ -627,5 +627,10 @@ test('completed carrier checks show an unlinked candidate and a fresh check time
   await settle(()=>Boolean(button('הפק משלוח חדש')) && !button('הפק משלוח חדש').props.disabled);
   assert.notEqual(checkedText(),first);
   assert.equal(completions,0,'An unlinked carrier candidate must not advance the order shipment status');
+  fixture.shipmentStatus=(_request,response)=>json(response,{detail:'בעיית תקשורת בבדיקה החדשה'},503);
+  await act(async()=>button('בדוק מצב משלוח').props.onClick());
+  await settle(()=>Boolean(button('הפק משלוח חדש')) && !button('הפק משלוח חדש').props.disabled);
+  assert.ok(JSON.stringify(renderer.toJSON()).includes('בעיית תקשורת בבדיקה החדשה'),'An earlier successful check must not hide a new connection failure');
+  assert.ok(checkedText(),'Earlier evidence retains its actual previous check time');
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery') || url.startsWith('/api/cancel-delivery')),false);
 });

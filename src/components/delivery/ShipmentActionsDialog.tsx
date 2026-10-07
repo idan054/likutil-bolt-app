@@ -16,6 +16,7 @@ interface Props {
   resultUnknown?: boolean;
   relatedShipments?: ShipmentLookupCandidate[];
   checkedAt?: string;
+  lookupCompleted?: boolean;
   onAdditional: () => void;
   onCancelShipment: (shipment: DeliveryTaskResponse) => Promise<boolean>;
   onCheck: () => void;
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export function ShipmentActionsDialog({ order, companyName, shipments, isChecking, isBusy,
-  message, canRequestAdditional, resultUnknown, relatedShipments = [], checkedAt, onAdditional, onCancelShipment, onCheck, onClose }: Props) {
+  message, canRequestAdditional, resultUnknown, relatedShipments = [], checkedAt, lookupCompleted, onAdditional, onCancelShipment, onCheck, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancelling = useRef(false);
   const [selectedNumber, setSelectedNumber] = useState('');
@@ -33,6 +34,9 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
   const active = shipments.filter(shipment => !shipment.cancelled);
   const selected = active.find(shipment => String(shipment.track_number) === selectedNumber) ?? active[0];
   const busy = isBusy || isChecking;
+  const notice = lookupCompleted && relatedShipments.length > 0
+    ? `הבדיקה הושלמה. ${relatedShipments.length === 1 ? 'נמצא משלוח' : 'נמצאו משלוחים'} עם אותו טלפון ועיר. בדקו את הפרטים לפני הדפסה או הפקה נוספת.`
+    : message;
   const cancelHint = selected?.can_cancel ? 'מבטל רק את המשלוח שנבחר. יידרש אישור.'
     : selected?.delivered ? 'המשלוח כבר נמסר ולכן אי אפשר לבטל אותו.' : 'הביטול אינו זמין כרגע בחברת המשלוחים.';
 
@@ -68,15 +72,14 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
     </div>
     <div className="max-h-[70dvh] space-y-3 overflow-y-auto p-5" aria-busy={busy}>
       {isChecking ? <p role="status" className="flex items-center gap-2 py-4"><Loader2 className="animate-spin" size={18} />בודק…</p> : <>
-        {(error || message) && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{error || message}</p>}
+        {(error || notice) && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{error || notice}</p>}
         {checkedAt && Number.isFinite(Date.parse(checkedAt)) && <p className="text-xs text-slate-500">נבדק ב־{new Date(checkedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
         {relatedShipments.map(candidate => {
           const link = getPrintLabelSource(candidate.control_panel_link);
           return <div key={`${candidate.provider}:${candidate.track_number}`} className="space-y-2 rounded-xl border border-slate-200 p-3 text-sm">
-            <p className="font-semibold">משלוח <span dir="ltr">#{candidate.track_number}</span>{candidate.company_name ? ` · ${candidate.company_name}` : ''} · {candidate.carrier_status}</p>
+            <p className="font-semibold">משלוח <span dir="ltr">#{candidate.track_number}</span>{candidate.company_name && candidate.company_name !== companyName ? ` · ${candidate.company_name}` : ''} · {candidate.carrier_status}</p>
             <p>{candidate.order_reference ? `מספר ההזמנה בחברת המשלוחים: ${candidate.order_reference}` : 'מספר ההזמנה חסר בחברת המשלוחים.'}</p>
-            <p className="text-slate-600">פרטי היעד בחברת המשלוחים: {candidate.destination}</p>
-            <p className="text-slate-600">אותו טלפון ועיר. יש לבדוק שהמשלוח שייך להזמנה הזאת לפני שימוש במדבקה.</p>
+            <p className="text-slate-600">יעד המשלוח: {candidate.destination}</p>
             {link?.type === 'url' && <a href={link.value} target="_blank" rel="noopener noreferrer" className="inline-block font-semibold text-blue-700 underline">פתח את המשלוח בחברת המשלוחים</a>}
           </div>;
         })}
