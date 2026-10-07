@@ -398,8 +398,8 @@ test('server rejects a race after preflight and returns the existing label witho
   assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
 });
 
-test('an uncertain carrier result remains blocked after refresh with no browser storage', async () => {
-  fixture.shipmentStatus=(_request,response)=>json(response,{state:'uncertain',blocked:true,message:'יש לבדוק עם המשרד',response:null});
+test('an uncertain result survives refresh and offers explicit new creation without automatic retries', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'uncertain',blocked:true,can_additional:true,revision:'unknown-v1',message:'לא ידוע אם ההפקה הצליחה',response:null,shipments:[]});
   await mount();
   assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
   await act(async()=>button('הפק משלוח בCarrier').props.onClick());
@@ -407,6 +407,18 @@ test('an uncertain carrier result remains blocked after refresh with no browser 
   await mount();
   assert.equal(button('הפק משלוח בCarrier').props.disabled,true);
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  await openActions();
+  assert.equal(JSON.stringify(renderer.toJSON()).includes('אין משלוחים פעילים'),false);
+  await act(async()=>button('הפק משלוח חדש').props.onClick());
+  assert.ok(button('המשך להפקת משלוח חדש'));
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  await act(async()=>button('המשך להפקת משלוח חדש').props.onClick());
+  await settle(()=>Boolean(button('הזמן משלוח נוסף בCarrier')));
+  await act(async()=>button('הזמן משלוח נוסף בCarrier').props.onClick());
+  await settle(()=>requests.some(({url})=>url.startsWith('/api/create-delivery')));
+  const query=new URL(requests.find(({url})=>url.startsWith('/api/create-delivery')).url,fixture.baseUrl).searchParams;
+  assert.equal(query.get('additionalShipmentRevision'),'unknown-v1');
+  assert.equal(requests.filter(({url})=>url.startsWith('/api/create-delivery')).length,1);
 });
 
 test('a failed shipment check blocks creation and its retry only checks the server', async () => {
@@ -444,7 +456,7 @@ const carousel = () => renderer.root.find(node=>node.type?.name==='DeliveryCarou
 const openActions = async (provider='mahirLi') => {
   await settle(()=>!renderer.root.find(node=>node.type?.name==='DeliverySelector').props.isCreating);
   await act(async()=>carousel().props.onSelect(provider));
-  await settle(()=>button('משלוח נוסף')?.props.disabled === false);
+  await settle(()=>(button('משלוח נוסף') ?? button('הפק משלוח חדש'))?.props.disabled === false);
 };
 
 test('no banner or automatic dialog; clicking the same carrier opens all three actions', async () => {
@@ -528,7 +540,7 @@ test('a cancelled shipment opens normal creation without reprinting its label', 
 
 test('another carrier with no active shipment opens normal creation without cancelling the first', async () => {
   fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
-  await mount();await act(async()=>carousel().props.onSelect('negevExpress'));
+  await mount();await settle(()=>!carousel().props.isDisabled);await act(async()=>carousel().props.onSelect('negevExpress'));
   await settle(()=>renderer.root.findAllByType('dialog').length===0 && Boolean(button('הפק משלוח בCarrier')) && !button('הפק משלוח בCarrier').props.disabled);
   assert.equal(labelLinks().length,0);
   assert.equal(requests.some(({url})=>url.startsWith('/api/cancel-delivery')),false);
@@ -548,13 +560,37 @@ test('cancellation failure keeps the dialog recoverable and never reports succes
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
 });
 
-test('unknown carrier status prevents stale reprint and refresh clears an unsent additional choice', async () => {
+test('a confirmed label remains printable when carrier status is unavailable and refresh clears an unsent additional choice', async () => {
   fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment('v1',[{...delivery,provider:'mahirLi',status_checked:false,can_cancel:true}]));
   await mount();await openActions();
-  assert.equal(renderer.root.findByType('dialog').findAllByType('a').length,0);
+  assert.equal(renderer.root.findByType('dialog').findAllByType('a').length,1);
   await act(async()=>button('משלוח נוסף').props.onClick());
   assert.ok(button('הזמן משלוח נוסף בCarrier'));
   await act(async()=>renderer.unmount());await mount();
   assert.equal(button('הזמן משלוח נוסף בCarrier'),undefined);
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+});
+
+test('a failed status refresh preserves the confirmed label and permits an explicit additional request', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,confirmedShipment());
+  await mount();await openActions();
+  fixture.shipmentStatus=(_request,response)=>json(response,{detail:'בעיית תקשורת עם חברת המשלוחים'},503);
+  await act(async()=>renderer.root.findByType('dialog').findAllByType('button').find(n=>n.findAllByType('span').some(s=>s.props.children==='בדוק מצב משלוח')).props.onClick());
+  await settle(()=>Boolean(button('משלוח נוסף')) && !button('משלוח נוסף').props.disabled);
+  assert.equal(renderer.root.findByType('dialog').findAllByType('a').length,1);
+  assert.equal(JSON.stringify(renderer.toJSON()).includes('בעיית תקשורת'),true);
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+});
+
+test('an initial connection failure offers explicit creation and never sends a fictitious revision', async () => {
+  fixture.shipmentStatus=(_request,response)=>json(response,{detail:'בעיית תקשורת'},503);
+  await mount();await act(async()=>carousel().props.onSelect('mahirLi'));
+  await settle(()=>Boolean(button('הפק משלוח חדש')));
+  await act(async()=>button('הפק משלוח חדש').props.onClick());
+  await act(async()=>button('המשך להפקת משלוח חדש').props.onClick());
+  await settle(()=>Boolean(button('הזמן משלוח נוסף בCarrier')));
+  await act(async()=>button('הזמן משלוח נוסף בCarrier').props.onClick());
+  await settle(()=>requests.some(({url})=>url.startsWith('/api/create-delivery')));
+  const query=new URL(requests.find(({url})=>url.startsWith('/api/create-delivery')).url,fixture.baseUrl).searchParams;
+  assert.equal(query.has('additionalShipmentRevision'),false);
 });

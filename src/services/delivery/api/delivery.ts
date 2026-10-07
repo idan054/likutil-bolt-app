@@ -32,8 +32,8 @@ export const getShipmentState = async (orderId: string, userId: string): Promise
   const query = new URLSearchParams({ orderId, userId });
   const response = await fetch(`${BASE_URL}/api/delivery-status?${query}`, {
     headers: await authHeaders(), cache: 'no-store',
-  });
-  const data = await response.json();
+  }).catch(() => { throw new Error('בעיית תקשורת עם שירות המשלוחים. לא ניתן לבדוק כרגע אם קיים משלוח. אפשר לבדוק שוב או לבחור במפורש הפקת משלוח חדש.'); });
+  const data = await response.json().catch(() => { throw new Error('שירות המשלוחים החזיר תשובה לא תקינה. מצב המשלוח אינו ידוע. אפשר לבדוק שוב או לבחור במפורש הפקת משלוח חדש.'); });
   if (!response.ok || typeof data.blocked !== 'boolean') {
     throw new Error(typeof data.detail === 'string' ? data.detail : 'לא ניתן לבדוק אם כבר קיים משלוח. יצירה נוספת חסומה עד לחידוש החיבור.');
   }
@@ -96,7 +96,7 @@ export const createDeliveryTask = async (
 
     if (!response.ok) {
       const detail = data && typeof data === 'object' ? (data as Record<string, unknown>).detail : null;
-      if (detail && typeof detail === 'object' && (detail as ShipmentState).blocked) {
+      if (detail && typeof detail === 'object' && typeof (detail as ShipmentState).blocked === 'boolean') {
         throw new ShipmentBlockedError(detail as ShipmentState);
       }
       throw new ApiError({

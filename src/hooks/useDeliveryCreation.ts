@@ -38,6 +38,8 @@ export const useDeliveryCreation = ({
   const [checkVersion, setCheckVersion] = useState(0);
   const [shipmentState, setShipmentState] = useState<ShipmentState | null>(null);
   const [additionalRevision, setAdditionalRevision] = useState<string | null>(null);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const loadedKey = useRef('');
   const creatingRef = useRef(false);
   const [deliveryResponse, setDeliveryResponse] =
     useState<DeliveryTaskResponse | null>(null);
@@ -54,17 +56,24 @@ export const useDeliveryCreation = ({
   onSuccessRef.current = onSuccess;
   const shipments = shipmentState?.shipments ?? (shipmentState?.response ? [shipmentState.response] : deliveryResponse ? [deliveryResponse] : []);
   const providerShipments = shipments.filter(shipment => shipment.provider === provider && !shipment.cancelled);
-  const pending = shipmentState?.state === 'creating' || shipmentState?.state === 'uncertain' || shipmentState?.state === 'cancelling';
+  const additionalRequested = additionalRevision !== null;
+  const pending = shipmentState?.state === 'creating' || shipmentState?.state === 'cancelling' ||
+    (shipmentState?.state === 'uncertain' && !additionalRequested);
   const isCreationBlocked = isChecking || isCancelling || pending ||
-    (shipmentBlocked && !shipmentState?.can_additional) || (providerShipments.length > 0 && !additionalRevision);
+    (shipmentBlocked && !shipmentState?.can_additional && !additionalRequested) || (providerShipments.length > 0 && !additionalRequested);
 
   useEffect(() => { setAdditionalRevision(null); }, [provider]);
 
   useEffect(() => {
     let cancelled = false;
-    setDeliveryResponse(null);
-    setShipmentState(null);
+    // Refreshing status must keep previously confirmed labels when the network fails.
+    if (loadedKey.current !== responseKey) {
+      loadedKey.current = responseKey;
+      setDeliveryResponse(null);
+      setShipmentState(null);
+    }
     setAdditionalRevision(null);
+    setCheckFailed(false);
     setShipmentBlocked(false);
     setShipmentMessage("");
     setIsChecking(checkEnabled);
@@ -79,7 +88,9 @@ export const useDeliveryCreation = ({
       if (cancelled) return;
       setShipmentState(state);
       setShipmentBlocked(state.blocked);
-      setShipmentMessage(state.state === 'created' ? '' : state.message);
+      const statusUnavailable = state.shipments?.some(shipment => shipment.status_checked === false);
+      const allCancelled = Boolean(state.shipments?.length && state.shipments.every(shipment => shipment.cancelled));
+      setShipmentMessage(state.state === 'created' && !state.error_code && !statusUnavailable && !allCancelled ? '' : state.message);
       if (isValidDeliveryTaskResponse(state.response)) {
         setDeliveryResponse(state.response);
         try { sessionStorage.setItem(responseKey, JSON.stringify(state.response)); } catch { /* Optional cache. */ }
@@ -90,6 +101,7 @@ export const useDeliveryCreation = ({
       }
     }).catch((error) => {
       if (!cancelled) {
+        setCheckFailed(true);
         setShipmentBlocked(true);
         setShipmentMessage(error instanceof Error ? error.message : "לא ניתן לבדוק את מצב המשלוח. נסו לבדוק שוב.");
       }
@@ -156,7 +168,7 @@ export const useDeliveryCreation = ({
         packNum,
         deliveryType,
         requestedAt,
-        additionalShipmentRevision: shipmentState?.can_additional ? shipmentState.revision : undefined,
+        additionalShipmentRevision: additionalRevision || (shipmentState?.state === 'created' ? shipmentState.revision : undefined),
       });
 
       const result: DeliveryTaskResponse = {
@@ -208,10 +220,9 @@ export const useDeliveryCreation = ({
     } catch (error) {
       labelTab?.close();
       setAdditionalRevision(null);
-      setShipmentState(null);
       if (error instanceof ShipmentBlockedError) {
         setShipmentState(error.shipment);
-        setShipmentBlocked(true);
+        setShipmentBlocked(error.shipment.blocked);
         setShipmentMessage(error.message);
         if (isValidDeliveryTaskResponse(error.shipment.response)) {
           setDeliveryResponse(error.shipment.response);
@@ -225,6 +236,7 @@ export const useDeliveryCreation = ({
         // A lost HTTP response is not proof that the carrier rejected the task.
         setShipmentBlocked(true);
         setShipmentMessage("לא התקבל אישור סופי. יש לבדוק את מצב המשלוח לפני ניסיון נוסף.");
+        setCheckVersion(version => version + 1);
       }
       showErrorToast(error);
     } finally {
@@ -278,13 +290,14 @@ export const useDeliveryCreation = ({
     shipmentMessage,
     checkShipment: () => { if (!creatingRef.current) { setIsChecking(true); setCheckVersion((version) => version + 1); } },
     createDelivery: createDeliveryTask,
-    deliveryResponse: additionalRevision || isChecking ? null : [...providerShipments].reverse().find(shipment => shipment.status_checked !== false && isValidDeliveryTaskResponse(shipment)) ?? null,
+    deliveryResponse: additionalRequested || isChecking ? null : [...providerShipments].reverse().find(shipment => isValidDeliveryTaskResponse(shipment)) ?? null,
     previousShipments: shipments,
-    canRequestAdditional: !isChecking && !isCreating && !isCancelling && Boolean(shipmentState?.can_additional && shipmentState.revision),
-    isAdditional: Boolean(additionalRevision),
+    shipmentState,
+    canRequestAdditional: !isChecking && !isCreating && !isCancelling && Boolean((shipmentState?.can_additional && shipmentState.revision) || checkFailed),
+    isAdditional: additionalRequested,
     requestAdditional: () => {
-      if (!creatingRef.current && !isChecking && shipmentState?.can_additional && shipmentState.revision) {
-        setAdditionalRevision(shipmentState.revision);
+      if (!creatingRef.current && !isChecking && ((shipmentState?.can_additional && shipmentState.revision) || checkFailed)) {
+        setAdditionalRevision(shipmentState?.revision ?? '');
       }
     },
     cancelAdditional: () => { if (!creatingRef.current) setAdditionalRevision(null); },

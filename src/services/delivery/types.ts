@@ -63,5 +63,6 @@ export interface ShipmentState {
   state: 'none' | 'creating' | 'uncertain' | 'created' | 'rejected' | 'cancelling';
   blocked: boolean;
   message: string;
+  error_code?: string | null;
   response: DeliveryTaskResponse | null;
 }

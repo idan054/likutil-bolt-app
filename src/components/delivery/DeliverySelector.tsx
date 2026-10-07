@@ -6,9 +6,7 @@ import { DeliveryCarousel } from './selector/DeliveryCarousel';
 import { DeliveryCompanyInfo } from './selector/DeliveryCompanyInfo';
 import { useDeliveryIntegrations } from '../../hooks/settings/useDeliveryIntegrations';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
-import type { DeliveryTaskResponse } from '../../services/delivery/types';
-import { Ban, CheckCheck, CheckCircle, Loader2, Tag, Tags } from 'lucide-react';
-import { updateOrderStatus } from '../../services/orders/orders.service';
+import type { DeliveryTaskResponse, ShipmentState } from '../../services/delivery/types';
 import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
 import { OrderDetails } from '../../types/order';
 import { ShipmentActionsDialog } from './ShipmentActionsDialog';
@@ -25,6 +23,7 @@ interface DeliverySelectorProps {
   shipments: DeliveryTaskResponse[];
   isChecking: boolean;
   shipmentMessage: string;
+  shipmentState?: ShipmentState | null;
   canRequestAdditional: boolean;
   isAdditional: boolean;
   onRequestAdditional: () => void;
@@ -47,14 +46,13 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   isLocalPickup,
   isCreating,
   isCreationBlocked,
-  shipments, isChecking, shipmentMessage, canRequestAdditional, isAdditional,
+  shipments, isChecking, shipmentMessage, shipmentState, canRequestAdditional, isAdditional,
   onRequestAdditional, onCancelAdditional, onCancelShipment, onCheckShipment,
   onCreateDelivery,
   deliveryResponse,
   onComplete,
   isCompleting,
-  onStatusChanged,
-  orderId
+  onStatusChanged
 }) => {
   
 
@@ -83,9 +81,10 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   }, [isCreating, onSelect, onCheckShipment]);
   const companyShipments = shipments.filter(shipment => shipment.provider === actionsProvider && !shipment.cancelled);
   const actionsCompany = integrations.find(integration => integration.provider === actionsProvider);
+  const allShipmentsCancelled = shipments.length > 0 && shipments.every(shipment => shipment.cancelled);
   React.useEffect(() => {
-    if (!isChecking && !shipmentMessage && companyShipments.length === 0) setActionsProvider(null);
-  }, [isChecking, shipmentMessage, companyShipments.length]);
+    if (!isChecking && companyShipments.length === 0 && (!shipmentMessage || allShipmentsCancelled)) setActionsProvider(null);
+  }, [isChecking, shipmentMessage, companyShipments.length, allShipmentsCancelled]);
 
 
   return (
@@ -116,6 +115,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         key={`actions:${order.id}:${actionsProvider}`} order={order} companyName={actionsCompany.name}
         shipments={companyShipments} isChecking={isChecking} isBusy={isCreating}
         message={shipmentMessage} canRequestAdditional={canRequestAdditional}
+        resultUnknown={shipmentState?.state === 'uncertain' || !shipmentState && Boolean(shipmentMessage)}
         onAdditional={() => { onRequestAdditional(); setActionsProvider(null); }}
         onCancelShipment={onCancelShipment} onCheck={onCheckShipment} onClose={() => setActionsProvider(null)}
       />}

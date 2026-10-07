@@ -119,6 +119,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     isChecking,
     isCreationBlocked,
     shipmentMessage,
+    shipmentState,
     isCancelling,
     cancelShipment,
     previousShipments,
@@ -276,6 +277,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
                 shipments={previousShipments}
                 isChecking={isChecking}
                 shipmentMessage={shipmentMessage}
+                shipmentState={shipmentState}
                 canRequestAdditional={canRequestAdditional}
                 isAdditional={isAdditional}
                 onRequestAdditional={requestAdditional}
