@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, PackagePlus, RefreshCw, Trash2, X } from 'lucide-react';
 import type { OrderDetails } from '../../types/order';
-import type { DeliveryTaskResponse } from '../../services/delivery/types';
+import type { DeliveryTaskResponse, ShipmentLookupCandidate } from '../../services/delivery/types';
+import { getPrintLabelSource } from '../../services/delivery/validation/response';
 import { ExistingShipments } from './ExistingShipments';
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   message: string;
   canRequestAdditional: boolean;
   resultUnknown?: boolean;
+  relatedShipments?: ShipmentLookupCandidate[];
+  checkedAt?: string;
   onAdditional: () => void;
   onCancelShipment: (shipment: DeliveryTaskResponse) => Promise<boolean>;
   onCheck: () => void;
@@ -20,7 +23,7 @@ interface Props {
 }
 
 export function ShipmentActionsDialog({ order, companyName, shipments, isChecking, isBusy,
-  message, canRequestAdditional, resultUnknown, onAdditional, onCancelShipment, onCheck, onClose }: Props) {
+  message, canRequestAdditional, resultUnknown, relatedShipments = [], checkedAt, onAdditional, onCancelShipment, onCheck, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancelling = useRef(false);
   const [selectedNumber, setSelectedNumber] = useState('');
@@ -66,6 +69,17 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
     <div className="max-h-[70dvh] space-y-3 overflow-y-auto p-5" aria-busy={busy}>
       {isChecking ? <p role="status" className="flex items-center gap-2 py-4"><Loader2 className="animate-spin" size={18} />בודק…</p> : <>
         {(error || message) && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{error || message}</p>}
+        {checkedAt && Number.isFinite(Date.parse(checkedAt)) && <p className="text-xs text-slate-500">נבדק ב־{new Date(checkedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
+        {relatedShipments.map(candidate => {
+          const link = getPrintLabelSource(candidate.control_panel_link);
+          return <div key={`${candidate.provider}:${candidate.track_number}`} className="space-y-2 rounded-xl border border-slate-200 p-3 text-sm">
+            <p className="font-semibold">משלוח <span dir="ltr">#{candidate.track_number}</span>{candidate.company_name ? ` · ${candidate.company_name}` : ''} · {candidate.carrier_status}</p>
+            <p>{candidate.order_reference ? `מספר ההזמנה בחברת המשלוחים: ${candidate.order_reference}` : 'מספר ההזמנה חסר בחברת המשלוחים.'}</p>
+            <p className="text-slate-600">פרטי היעד בחברת המשלוחים: {candidate.destination}</p>
+            <p className="text-slate-600">אותו טלפון ועיר. יש לבדוק שהמשלוח שייך להזמנה הזאת לפני שימוש במדבקה.</p>
+            {link?.type === 'url' && <a href={link.value} target="_blank" rel="noopener noreferrer" className="inline-block font-semibold text-blue-700 underline">פתח את המשלוח בחברת המשלוחים</a>}
+          </div>;
+        })}
         {confirmAdditional ? <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h3 className="font-bold">להפיק משלוח חדש?</h3>
           <p className="text-sm">ייתכן שהניסיון הקודם הצליח. הפקה חדשה תיצור משלוח נוסף ולא תבטל משלוח קיים. בדקו קודם בחברת המשלוחים כדי להימנע מכפילות.</p>

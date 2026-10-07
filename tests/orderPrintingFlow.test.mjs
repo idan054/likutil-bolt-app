@@ -608,3 +608,24 @@ test('a status request that never answers leaves loading and offers recovery wit
     assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
   } finally { AbortSignal.timeout=timeout; }
 });
+
+test('completed carrier checks show an unlinked candidate and a fresh check time without pretending its label belongs to the order', async () => {
+  let checkedAt='2026-10-07T12:00:00Z';
+  fixture.shipmentStatus=(_request,response)=>json(response,{state:'uncertain',blocked:true,can_additional:true,revision:'v1',response:null,shipments:[],
+    message:'הבדיקה בחברת המשלוחים הושלמה. נמצאו משלוחים ללא התאמה מלאה להזמנה.',lookup_completed:true,lookup_checked_at:checkedAt,
+    related_shipments:[{provider:'mahirLi',track_number:'77',carrier_status:'נאסף',destination:'Customer 0501234567 . 3 City',order_reference:'',control_panel_link:'https://carrier.example.invalid/delivery/77'}]});
+  await mount();await openActions();
+  const dialog=renderer.root.findByType('dialog');
+  const text=JSON.stringify(renderer.toJSON());
+  assert.ok(text.includes('77') && text.includes('נאסף') && text.includes('מספר ההזמנה חסר'));
+  const link=dialog.findAllByType('a').find(n=>n.props.children==='פתח את המשלוח בחברת המשלוחים');
+  assert.equal(link.props.href,'https://carrier.example.invalid/delivery/77');
+  assert.equal(dialog.findAllByType('a').length,1,'A possible match has a carrier-details link, not a confirmed order-label link');
+  const checkedText=()=>JSON.stringify(renderer.root.findByType('dialog').findAllByType('p').find(n=>n.props.children?.[0]==='נבדק ב־').props.children);
+  const first=checkedText();checkedAt='2026-10-07T12:01:00Z';
+  await act(async()=>button('בדוק מצב משלוח').props.onClick());
+  await settle(()=>Boolean(button('הפק משלוח חדש')) && !button('הפק משלוח חדש').props.disabled);
+  assert.notEqual(checkedText(),first);
+  assert.equal(completions,0,'An unlinked carrier candidate must not advance the order shipment status');
+  assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery') || url.startsWith('/api/cancel-delivery')),false);
+});

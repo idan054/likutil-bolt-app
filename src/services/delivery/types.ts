@@ -55,6 +55,16 @@ export interface DeliveryTaskResponse {
   DeliveryNumber?: string | number;
 }
 
+export interface ShipmentLookupCandidate {
+  provider: string;
+  company_name?: string;
+  track_number: string;
+  carrier_status: string;
+  destination: string;
+  order_reference: string;
+  control_panel_link: string;
+}
+
 export interface ShipmentState {
   revision?: string;
   can_additional?: boolean;
@@ -64,5 +74,8 @@ export interface ShipmentState {
   blocked: boolean;
   message: string;
   error_code?: string | null;
+  lookup_completed?: boolean;
+  lookup_checked_at?: string;
+  related_shipments?: ShipmentLookupCandidate[];
   response: DeliveryTaskResponse | null;
 }

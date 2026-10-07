@@ -116,6 +116,9 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         shipments={companyShipments} isChecking={isChecking} isBusy={isCreating}
         message={shipmentMessage} canRequestAdditional={canRequestAdditional}
         resultUnknown={shipmentState?.state !== 'created' && Boolean(shipmentMessage)}
+        relatedShipments={shipmentState?.related_shipments?.map(candidate => ({ ...candidate,
+          company_name: integrations.find(integration => integration.provider === candidate.provider)?.name ?? 'חברת המשלוחים הקודמת' }))}
+        checkedAt={shipmentState?.lookup_checked_at}
         onAdditional={() => { onRequestAdditional(); setActionsProvider(null); }}
         onCancelShipment={onCancelShipment} onCheck={onCheckShipment} onClose={() => setActionsProvider(null)}
       />}
