@@ -35,7 +35,9 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
   const selected = active.find(shipment => String(shipment.track_number) === selectedNumber) ?? active[0];
   const busy = isBusy || isChecking;
   const notice = lookupCompleted && relatedShipments.length > 0
-    ? `הבדיקה הושלמה. ${relatedShipments.length === 1 ? 'נמצא משלוח' : 'נמצאו משלוחים'} עם אותו טלפון ועיר. בדקו את הפרטים לפני הדפסה או הפקה נוספת.`
+    ? relatedShipments.length === 1
+      ? relatedShipments[0].order_reference ? 'נמצא משלוח. בדקו שהוא להזמנה הזאת.' : 'נמצא משלוח. חסר בו מספר הזמנה.'
+      : 'נמצאו משלוחים. בדקו לאיזו הזמנה הם שייכים.'
     : message;
   const cancelHint = selected?.can_cancel ? 'מבטל רק את המשלוח שנבחר. יידרש אישור.'
     : selected?.delivered ? 'המשלוח כבר נמסר ולכן אי אפשר לבטל אותו.' : 'הביטול אינו זמין כרגע בחברת המשלוחים.';
@@ -73,24 +75,27 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
     <div className="max-h-[70dvh] space-y-3 overflow-y-auto p-5" aria-busy={busy}>
       {isChecking ? <p role="status" className="flex items-center gap-2 py-4"><Loader2 className="animate-spin" size={18} />בודק…</p> : <>
         {(error || notice) && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{error || notice}</p>}
-        {checkedAt && Number.isFinite(Date.parse(checkedAt)) && <p className="text-xs text-slate-500">נבדק ב־{new Date(checkedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
+        {checkedAt && Number.isFinite(Date.parse(checkedAt)) && <p className="text-xs text-slate-500">נבדק {new Date(checkedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
         {relatedShipments.map(candidate => {
           const link = getPrintLabelSource(candidate.control_panel_link);
           return <div key={`${candidate.provider}:${candidate.track_number}`} className="space-y-2 rounded-xl border border-slate-200 p-3 text-sm">
-            <p className="font-semibold">משלוח <span dir="ltr">#{candidate.track_number}</span>{candidate.company_name && candidate.company_name !== companyName ? ` · ${candidate.company_name}` : ''} · {candidate.carrier_status}</p>
-            <p>{candidate.order_reference ? `מספר ההזמנה בחברת המשלוחים: ${candidate.order_reference}` : 'מספר ההזמנה חסר בחברת המשלוחים.'}</p>
-            <p className="text-slate-600">יעד המשלוח: {candidate.destination}</p>
-            {link?.type === 'url' && <a href={link.value} target="_blank" rel="noopener noreferrer" className="inline-block font-semibold text-blue-700 underline">פתח את המשלוח בחברת המשלוחים</a>}
+            <p className="font-semibold"><span dir="ltr">#{candidate.track_number}</span>{candidate.company_name && candidate.company_name !== companyName ? ` · ${candidate.company_name}` : ''} · {candidate.carrier_status}</p>
+            <details className="text-slate-600">
+              <summary className="cursor-pointer">כתובת וטלפון</summary>
+              <p className="mt-2">{candidate.destination}</p>
+              {candidate.order_reference && <p>מספר הזמנה: {candidate.order_reference}</p>}
+            </details>
+            {link?.type === 'url' && <a href={link.value} target="_blank" rel="noopener noreferrer" className="inline-block font-semibold text-blue-700 underline">פרטי משלוח</a>}
           </div>;
         })}
         {confirmAdditional ? <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h3 className="font-bold">להפיק משלוח חדש?</h3>
-          <p className="text-sm">ייתכן שהניסיון הקודם הצליח. הפקה חדשה תיצור משלוח נוסף ולא תבטל משלוח קיים. בדקו קודם בחברת המשלוחים כדי להימנע מכפילות.</p>
-          <button onClick={onAdditional} disabled={busy} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">המשך להפקת משלוח חדש</button>
+          <p className="text-sm">ייתכן שכבר יש משלוח. החדש לא יבטל אותו.</p>
+          <button onClick={onAdditional} disabled={busy} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">המשך להפקה</button>
           <button onClick={() => setConfirmAdditional(false)} disabled={busy} className="mr-2 rounded-lg border bg-white px-4 py-2">חזרה</button>
         </div> : <>
         {selected && <>
-          {!message && <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{selected.delivered ? 'המשלוח כבר נמסר. אפשר להדפיס את המדבקה הקיימת או ליצור משלוח נוסף לחבילה נוספת.' : 'יש כבר מדבקה מוכנה למשלוח. אפשר להדפיס אותה או ליצור משלוח נוסף לחבילה נוספת.'}</p>}
+          {!message && <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{selected.delivered ? 'המשלוח נמסר.' : 'המדבקה מוכנה.'}</p>}
           {active.length > 1 ? <label className="block text-sm font-semibold">משלוח
             <select aria-label="בחירת משלוח" value={String(selected.track_number)} disabled={busy}
               onChange={event => { setSelectedNumber(event.target.value); setConfirmCancel(false); setError(''); }}
@@ -126,7 +131,7 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
           {!message && <p className="py-3">לא נמצאה מדבקה למשלוח בחברה זו.</p>}
           {canRequestAdditional && <button onClick={() => resultUnknown ? setConfirmAdditional(true) : onAdditional()} disabled={busy}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white disabled:opacity-50">
-            <PackagePlus size={18} aria-hidden="true" /><span>{resultUnknown ? 'הפק משלוח חדש' : 'צור משלוח נוסף לחבילה נוספת'}</span>
+            <PackagePlus size={18} aria-hidden="true" /><span>{resultUnknown ? 'הפק משלוח חדש' : 'משלוח נוסף'}</span>
           </button>}
         </>}
         </>}

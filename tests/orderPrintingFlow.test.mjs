@@ -410,9 +410,9 @@ test('an uncertain result survives refresh and offers explicit new creation with
   await openActions();
   assert.equal(JSON.stringify(renderer.toJSON()).includes('אין משלוחים פעילים'),false);
   await act(async()=>button('הפק משלוח חדש').props.onClick());
-  assert.ok(button('המשך להפקת משלוח חדש'));
+  assert.ok(button('המשך להפקה'));
   assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
-  await act(async()=>button('המשך להפקת משלוח חדש').props.onClick());
+  await act(async()=>button('המשך להפקה').props.onClick());
   await settle(()=>Boolean(button('הזמן משלוח נוסף בCarrier')));
   await act(async()=>button('הזמן משלוח נוסף בCarrier').props.onClick());
   await settle(()=>requests.some(({url})=>url.startsWith('/api/create-delivery')));
@@ -587,7 +587,7 @@ test('an initial connection failure offers explicit creation and never sends a f
   await mount();await act(async()=>carousel().props.onSelect('mahirLi'));
   await settle(()=>Boolean(button('הפק משלוח חדש')));
   await act(async()=>button('הפק משלוח חדש').props.onClick());
-  await act(async()=>button('המשך להפקת משלוח חדש').props.onClick());
+  await act(async()=>button('המשך להפקה').props.onClick());
   await settle(()=>Boolean(button('הזמן משלוח נוסף בCarrier')));
   await act(async()=>button('הזמן משלוח נוסף בCarrier').props.onClick());
   await settle(()=>requests.some(({url})=>url.startsWith('/api/create-delivery')));
@@ -617,11 +617,12 @@ test('completed carrier checks show an unlinked candidate and a fresh check time
   await mount();await openActions();
   const dialog=renderer.root.findByType('dialog');
   const text=JSON.stringify(renderer.toJSON());
-  assert.ok(text.includes('77') && text.includes('נאסף') && text.includes('מספר ההזמנה חסר'));
-  const link=dialog.findAllByType('a').find(n=>n.props.children==='פתח את המשלוח בחברת המשלוחים');
+  assert.ok(text.includes('77') && text.includes('נאסף') && text.includes('חסר בו מספר הזמנה'));
+  assert.ok(dialog.findByType('details').props.open !== true,'The address is available on demand without crowding the dialog');
+  const link=dialog.findAllByType('a').find(n=>n.props.children==='פרטי משלוח');
   assert.equal(link.props.href,'https://carrier.example.invalid/delivery/77');
   assert.equal(dialog.findAllByType('a').length,1,'A possible match has a carrier-details link, not a confirmed order-label link');
-  const checkedText=()=>JSON.stringify(renderer.root.findByType('dialog').findAllByType('p').find(n=>n.props.children?.[0]==='נבדק ב־').props.children);
+  const checkedText=()=>JSON.stringify(renderer.root.findByType('dialog').findAllByType('p').find(n=>n.props.children?.[0]==='נבדק ').props.children);
   const first=checkedText();checkedAt='2026-10-07T12:01:00Z';
   await act(async()=>button('בדוק מצב משלוח').props.onClick());
   await settle(()=>Boolean(button('הפק משלוח חדש')) && !button('הפק משלוח חדש').props.disabled);
