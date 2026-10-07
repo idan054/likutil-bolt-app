@@ -594,3 +594,17 @@ test('an initial connection failure offers explicit creation and never sends a f
   const query=new URL(requests.find(({url})=>url.startsWith('/api/create-delivery')).url,fixture.baseUrl).searchParams;
   assert.equal(query.has('additionalShipmentRevision'),false);
 });
+
+test('a status request that never answers leaves loading and offers recovery without creating a shipment', async () => {
+  const timeout=AbortSignal.timeout;
+  AbortSignal.timeout=()=>timeout(30);
+  fixture.shipmentStatus=()=>{};
+  try {
+    await mount();
+    await settle(()=>Boolean(button('בדוק מצב משלוח')));
+    assert.equal(JSON.stringify(renderer.toJSON()).includes('בעיית תקשורת'),true);
+    await act(async()=>carousel().props.onSelect('mahirLi'));
+    await settle(()=>Boolean(button('הפק משלוח חדש')) && !button('הפק משלוח חדש').props.disabled);
+    assert.equal(requests.some(({url})=>url.startsWith('/api/create-delivery')),false);
+  } finally { AbortSignal.timeout=timeout; }
+});

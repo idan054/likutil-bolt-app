@@ -115,7 +115,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         key={`actions:${order.id}:${actionsProvider}`} order={order} companyName={actionsCompany.name}
         shipments={companyShipments} isChecking={isChecking} isBusy={isCreating}
         message={shipmentMessage} canRequestAdditional={canRequestAdditional}
-        resultUnknown={shipmentState?.state === 'uncertain' || !shipmentState && Boolean(shipmentMessage)}
+        resultUnknown={shipmentState?.state !== 'created' && Boolean(shipmentMessage)}
         onAdditional={() => { onRequestAdditional(); setActionsProvider(null); }}
         onCancelShipment={onCancelShipment} onCheck={onCheckShipment} onClose={() => setActionsProvider(null)}
       />}

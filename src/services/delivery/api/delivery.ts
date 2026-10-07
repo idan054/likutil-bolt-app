@@ -31,7 +31,7 @@ const authHeaders = async () => {
 export const getShipmentState = async (orderId: string, userId: string): Promise<ShipmentState> => {
   const query = new URLSearchParams({ orderId, userId });
   const response = await fetch(`${BASE_URL}/api/delivery-status?${query}`, {
-    headers: await authHeaders(), cache: 'no-store',
+    headers: await authHeaders(), cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(() => { throw new Error('בעיית תקשורת עם שירות המשלוחים. לא ניתן לבדוק כרגע אם קיים משלוח. אפשר לבדוק שוב או לבחור במפורש הפקת משלוח חדש.'); });
   const data = await response.json().catch(() => { throw new Error('שירות המשלוחים החזיר תשובה לא תקינה. מצב המשלוח אינו ידוע. אפשר לבדוק שוב או לבחור במפורש הפקת משלוח חדש.'); });
   if (!response.ok || typeof data.blocked !== 'boolean') {
@@ -46,8 +46,8 @@ export const cancelDeliveryShipment = async (
   const query = new URLSearchParams({orderId, userId, provider: shipment.provider,
     trackNumber: String(shipment.track_number), revision});
   const response = await fetch(`${BASE_URL}/api/cancel-delivery?${query}`, {
-    method: 'POST', headers: await authHeaders(),
-  });
+    method: 'POST', headers: await authHeaders(), signal: AbortSignal.timeout(90_000),
+  }).catch(() => { throw new Error('בעיית תקשורת בזמן הביטול. לא ידוע אם המשלוח בוטל. אפשר לבדוק שוב את מצבו.'); });
   const data = await response.json();
   if (!response.ok) {
     if (data.detail && typeof data.detail === 'object' && data.detail.blocked) {
@@ -83,7 +83,8 @@ export const createDeliveryTask = async (
       method: 'POST',
       headers: await authHeaders(),
       body: JSON.stringify(request),
-    });
+      signal: AbortSignal.timeout(90_000),
+    }).catch(() => { throw new Error('בעיית תקשורת בזמן הפקת המשלוח. לא ידוע אם ההפקה הצליחה. אפשר לבדוק מצב משלוח או לבחור במפורש הפקה חדשה.'); });
 
     const responseText = await response.text();
     let data: unknown = responseText;

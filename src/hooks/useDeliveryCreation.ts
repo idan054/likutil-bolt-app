@@ -57,7 +57,7 @@ export const useDeliveryCreation = ({
   const shipments = shipmentState?.shipments ?? (shipmentState?.response ? [shipmentState.response] : deliveryResponse ? [deliveryResponse] : []);
   const providerShipments = shipments.filter(shipment => shipment.provider === provider && !shipment.cancelled);
   const additionalRequested = additionalRevision !== null;
-  const pending = shipmentState?.state === 'creating' || shipmentState?.state === 'cancelling' ||
+  const pending = ((shipmentState?.state === 'creating' || shipmentState?.state === 'cancelling') && !(additionalRequested && checkFailed)) ||
     (shipmentState?.state === 'uncertain' && !additionalRequested);
   const isCreationBlocked = isChecking || isCancelling || pending ||
     (shipmentBlocked && !shipmentState?.can_additional && !additionalRequested) || (providerShipments.length > 0 && !additionalRequested);
