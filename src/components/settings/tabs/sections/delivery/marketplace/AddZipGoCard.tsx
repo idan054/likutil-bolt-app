@@ -31,8 +31,11 @@ export const AddZipGoCard: React.FC<AddZipGoCardProps> = ({ integrations }) => {
     try {
       const ref = doc(db, 'delivery_companies', ZIPGO_ID);
       if (!(await getDoc(ref)).exists()) {
-        const template = (await getDoc(doc(db, 'delivery_companies', 'mahirLi'))).data() || {};
+        // Same shape as the Mahir Li record (both are LionWheel companies), without its identity or any credential.
+        const template = { ...((await getDoc(doc(db, 'delivery_companies', 'mahirLi'))).data() || {}) };
+        for (const key of ['token', 'username', 'password', 'clientId', 'lastTested', 'key', 'keys']) delete template[key];
         await setDoc(ref, {
+          ...template,
           id: ZIPGO_ID,
           provider: ZIPGO_ID,
           name: 'ZipGo',

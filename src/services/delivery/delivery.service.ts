@@ -75,25 +75,35 @@ export const persistCourierMetaToOrder = async (
   const courier = siteCarrierForProvider(provider);
   if (!courier) return;
 
-  const meta: Array<{ key: string; value: string }> = [{ key: '_s3_courier', value: courier }];
-  if (courier === 'zipgo') {
-    const trackNumber = response.track_number != null ? String(response.track_number) : '';
-    let publicId = response.public_id != null ? String(response.public_id) : '';
-    if (!publicId && response.print_label) {
-      const match = /[?&]public_id=([^&]+)/i.exec(response.print_label);
-      if (match) publicId = decodeURIComponent(match[1]);
-    }
-    meta.push(
-      { key: '_s3_zipgo_task_id', value: response.id != null ? String(response.id) : trackNumber },
-      { key: '_s3_zipgo_public_id', value: publicId },
-      { key: '_s3_zipgo_created_at', value: createdAt }
-    );
-  }
-
   try {
-    await updateOrderMeta(String(order.id), meta);
+    const meta: Array<{ key: string; value: string }> = [{ key: '_s3_courier', value: courier }];
+    if (courier === 'zipgo') {
+      const trackNumber = response.track_number != null ? String(response.track_number) : '';
+      meta.push(
+        { key: '_s3_zipgo_task_id', value: response.id != null ? String(response.id) : trackNumber },
+        { key: '_s3_zipgo_public_id', value: lionwheelPublicId(response) },
+        { key: '_s3_zipgo_created_at', value: createdAt }
+      );
+    }
+    // The shipment already exists: a slow store must not hold the picker's screen for long.
+    await Promise.race([
+      updateOrderMeta(String(order.id), meta),
+      new Promise<void>((resolve) => setTimeout(resolve, 8000)),
+    ]);
   } catch (error) {
     console.error('[delivery.service] Failed to persist courier meta to order:', error);
+  }
+};
+
+/** LionWheel's public_id: from the response, or from the print label link (?public_id=XXXX). Never throws. */
+const lionwheelPublicId = (response: DeliveryTaskResponse): string => {
+  if (response.public_id != null) return String(response.public_id);
+  const match = /[?&]public_id=([^&]+)/i.exec(response.print_label || '');
+  if (!match) return '';
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
   }
 };
 

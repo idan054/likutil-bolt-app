@@ -82,11 +82,12 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
   }, [selectedProvider, connectedKey, order.id]);
 
   // What the site decided, in words, for the picker
-  const siteCompanyName = integrations.find(
-    integration => integration.provider === providerForSiteCarrier(order.s3_carrier?.use)
-  )?.name;
+  const siteProviderId = providerForSiteCarrier(order.s3_carrier?.use);
+  const siteCompanyName = integrations.find(integration => integration.provider === siteProviderId)?.name;
+  const siteCompanyMissing = Boolean(siteProviderId && connectedKey && !connectedProviders.has(siteProviderId));
   const siteNote = order.s3_carrier?.use
-    ? ['לפי האתר', siteCompanyName, order.s3_carrier.line].filter(Boolean).join(' · ')
+    ? ['לפי האתר', siteCompanyName, order.s3_carrier.line, siteCompanyMissing ? 'החברה הזו לא מחוברת בחשבון הזה' : '']
+        .filter(Boolean).join(' · ')
     : '';
 
   // Find selected integration

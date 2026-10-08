@@ -30,7 +30,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   const { decision } = useOrderFastDeliveryDecision(order);
 
   // The site's routing decision, when there is one, says whether this order leaves with a same-day courier.
-  const isFast = (siteDeliveryType(order.s3_carrier) ?? getOrderDeliveryBadgeType(order.shipping_lines, decision)) === 'fast';
+  const badgeType = getOrderDeliveryBadgeType(order.shipping_lines, decision);
+  const isFast = badgeType !== 'pickup' && (siteDeliveryType(order.s3_carrier) ?? badgeType) === 'fast';
   useEffect(() => {
     onPriorityChange(order.id, isFast);
   }, [order.id, isFast, onPriorityChange]);

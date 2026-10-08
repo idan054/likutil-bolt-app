@@ -143,15 +143,18 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
 
   // The site decides which courier the order should use (order.s3_carrier) and that card is preselected;
   // the picker can still choose another. Without a site decision the old rule applies: fast -> mahirLi.
+  // An order that already has a live shipment keeps that courier selected, so the picker sees it.
   const siteProvider = providerForSiteCarrier(order.s3_carrier?.use);
+  const existingShipmentProvider = previousShipments.find((shipment) => !shipment.cancelled)?.provider ?? null;
   useEffect(() => {
     if (selectedDeliveryProvider) return;
     if (siteProvider) {
-      setSelectedDeliveryProvider(siteProvider);
+      if (isChecking) return;
+      setSelectedDeliveryProvider(existingShipmentProvider ?? siteProvider);
     } else if (decision?.deliveryType === 'fast') {
       setSelectedDeliveryProvider('mahirLi');
     }
-  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider]);
+  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider, isChecking, existingShipmentProvider]);
 
   useEffect(() => {
     resetMessaging();

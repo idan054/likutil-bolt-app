@@ -53,6 +53,7 @@ test("fast or regular follows the site only when it decided", () => {
   assert.equal(siteDeliveryType({ use: "mahirli" }), "fast");
   assert.equal(siteDeliveryType({ use: "negev" }), "regular");
   assert.equal(siteDeliveryType({ use: "" }), null);
+  assert.equal(siteDeliveryType({ use: "something-new" }), null);
   assert.equal(siteDeliveryType(null), null);
   assert.equal(siteDeliveryType(undefined), null);
 });

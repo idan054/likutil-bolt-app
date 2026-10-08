@@ -38,6 +38,7 @@ export const preferredSiteProvider = (
 export const siteDeliveryType = (
   decision: SiteCarrierDecision | null | undefined
 ): "fast" | "regular" | null => {
-  if (!decision?.use) return null;
-  return decision.use === "zipgo" || decision.use === "mahirli" ? "fast" : "regular";
+  if (decision?.use === "zipgo" || decision?.use === "mahirli") return "fast";
+  if (decision?.use === "negev") return "regular";
+  return null;
 };
