@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { createDelivery, persistMahirliMetaToOrder } from "../services/delivery/delivery.service";
+import { createDelivery, persistCourierMetaToOrder } from "../services/delivery/delivery.service";
 import {
   getKeysByProgramType,
   useDeliveryIntegrations,
@@ -211,10 +211,8 @@ export const useDeliveryCreation = ({
         }
       }
 
-      // Persist Mahir Li delivery identifiers onto the order (best-effort, never blocks).
-      if (provider === "mahirLi") {
-        await persistMahirliMetaToOrder(order, result, requestedAt);
-      }
+      // Mark the courier on the order (and the LionWheel identifiers for Mahir Li / ZipGo); best-effort, never blocks.
+      await persistCourierMetaToOrder(order, provider, result, requestedAt);
 
       await onSuccess(labelOpened);
     } catch (error) {

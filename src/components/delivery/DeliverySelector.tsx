@@ -10,6 +10,7 @@ import type { DeliveryTaskResponse, ShipmentState } from '../../services/deliver
 import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
 import { OrderDetails } from '../../types/order';
 import { ShipmentActionsDialog } from './ShipmentActionsDialog';
+import { preferredSiteProvider, providerForSiteCarrier } from '../../utils/siteCarrier';
 
 
 interface DeliverySelectorProps {
@@ -68,6 +69,26 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
       .map(integration => integration.provider)
   );
 
+  // The site chose a courier this account is not connected to (for example ZipGo before its token was
+  // entered): move to the site's fallback courier instead of leaving the picker with no card selected.
+  const connectedKey = Array.from(connectedProviders).sort().join(',');
+  React.useEffect(() => {
+    if (!selectedProvider || !connectedKey || isCreating || deliveryResponse) return;
+    if (connectedProviders.has(selectedProvider)) return;
+    if (selectedProvider !== providerForSiteCarrier(order.s3_carrier?.use)) return;
+    const next = preferredSiteProvider(order.s3_carrier, connectedProviders);
+    if (next && next !== selectedProvider) onSelect(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvider, connectedKey, order.id]);
+
+  // What the site decided, in words, for the picker
+  const siteCompanyName = integrations.find(
+    integration => integration.provider === providerForSiteCarrier(order.s3_carrier?.use)
+  )?.name;
+  const siteNote = order.s3_carrier?.use
+    ? ['לפי האתר', siteCompanyName, order.s3_carrier.line].filter(Boolean).join(' · ')
+    : '';
+
   // Find selected integration
   const displayedProvider = selectedProvider || deliveryResponse?.provider || null;
   const selectedIntegration = integrations.find(
@@ -103,6 +124,12 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         </div>
       </div>
       
+      {siteNote && (
+        <div role="note" className="mb-3 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-right text-sm text-teal-900">
+          {siteNote}
+        </div>
+      )}
+
       <DeliveryCarousel
         selectedProvider={displayedProvider}
         onSelect={selectProvider}

@@ -252,6 +252,7 @@ const mapOrder = (
       tags: order.tags ? order.tags.split(", ") : [],
       s3_print: order.s3_print ?? null,
       s3_label_url: order.s3_label_url ?? null,
+      s3_carrier: order.s3_carrier ?? null,
     };
   }
 // --------------------------------------------------
@@ -353,6 +354,7 @@ const mapOrder = (
     ),
     s3_print: order.s3_print ?? null,
     s3_label_url: order.s3_label_url ?? null,
+    s3_carrier: order.s3_carrier ?? null,
   };
 };
 

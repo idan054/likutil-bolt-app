@@ -3,6 +3,7 @@ import { createDeliveryTask } from './api/delivery';
 import { mapOrderToDeliveryTask } from './mappers';
 import type { DeliveryTaskResponse } from './types';
 import { getOrderById, updateOrderMeta } from '../orders/orders.service';
+import { siteCarrierForProvider } from '../../utils/siteCarrier';
 
 interface CreateDeliveryParams {
   userId: string;
@@ -51,6 +52,49 @@ export const createDelivery = async ({
     additionalShipmentRevision,
     replacementShipmentRevision
   });
+};
+
+/**
+ * Marks on the WooCommerce order which courier took the parcel, for every provider the site tracks.
+ * `_s3_courier` is always written (mahirli | zipgo | negev): the site uses it to choose the account it
+ * polls, and after a parcel is moved between couriers it is the only record of who holds it now.
+ * ZipGo runs on LionWheel like Mahir Li but under its own account, so its identifiers go under their own
+ * keys (`_s3_zipgo_*`); a ZipGo number stored under the Mahir Li keys would be looked up in the wrong account.
+ * Best-effort: a failure is logged and never blocks the delivery flow.
+ */
+export const persistCourierMetaToOrder = async (
+  order: OrderDetails,
+  provider: string,
+  response: DeliveryTaskResponse,
+  createdAt: string
+): Promise<void> => {
+  if (provider === 'mahirLi') {
+    await persistMahirliMetaToOrder(order, response, createdAt);
+    return;
+  }
+  const courier = siteCarrierForProvider(provider);
+  if (!courier) return;
+
+  const meta: Array<{ key: string; value: string }> = [{ key: '_s3_courier', value: courier }];
+  if (courier === 'zipgo') {
+    const trackNumber = response.track_number != null ? String(response.track_number) : '';
+    let publicId = response.public_id != null ? String(response.public_id) : '';
+    if (!publicId && response.print_label) {
+      const match = /[?&]public_id=([^&]+)/i.exec(response.print_label);
+      if (match) publicId = decodeURIComponent(match[1]);
+    }
+    meta.push(
+      { key: '_s3_zipgo_task_id', value: response.id != null ? String(response.id) : trackNumber },
+      { key: '_s3_zipgo_public_id', value: publicId },
+      { key: '_s3_zipgo_created_at', value: createdAt }
+    );
+  }
+
+  try {
+    await updateOrderMeta(String(order.id), meta);
+  } catch (error) {
+    console.error('[delivery.service] Failed to persist courier meta to order:', error);
+  }
 };
 
 /**

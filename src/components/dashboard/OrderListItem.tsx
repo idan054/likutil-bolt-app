@@ -4,6 +4,7 @@ import { formatTimeAgo } from '../../utils/date';
 import { useCustomerDetails } from '../../hooks/useCustomerDetails';
 import type { OrderSummary } from '../../types/order';
 import { DeliveryTypeBadge } from '../ui/DeliveryTypeBadge';
+import { siteDeliveryType } from '../../utils/siteCarrier';
 import { useOrderFastDeliveryDecision } from '../../hooks/useOrderFastDeliveryDecision';
 import { isOtherPaymentMethod } from '../../utils/order';
 import { getOrderDeliveryBadgeType } from '../../utils/shippingMethod';
@@ -28,7 +29,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   const { customer, isLoading, refetch } = useCustomerDetails(order.customer_id);
   const { decision } = useOrderFastDeliveryDecision(order);
 
-  const isFast = getOrderDeliveryBadgeType(order.shipping_lines, decision) === 'fast';
+  // The site's routing decision, when there is one, says whether this order leaves with a same-day courier.
+  const isFast = (siteDeliveryType(order.s3_carrier) ?? getOrderDeliveryBadgeType(order.shipping_lines, decision)) === 'fast';
   useEffect(() => {
     onPriorityChange(order.id, isFast);
   }, [order.id, isFast, onPriorityChange]);

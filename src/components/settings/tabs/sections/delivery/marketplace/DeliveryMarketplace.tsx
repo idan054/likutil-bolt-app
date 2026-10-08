@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IntegrationCard } from './IntegrationCard';
 import { RequestCompanyCard } from './RequestCompanyCard';
 import { AddDeliveryCompanyCard } from './AddDeliveryCompanyCard';
+import { AddZipGoCard } from './AddZipGoCard';
 // import { IntegrationDetails } from './IntegrationDetails';
 import type { DeliveryIntegration } from '../../../../../../types/delivery';
 import { NonConnectedCompany } from '../../../../../delivery/company/NonConnectedCompany';
@@ -91,6 +92,7 @@ export const DeliveryMarketplace: React.FC<DeliveryMarketplaceProps> = ({
             />
           ))}
 
+<AddZipGoCard integrations={integrations} />
 <RequestCompanyCard />
       </div>
 

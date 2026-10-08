@@ -59,6 +59,23 @@ export interface CompanyPrintDocuments {
   };
 }
 
+/**
+ * The site's routing decision for an order (spider3d-carrier-route.php, field `s3_carrier`).
+ * An empty `use` means the site made no decision and the picker chooses as before.
+ */
+export interface SiteCarrierDecision {
+  v?: number;
+  /** 'zipgo' | 'mahirli' | 'negev' | '' */
+  use?: string;
+  fallback?: string;
+  service?: string;
+  upgrade?: boolean;
+  packages?: number;
+  /** A short Hebrew line for the picker. */
+  line?: string;
+  why?: string;
+}
+
 export interface OrderSummary {
   customer_id: number | null;
   is_vip_member?: boolean;
@@ -86,6 +103,7 @@ export interface OrderSummary {
   payment_method_title?: string;
   s3_print?: CompanyPrintDocuments | null;
   s3_label_url?: string | null;
+  s3_carrier?: SiteCarrierDecision | null;
 }
 
 export interface OrderDetails extends OrderSummary {

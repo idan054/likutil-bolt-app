@@ -15,6 +15,7 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
+import { providerForSiteCarrier } from "../utils/siteCarrier";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 import {
   isCashPaymentMethod,
@@ -140,12 +141,17 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
     setSelectedDeliveryProvider(null);
   }, [order.id]);
 
-  // Auto-select mahirLi when fast delivery decision is active
+  // The site decides which courier the order should use (order.s3_carrier) and that card is preselected;
+  // the picker can still choose another. Without a site decision the old rule applies: fast -> mahirLi.
+  const siteProvider = providerForSiteCarrier(order.s3_carrier?.use);
   useEffect(() => {
-    if (decision?.deliveryType === 'fast' && !selectedDeliveryProvider) {
+    if (selectedDeliveryProvider) return;
+    if (siteProvider) {
+      setSelectedDeliveryProvider(siteProvider);
+    } else if (decision?.deliveryType === 'fast') {
       setSelectedDeliveryProvider('mahirLi');
     }
-  }, [decision?.deliveryType, selectedDeliveryProvider]);
+  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider]);
 
   useEffect(() => {
     resetMessaging();
