@@ -30,8 +30,8 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
   const { decision } = useOrderFastDeliveryDecision(order);
 
   // The site's routing decision, when there is one, says whether this order leaves with a same-day courier.
-  const badgeType = getOrderDeliveryBadgeType(order.shipping_lines, decision);
-  const isFast = badgeType !== 'pickup' && (siteDeliveryType(order.s3_carrier) ?? badgeType) === 'fast';
+  const siteType = siteDeliveryType(order.s3_carrier);
+  const isFast = getOrderDeliveryBadgeType(order.shipping_lines, decision, siteType) === 'fast';
   useEffect(() => {
     onPriorityChange(order.id, isFast);
   }, [order.id, isFast, onPriorityChange]);
@@ -71,7 +71,9 @@ export const OrderListItem: React.FC<OrderListItemProps> = ({
               shippingLines={order.shipping_lines}
               deliveryType={decision?.deliveryType} 
               decisionState={decision?.decisionState} 
-              checks={decision?.checks} 
+              checks={decision?.checks}
+              siteType={siteType}
+              siteLine={order.s3_carrier?.line} 
             />
           {isCompleted && <CheckCircle size={14} className="text-green-500" />}
           </div>

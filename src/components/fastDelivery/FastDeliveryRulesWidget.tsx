@@ -82,17 +82,17 @@ export const FastDeliveryRulesWidget: React.FC = () => {
         type="button"
         onClick={() => setOpen(true)}
         className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full bg-slate-900 text-white px-3 py-2 shadow-lg hover:bg-slate-800"
-        title="כללי מהיר לי"
+        title="כללי משלוח להיום"
       >
         <Settings2 size={16} />
-        <span className="text-sm">כללי מהיר לי</span>
+        <span className="text-sm">כללי משלוח להיום</span>
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-3">
           <div className="w-full max-w-2xl max-h-[calc(100vh-1.5rem)] rounded-xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <div className="font-semibold">כללי מהיר לי</div>
+              <div className="font-semibold">כללי משלוח להיום</div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

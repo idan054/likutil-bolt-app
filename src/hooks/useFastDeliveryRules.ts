@@ -16,7 +16,7 @@ export const useFastDeliveryRules = () => {
       const r = await getFastDeliveryRules(settings.storeUrl);
       setRules(r);
     } catch {
-      toast.error("שגיאה בטעינת כללי מהיר לי");
+      toast.error("שגיאה בטעינת כללי משלוח להיום");
     } finally {
       setIsLoading(false);
     }

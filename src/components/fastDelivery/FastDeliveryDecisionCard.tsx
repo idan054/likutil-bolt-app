@@ -30,7 +30,7 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
     if (decisionError && !decision) return "שגיאה";
     if (!decision) return "לא נקבע";
     if (decision.decisionState === "needs_review") return "דורש בדיקה";
-    return decision.deliveryType === "fast" ? "מהיר לי" : "רגיל";
+    return decision.deliveryType === "fast" ? "להיום" : "רגיל";
   }, [decision, decisionError, isLoading]);
 
   const badgeType = useMemo(() => {
@@ -126,7 +126,7 @@ export const FastDeliveryDecisionCard: React.FC<{ order: OrderDetails }> = ({ or
             className="px-3 py-2 rounded-lg border hover:bg-slate-50"
             disabled={isLoading}
           >
-            מהיר לי
+            להיום
           </button>
           <button
             type="button"

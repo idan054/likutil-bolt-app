@@ -8,6 +8,7 @@ let siteCarrierForProvider;
 let preferredSiteProvider;
 let siteDeliveryType;
 let siteBlockedProviders;
+let getOrderDeliveryBadgeType;
 
 before(async () => {
   viteServer = await createServer({
@@ -17,6 +18,7 @@ before(async () => {
   });
   ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType, siteBlockedProviders } =
     await viteServer.ssrLoadModule("/src/utils/siteCarrier.ts"));
+  ({ getOrderDeliveryBadgeType } = await viteServer.ssrLoadModule("/src/utils/shippingMethod.ts"));
 });
 
 after(async () => {
@@ -61,6 +63,26 @@ test("couriers the site blocks for the town are keyed by our provider ids", () =
   assert.deepEqual(siteBlockedProviders({ blocked: { unknown: "x", zipgo: "" } }), {});
   assert.deepEqual(siteBlockedProviders({ use: "zipgo" }), {});
   assert.deepEqual(siteBlockedProviders(null), {});
+});
+
+test("the delivery type badge: pickup, then a manual choice, then the site, then the old rules", () => {
+  const regular = [{ method_id: "flexible_shipping_single", method_title: "משלוח רגיל — 3–7 ימי עסקים" }];
+  const sameDay = [{ method_id: "flexible_shipping_single", method_title: "מהיום להיום — הזמנה עד 11:00" }];
+  const pickup = [{ method_id: "local_pickup", method_title: "איסוף עצמי" }];
+  // a regular-shipping order the site upgrades is a same-day order for the picker
+  assert.equal(getOrderDeliveryBadgeType(regular, null, "fast"), "fast");
+  assert.equal(getOrderDeliveryBadgeType(regular, { deliveryType: "regular", decisionState: "auto" }, "fast"), "fast");
+  // the site says regular: Likutil's own automatic "fast" no longer applies
+  assert.equal(getOrderDeliveryBadgeType(regular, { deliveryType: "fast", decisionState: "auto" }, "regular"), "regular");
+  // a manual choice by the picker wins over the site
+  assert.equal(getOrderDeliveryBadgeType(regular, { deliveryType: "regular", decisionState: "manual" }, "fast"), "regular");
+  // pickup stays pickup
+  assert.equal(getOrderDeliveryBadgeType(pickup, null, "fast"), "pickup");
+  // no site decision: exactly as before
+  assert.equal(getOrderDeliveryBadgeType(regular, null, null), "regular");
+  assert.equal(getOrderDeliveryBadgeType(sameDay, null, null), "fast");
+  assert.equal(getOrderDeliveryBadgeType(regular, { deliveryType: "fast", decisionState: "auto" }), "fast");
+  assert.equal(getOrderDeliveryBadgeType(regular, { decisionState: "needs_review" }, undefined), "needs_review");
 });
 
 test("fast or regular follows the site only when it decided", () => {

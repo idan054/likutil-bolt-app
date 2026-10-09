@@ -21,6 +21,10 @@ import { getProductCategoriesByIds } from "../services/fastDelivery/product-cate
 import { getCustomerById } from "../services/customers/customers.service";
 import { createOrderNote } from "../services/orders/notes.service";
 import { hasSelectedFastShipping } from "../utils/shippingMethod";
+import { siteDeliveryType } from "../utils/siteCarrier";
+
+/** `rulesUpdatedAt` of a decision that came from the shop site's routing decision (order.s3_carrier). */
+const SITE_DECISION_MARK = "site-carrier";
 
 const decisionCache = new Map<string, OrderDeliveryDecision | null>();
 const decisionListeners = new Map<
@@ -227,7 +231,43 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       let rulesUpdatedAt: string;
       let inputFingerprint: string;
 
-      if (hasExplicitFastShipping) {
+      const siteCarrier = (order as OrderDetails).s3_carrier;
+      const siteType = siteDeliveryType(siteCarrier);
+
+      // A decision taken from the site stays as it is after the site stops sending one (it stops once a
+      // shipment is opened). Recalculating from the old rules would flip the type and add a second note.
+      if (!siteType && existing?.rulesUpdatedAt === SITE_DECISION_MARK) {
+        publishDecision(cacheKey, existing);
+        return;
+      }
+
+      if (siteType) {
+        // The shop site decided which courier takes this order (order.s3_carrier): that is the delivery type.
+        rulesUpdatedAt = SITE_DECISION_MARK;
+        inputFingerprint = JSON.stringify({
+          use: siteCarrier?.use ?? "",
+          upgrade: Boolean(siteCarrier?.upgrade),
+        });
+
+        if (
+          !shouldRecalculateAutomaticDecision({
+            existing,
+            rulesUpdatedAt,
+            inputFingerprint,
+          })
+        ) {
+          publishDecision(cacheKey, existing);
+          return;
+        }
+
+        const siteLabel = "לפי ההחלטה של האתר";
+        res = {
+          deliveryType: siteType,
+          decisionState: "auto" as const,
+          // Firestore rejects undefined values, so `detail` is present only when there is a line.
+          checks: [siteCarrier?.line ? { label: siteLabel, ok: true, detail: siteCarrier.line } : { label: siteLabel, ok: true }],
+        };
+      } else if (hasExplicitFastShipping) {
         rulesUpdatedAt = "woo-shipping-selection";
         inputFingerprint = JSON.stringify(
           (order as OrderDetails).shipping_lines.map((line) => ({
@@ -344,7 +384,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       const noteText =
         res.decisionState === "needs_review"
           ? "סוג משלוח במערכת ליקוט: דורש בדיקה (חסר מידע מלא)"
-          : `סוג משלוח במערכת ליקוט: ${res.deliveryType === "fast" ? "מהיר לי" : "רגיל"} (אוטומטי)`;
+          : `סוג משלוח במערכת ליקוט: ${res.deliveryType === "fast" ? "להיום" : "רגיל"} (אוטומטי)`;
 
       const sync = await trySyncWooNote(noteText);
 
@@ -403,7 +443,7 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
 
         const saved = await persist(next);
 
-        const noteText = `סוג משלוח במערכת ליקוט: ${type === "fast" ? "מהיר לי" : "רגיל"} (שונה ידנית)`;
+        const noteText = `סוג משלוח במערכת ליקוט: ${type === "fast" ? "להיום" : "רגיל"} (שונה ידנית)`;
         const sync = await trySyncWooNote(noteText);
 
         if (!sync.ok && saved) {
@@ -441,10 +481,10 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
       const now = new Date().toISOString();
       const noteText =
         decision.decisionState === "manual"
-          ? `סוג משלוח במערכת ליקוט: ${decision.deliveryType === "fast" ? "מהיר לי" : "רגיל"} (שונה ידנית)`
+          ? `סוג משלוח במערכת ליקוט: ${decision.deliveryType === "fast" ? "להיום" : "רגיל"} (שונה ידנית)`
           : decision.decisionState === "needs_review"
             ? "סוג משלוח במערכת ליקוט: דורש בדיקה (חסר מידע מלא)"
-            : `סוג משלוח במערכת ליקוט: ${decision.deliveryType === "fast" ? "מהיר לי" : "רגיל"} (אוטומטי)`;
+            : `סוג משלוח במערכת ליקוט: ${decision.deliveryType === "fast" ? "להיום" : "רגיל"} (אוטומטי)`;
 
       const sync = await trySyncWooNote(noteText);
 

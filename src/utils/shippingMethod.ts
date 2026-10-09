@@ -54,7 +54,9 @@ export const getOrderDeliveryBadgeType = (
   decision?: {
     deliveryType?: DeliveryType;
     decisionState?: DeliveryDecisionState;
-  } | null
+  } | null,
+  /** Fast or regular according to the shop site's routing decision (order.s3_carrier); null when it made none. */
+  siteType?: "fast" | "regular" | null
 ): "fast" | "regular" | "needs_review" | "pickup" => {
   if (shippingLines?.some(isPickupShippingLine)) return "pickup";
 
@@ -62,6 +64,9 @@ export const getOrderDeliveryBadgeType = (
   if (decision?.decisionState === "manual" && decision.deliveryType) {
     return decision.deliveryType;
   }
+
+  // The site decided which courier takes the order: a regular-shipping order it upgrades is a same-day order here.
+  if (siteType) return siteType;
 
   if (hasSelectedFastShipping(shippingLines)) return "fast";
   if (decision?.decisionState === "needs_review") return "needs_review";

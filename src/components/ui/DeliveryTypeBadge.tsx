@@ -17,6 +17,10 @@ interface DeliveryTypeBadgeProps {
   decisionState?: DeliveryDecisionState;
   checks?: DeliveryCheck[];
   className?: string;
+
+  /** The shop site's routing decision, when there is one: it sets the type unless the picker chose manually. */
+  siteType?: "fast" | "regular" | null;
+  siteLine?: string;
 }
 
 type BadgeType = ReturnType<typeof getOrderDeliveryBadgeType>;
@@ -57,6 +61,8 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   decisionState,
   checks,
   className = "",
+  siteType,
+  siteLine,
 }) => {
   const fallbackShippingLine = {
     method_title: shippingMethodTitle || "",
@@ -69,19 +75,21 @@ export const DeliveryTypeBadge: React.FC<DeliveryTypeBadgeProps> = ({
   const derivedType = getOrderDeliveryBadgeType(effectiveShippingLines, {
     deliveryType,
     decisionState,
-  });
+  }, siteType);
+  const decidedBySite = Boolean(siteType) && decisionState !== "manual" && derivedType !== "pickup";
 
   const label = (() => {
     switch (derivedType) {
       case "pickup": return "איסוף עצמי";
-      case "fast": return "מהיר לי";
+      case "fast": return "להיום";
       case "needs_review": return "דורש בדיקה";
       default: return "רגיל";
     }
   })();
 
-  const effectiveChecks =
-    isSelectedFastMethod && derivedType === "fast" && decisionState !== "manual"
+  const effectiveChecks = decidedBySite
+    ? [siteLine ? { label: "לפי ההחלטה של האתר", ok: true, detail: siteLine } : { label: "לפי ההחלטה של האתר", ok: true }]
+    : isSelectedFastMethod && derivedType === "fast" && decisionState !== "manual"
       ? [{ label: "שיטת משלוח מהיר נקבעה בחנות", ok: true }]
       : checks;
 
