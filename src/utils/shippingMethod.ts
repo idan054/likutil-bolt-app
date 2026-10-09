@@ -1,5 +1,6 @@
 import type { OrderSummary } from "../types/order";
 import type { DeliveryDecisionState, DeliveryType } from "../types/fastDelivery";
+import { siteDeliveryType } from "./siteCarrier";
 
 type ShippingLine = OrderSummary["shipping_lines"][number];
 
@@ -83,7 +84,7 @@ export const sortOrdersByDeliveryPriority = (
       index,
       isFast:
         fastByOrderId[order.id] ??
-        (getOrderDeliveryBadgeType(order.shipping_lines) === "fast"),
+        (getOrderDeliveryBadgeType(order.shipping_lines, null, siteDeliveryType(order.s3_carrier)) === "fast"),
     }))
     .sort((a, b) => Number(b.isFast) - Number(a.isFast) || a.index - b.index)
     .map(({ order }) => order);

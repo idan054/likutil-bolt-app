@@ -9,6 +9,7 @@ let preferredSiteProvider;
 let siteDeliveryType;
 let siteBlockedProviders;
 let getOrderDeliveryBadgeType;
+let sortOrdersByDeliveryPriority;
 
 before(async () => {
   viteServer = await createServer({
@@ -18,7 +19,8 @@ before(async () => {
   });
   ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType, siteBlockedProviders } =
     await viteServer.ssrLoadModule("/src/utils/siteCarrier.ts"));
-  ({ getOrderDeliveryBadgeType } = await viteServer.ssrLoadModule("/src/utils/shippingMethod.ts"));
+  ({ getOrderDeliveryBadgeType, sortOrdersByDeliveryPriority } =
+    await viteServer.ssrLoadModule("/src/utils/shippingMethod.ts"));
 });
 
 after(async () => {
@@ -85,10 +87,27 @@ test("the delivery type badge: pickup, then a manual choice, then the site, then
   assert.equal(getOrderDeliveryBadgeType(regular, { decisionState: "needs_review" }, undefined), "needs_review");
 });
 
+test("the list is sorted by the site's decision before any row reports", () => {
+  const regular = [{ method_id: "flexible_shipping_single", method_title: "משלוח רגיל — 3–7 ימי עסקים" }];
+  const sameDay = [{ method_id: "flexible_shipping_single", method_title: "מהיום להיום — הזמנה עד 11:00" }];
+  const orders = [
+    { id: 1, shipping_lines: regular, s3_carrier: { use: "negev", service: "regular" } },
+    { id: 2, shipping_lines: regular, s3_carrier: { use: "zipgo", service: "regular", upgrade: true } },
+    { id: 3, shipping_lines: sameDay, s3_carrier: { use: "", why: "before_start" } },
+    { id: 4, shipping_lines: regular },
+  ];
+  assert.deepEqual(sortOrdersByDeliveryPriority(orders, {}).map((order) => order.id), [2, 3, 1, 4]);
+  // what a row reported wins over the first guess
+  assert.deepEqual(sortOrdersByDeliveryPriority(orders, { 2: false, 4: true }).map((order) => order.id), [3, 4, 1, 2]);
+});
+
 test("fast or regular follows the site only when it decided", () => {
   assert.equal(siteDeliveryType({ use: "zipgo" }), "fast");
   assert.equal(siteDeliveryType({ use: "mahirli" }), "fast");
   assert.equal(siteDeliveryType({ use: "negev" }), "regular");
+  assert.equal(siteDeliveryType({ use: "negev", service: "regular" }), "regular");
+  // the customer paid same-day and the site found no same-day courier: still a same-day order for the picker
+  assert.equal(siteDeliveryType({ use: "negev", service: "sameday" }), "fast");
   assert.equal(siteDeliveryType({ use: "" }), null);
   assert.equal(siteDeliveryType({ use: "something-new" }), null);
   assert.equal(siteDeliveryType(null), null);

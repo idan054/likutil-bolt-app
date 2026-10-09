@@ -21,10 +21,7 @@ import { getProductCategoriesByIds } from "../services/fastDelivery/product-cate
 import { getCustomerById } from "../services/customers/customers.service";
 import { createOrderNote } from "../services/orders/notes.service";
 import { hasSelectedFastShipping } from "../utils/shippingMethod";
-import { siteDeliveryType } from "../utils/siteCarrier";
-
-/** `rulesUpdatedAt` of a decision that came from the shop site's routing decision (order.s3_carrier). */
-const SITE_DECISION_MARK = "site-carrier";
+import { SITE_DECISION_MARK, siteDeliveryType } from "../utils/siteCarrier";
 
 const decisionCache = new Map<string, OrderDeliveryDecision | null>();
 const decisionListeners = new Map<
@@ -378,6 +375,20 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
         inputFingerprint,
       };
 
+      // The site's decision replaced an automatic decision of the same type whose note is already on the order
+      // (the first open after the site started deciding, or a swap between the two same-day couriers):
+      // the note is not written a second time.
+      if (
+        rulesUpdatedAt === SITE_DECISION_MARK &&
+        existing?.decisionState === "auto" &&
+        existing.deliveryType === res.deliveryType &&
+        !existing.wooSyncError &&
+        existing.wooLastSyncAt
+      ) {
+        await persist({ ...toSave, wooLastSyncAt: existing.wooLastSyncAt });
+        return;
+      }
+
       const saved = await persist(toSave);
 
       // Woo note always (per your choice)
@@ -434,7 +445,8 @@ export const useOrderFastDeliveryDecision = (order: OrderDetails | OrderSummary)
           deliveryType: type,
           decisionState: "manual",
           override: true,
-          checks: decision?.checks ?? [],
+          // The site's check ("לפי ההחלטה של האתר") does not describe a choice the picker made against it.
+          checks: decision?.rulesUpdatedAt === SITE_DECISION_MARK ? [] : decision?.checks ?? [],
           wooSyncError: false,
           wooLastSyncAt: undefined,
           rulesUpdatedAt: decision?.rulesUpdatedAt,

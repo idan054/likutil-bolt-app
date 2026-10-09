@@ -10,6 +10,9 @@ const PROVIDER_BY_SITE_CARRIER: Record<string, string> = {
   negev: "negevExpress",
 };
 
+/** `rulesUpdatedAt` of a saved delivery decision that was taken from the site's routing decision. */
+export const SITE_DECISION_MARK = "site-carrier";
+
 /** Our provider id for a courier name sent by the site; null when unknown or empty. */
 export const providerForSiteCarrier = (name?: string | null): string | null =>
   (name && PROVIDER_BY_SITE_CARRIER[name]) || null;
@@ -57,6 +60,7 @@ export const siteDeliveryType = (
   decision: SiteCarrierDecision | null | undefined
 ): "fast" | "regular" | null => {
   if (decision?.use === "zipgo" || decision?.use === "mahirli") return "fast";
-  if (decision?.use === "negev") return "regular";
+  // An order the customer paid same-day for stays a same-day order, even when the site found no same-day courier for it.
+  if (decision?.use === "negev") return decision.service === "sameday" ? "fast" : "regular";
   return null;
 };

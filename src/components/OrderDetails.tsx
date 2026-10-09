@@ -15,7 +15,7 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
-import { providerForSiteCarrier, siteBlockedProviders } from "../utils/siteCarrier";
+import { SITE_DECISION_MARK, providerForSiteCarrier, siteBlockedProviders } from "../utils/siteCarrier";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 import {
   isCashPaymentMethod,
@@ -148,15 +148,19 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   const existingShipmentProvider = previousShipments.find((shipment) => !shipment.cancelled)?.provider ?? null;
   // The old rule must not preselect Mahir Li for a town the site says it does not reach.
   const mahirLiBlocked = Boolean(siteBlockedProviders(order.s3_carrier).mahirLi);
+  // The site stops sending a decision once a shipment is opened; the saved decision still says it came from the site.
+  const decidedBySite = Boolean(siteProvider) || decision?.rulesUpdatedAt === SITE_DECISION_MARK;
   useEffect(() => {
     if (selectedDeliveryProvider) return;
-    if (siteProvider) {
+    const oldRuleProvider = decision?.deliveryType === 'fast' && !mahirLiBlocked ? 'mahirLi' : null;
+    if (decidedBySite) {
       if (isChecking) return;
-      setSelectedDeliveryProvider(existingShipmentProvider ?? siteProvider);
-    } else if (decision?.deliveryType === 'fast' && !mahirLiBlocked) {
-      setSelectedDeliveryProvider('mahirLi');
+      const next = existingShipmentProvider ?? siteProvider ?? oldRuleProvider;
+      if (next) setSelectedDeliveryProvider(next);
+    } else if (oldRuleProvider) {
+      setSelectedDeliveryProvider(oldRuleProvider);
     }
-  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider, isChecking, existingShipmentProvider, mahirLiBlocked]);
+  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider, decidedBySite, isChecking, existingShipmentProvider, mahirLiBlocked]);
 
   useEffect(() => {
     resetMessaging();
