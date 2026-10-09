@@ -33,5 +33,21 @@ the entire write. Its persistence service filtered optional top-level fields onl
 Baseline: 2320e4ef585575668d4ee9ce549d578aa5da78a4, confirmed as published production.
 Production target: existing Netlify site a2dcfff4-8c46-4d25-a395-246c27964806.
 Previous deploy: 6ac841d0e5e7020008147ad0 (retained by Netlify).
-Publication and live reload verification pending at the time of this commit.
+Published code: 0ecba3ba86b8bbfa737b903c0ecc5b6619e80765.
+Netlify deploy: 6ac85e3ef9d7390008379a5d, ready and published at
+2026-10-09T03:24:08.12Z. The Git push triggered the existing deployment pipeline.
+The local CLI upload returned Not Found; it was not used as evidence of success.
+Netlify's published-deploy metadata independently identifies the code commit,
+and the live asset index-Bn6RpVrg.js contains version 1.2.10 and the boundary fix.
+
+## Live verification
+
+2026-10-09, approximately 03:25–03:27 UTC: the reported order displayed regular
+delivery instead of the save error; the existing flow wrote its private automatic
+decision note. After full page reload and reopening the order, regular delivery
+remained visible and exactly one such note was displayed. No FastDelivery errors
+were captured in the browser console. No shipment was created, no manual override
+was changed and no customer message was sent.
+ESLint on the two changed service files and git diff whitespace checks passed.
+Manual override and cross-store cases were covered offline, not modified in live data.
 Recovery: revert this scoped code change in Git and publish the resulting build.
