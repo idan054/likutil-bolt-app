@@ -7,6 +7,7 @@ let providerForSiteCarrier;
 let siteCarrierForProvider;
 let preferredSiteProvider;
 let siteDeliveryType;
+let siteBlockedProviders;
 
 before(async () => {
   viteServer = await createServer({
@@ -14,7 +15,7 @@ before(async () => {
     logLevel: "silent",
     server: { middlewareMode: true },
   });
-  ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType } =
+  ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType, siteBlockedProviders } =
     await viteServer.ssrLoadModule("/src/utils/siteCarrier.ts"));
 });
 
@@ -46,6 +47,19 @@ test("the site's courier is preselected only when it is connected, else its fall
   assert.equal(preferredSiteProvider({ use: "negev" }, all), "negevExpress");
   assert.equal(preferredSiteProvider({ use: "" , fallback: "mahirli" }, all), null);
   assert.equal(preferredSiteProvider(null, all), null);
+});
+
+test("couriers the site blocks for the town are keyed by our provider ids", () => {
+  assert.deepEqual(siteBlockedProviders({ blocked: { zipgo: "לא מגיעה לחיפה" } }), { zipGo: "לא מגיעה לחיפה" });
+  assert.deepEqual(
+    siteBlockedProviders({ blocked: { zipgo: "א", mahirli: "ב" } }),
+    { zipGo: "א", mahirLi: "ב" }
+  );
+  assert.deepEqual(siteBlockedProviders({ blocked: {} }), {});
+  assert.deepEqual(siteBlockedProviders({ blocked: [] }), {});
+  assert.deepEqual(siteBlockedProviders({ blocked: { unknown: "x", zipgo: "" } }), {});
+  assert.deepEqual(siteBlockedProviders({ use: "zipgo" }), {});
+  assert.deepEqual(siteBlockedProviders(null), {});
 });
 
 test("fast or regular follows the site only when it decided", () => {

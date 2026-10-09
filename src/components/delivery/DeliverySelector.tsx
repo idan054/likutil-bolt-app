@@ -10,7 +10,7 @@ import type { DeliveryTaskResponse, ShipmentState } from '../../services/deliver
 import { useDeliveryCompanies } from '../../hooks/delivery/useDeliveryCompanies';
 import { OrderDetails } from '../../types/order';
 import { ShipmentActionsDialog } from './ShipmentActionsDialog';
-import { preferredSiteProvider, providerForSiteCarrier } from '../../utils/siteCarrier';
+import { preferredSiteProvider, providerForSiteCarrier, siteBlockedProviders } from '../../utils/siteCarrier';
 
 
 interface DeliverySelectorProps {
@@ -90,8 +90,17 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         .filter(Boolean).join(' · ')
     : '';
 
+  // Couriers the site says do not reach this order's town: their card is grey and cannot be clicked.
+  // A courier that already holds a live shipment for this order stays clickable, so it can be managed or cancelled.
+  const blockedProviders = Object.fromEntries(
+    Object.entries(siteBlockedProviders(order.s3_carrier)).filter(
+      ([provider]) => !shipments.some(shipment => shipment.provider === provider && !shipment.cancelled)
+    )
+  );
+
   // Find selected integration
   const displayedProvider = selectedProvider || deliveryResponse?.provider || null;
+  const selectedBlockedReason = displayedProvider ? blockedProviders[displayedProvider] : undefined;
   const selectedIntegration = integrations.find(
     integration => integration.provider === displayedProvider
   ) ?? integrations.find(integration => integration.provider === selectedProvider);
@@ -137,7 +146,14 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         onAutoSelect={onSelect}
         isDisabled={isCreating}
         connectedProviders={connectedProviders}
+        blockedProviders={blockedProviders}
       />
+
+      {selectedBlockedReason && (
+        <div role="alert" className="my-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-right text-sm text-red-800">
+          {selectedIntegration?.name ?? 'החברה שנבחרה'} {selectedBlockedReason}. בחרו חברה אחרת.
+        </div>
+      )}
 
       {actionsProvider && actionsCompany && <ShipmentActionsDialog
         key={`actions:${order.id}:${actionsProvider}`} order={order} companyName={actionsCompany.name}
@@ -156,7 +172,7 @@ export const DeliverySelector: React.FC<DeliverySelectorProps> = ({
         {!isChecking && <button onClick={onCheckShipment} disabled={isCreating} className="mr-2 font-semibold text-blue-700 underline">בדוק מצב משלוח</button>}
       </div>}
 
-      {selectedIntegration && (
+      {selectedIntegration && !selectedBlockedReason && (
         <DeliveryCompanyInfo
         key={`${order.id}:${selectedIntegration.provider}`}
         order={order} 

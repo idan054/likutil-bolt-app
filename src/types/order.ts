@@ -74,6 +74,8 @@ export interface SiteCarrierDecision {
   /** A short Hebrew line for the picker. */
   line?: string;
   why?: string;
+  /** Couriers that do not reach this order's town, by the site's name, with the reason in Hebrew. */
+  blocked?: Record<string, string> | unknown[] | null;
 }
 
 export interface OrderSummary {

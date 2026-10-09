@@ -17,6 +17,8 @@ interface DeliveryCarouselProps {
   onAutoSelect?: (provider: string) => void;
   isDisabled?: boolean;
   connectedProviders: Set<string>;
+  /** provider id -> reason; these cards are shown grey and cannot be clicked. */
+  blockedProviders?: Record<string, string>;
 }
 
 export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
@@ -25,6 +27,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
   onAutoSelect,
   isDisabled,
   connectedProviders,
+  blockedProviders,
 }) => {
   const { scrollRef, scrollLeft, scrollRight } = useHorizontalScroll(240);
   const { companies, isLoading } = useDeliveryCompanies();
@@ -107,6 +110,7 @@ export const DeliveryCarousel: React.FC<DeliveryCarouselProps> = ({
             logoUrl={integration.logoUrl}
             isSelected={selectedProvider === integration.provider}
             disabled={isDisabled}
+            blockedReason={blockedProviders?.[integration.provider as string]}
             isConnected={connectedProviders.has(integration.provider)}
             onClick={() => onSelect(integration.provider as string)}
           />

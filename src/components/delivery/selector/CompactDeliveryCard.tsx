@@ -9,6 +9,8 @@ interface CompactDeliveryCardProps {
   isSelected: boolean;
   isConnected: boolean;
   disabled?: boolean;
+  /** The courier cannot take this order (for example it does not reach the town): grey card, not clickable. */
+  blockedReason?: string;
   onClick: () => void;
 }
 
@@ -18,8 +20,23 @@ export const CompactDeliveryCard: React.FC<CompactDeliveryCardProps> = ({
   isSelected,
   isConnected,
   disabled,
+  blockedReason,
   onClick,
-}) => (
+}) => blockedReason ? (
+  <div
+    role="group"
+    aria-label={`${name}: ${blockedReason}`}
+    aria-disabled="true"
+    title={blockedReason}
+    className="relative flex flex-col items-center p-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed min-w-[120px] max-w-[120px]"
+  >
+    <div className="relative p-2 rounded-lg bg-white/80 mb-2">
+      <img src={logoUrl} alt={name} className="h-10 w-auto object-contain grayscale" />
+    </div>
+    <h3 className="text-sm font-medium text-center truncate w-full text-gray-600">{name}</h3>
+    <span className="text-xs text-red-700 mt-1 text-center leading-tight">{blockedReason}</span>
+  </div>
+) : (
   <button
     type="button"
     aria-label={`משלוחים ב${name}`}

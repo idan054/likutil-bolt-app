@@ -34,6 +34,23 @@ export const preferredSiteProvider = (
   return second && connectedProviders.has(second) ? second : null;
 };
 
+/**
+ * Providers whose card must not be clickable for this order, with the reason to show on the card:
+ * the couriers the site says do not reach the order's town. Keyed by our provider id.
+ */
+export const siteBlockedProviders = (
+  decision: SiteCarrierDecision | null | undefined
+): Record<string, string> => {
+  const blocked = decision?.blocked;
+  if (!blocked || Array.isArray(blocked) || typeof blocked !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [name, reason] of Object.entries(blocked)) {
+    const provider = providerForSiteCarrier(name);
+    if (provider && typeof reason === "string" && reason) out[provider] = reason;
+  }
+  return out;
+};
+
 /** Fast or regular according to the site; null when the site made no decision for this order. */
 export const siteDeliveryType = (
   decision: SiteCarrierDecision | null | undefined
