@@ -13,7 +13,7 @@ import createApp from '@shopify/app-bridge';
 import { getSessionToken } from '@shopify/app-bridge-utils';
 import { Redirect } from '@shopify/app-bridge/actions';
 
-export const APP_VERSION = '09.10.26 | Version 1.2.9';
+export const APP_VERSION = '09.10.26 | Version 1.2.10';
 
 // Check if we're in an embedded context (inside Shopify admin)
 const isEmbedded = window !== window.parent;

@@ -187,10 +187,9 @@ export const decideFastDelivery = (
     {
       label: "אין מוצר חסום",
       ok: !blockedItem,
-      detail:
-        blockedItem && blockedReason
-          ? `${blockedItem.name}: ${blockedReason}`
-          : undefined,
+      ...(blockedItem && blockedReason
+        ? { detail: `${blockedItem.name}: ${blockedReason}` }
+        : {}),
     },
   ];
 
@@ -209,9 +208,9 @@ export const decideFastDelivery = (
         {
           label: "חסר מידע מלא (בדיקה ידנית)",
           ok: false,
-          detail: incompleteCategoryItem
-            ? `לא ניתן לאמת קטגוריה עבור "${incompleteCategoryItem.name}"`
-            : undefined,
+          ...(incompleteCategoryItem
+            ? { detail: `לא ניתן לאמת קטגוריה עבור "${incompleteCategoryItem.name}"` }
+            : {}),
         },
       ],
     };

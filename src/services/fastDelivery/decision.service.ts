@@ -39,6 +39,37 @@ export const upsertOrderDeliveryDecision = async (
     updatedAt?: string;
   }
 ): Promise<OrderDeliveryDecision> => {
+  // All decision routes share this boundary. Optional fields are omitted only
+  // when absent; invalid business data must never be silently coerced or saved.
+  if (
+    !Number.isSafeInteger(decision.orderId) || decision.orderId <= 0 ||
+    !["fast", "regular"].includes(decision.deliveryType) ||
+    !["auto", "manual", "needs_review"].includes(decision.decisionState) ||
+    typeof decision.override !== "boolean" ||
+    !Array.isArray(decision.checks) ||
+    (decision.wooSyncError !== undefined && typeof decision.wooSyncError !== "boolean")
+  ) {
+    throw new Error("Invalid delivery decision");
+  }
+  for (const key of ["wooLastSyncAt", "rulesUpdatedAt", "inputFingerprint", "updatedAt"] as const) {
+    if (decision[key] !== undefined && typeof decision[key] !== "string") {
+      throw new Error(`Invalid delivery decision ${key}`);
+    }
+  }
+  const checks = decision.checks.map((check) => {
+    if (
+      !check || typeof check.label !== "string" || !check.label.trim() ||
+      typeof check.ok !== "boolean" ||
+      (check.detail !== undefined && typeof check.detail !== "string")
+    ) {
+      throw new Error("Invalid delivery decision check");
+    }
+    return {
+      label: check.label,
+      ok: check.ok,
+      ...(check.detail !== undefined ? { detail: check.detail } : {}),
+    };
+  });
   const storeKey = normalizeStoreKey(storeUrl);
   const ref = doc(db, COLLECTION, makeId(storeKey, decision.orderId));
   const next: OrderDeliveryDecision = {
@@ -47,7 +78,7 @@ export const upsertOrderDeliveryDecision = async (
     deliveryType: decision.deliveryType,
     decisionState: decision.decisionState,
     override: decision.override,
-    checks: decision.checks ?? [],
+    checks,
     wooSyncError: decision.wooSyncError ?? false,
     updatedAt: decision.updatedAt ?? new Date().toISOString(),
   };
