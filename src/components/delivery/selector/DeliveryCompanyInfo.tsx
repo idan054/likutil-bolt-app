@@ -31,5 +31,14 @@ export const DeliveryCompanyInfo: React.FC<DeliveryCompanyInfoProps> = ({
     return <NonConnectedCompany integration={integration} />;
   }
 
-  return <ConnectedCompany key={order.id} order={order} integration={integration} {...props} />;
+  // Asking for an additional shipment starts the panel afresh, so its package counter is back at 1
+  // and the count of the shipment that already went out does not carry over.
+  return (
+    <ConnectedCompany
+      key={`${order.id}:${props.isAdditional ? 'additional' : 'first'}`}
+      order={order}
+      integration={integration}
+      {...props}
+    />
+  );
 };
