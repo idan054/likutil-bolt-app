@@ -46,7 +46,8 @@ export const siteBlockedProviders = (
   const out: Record<string, string> = {};
   for (const [name, reason] of Object.entries(blocked)) {
     const provider = providerForSiteCarrier(name);
-    if (provider && typeof reason === "string" && reason) out[provider] = reason;
+    // Negev delivers everywhere and is the fallback of every order: it is never blocked.
+    if (provider && provider !== "negevExpress" && typeof reason === "string" && reason) out[provider] = reason;
   }
   return out;
 };

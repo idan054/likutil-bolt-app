@@ -15,7 +15,7 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
-import { providerForSiteCarrier } from "../utils/siteCarrier";
+import { providerForSiteCarrier, siteBlockedProviders } from "../utils/siteCarrier";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 import {
   isCashPaymentMethod,
@@ -146,15 +146,17 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({
   // An order that already has a live shipment keeps that courier selected, so the picker sees it.
   const siteProvider = providerForSiteCarrier(order.s3_carrier?.use);
   const existingShipmentProvider = previousShipments.find((shipment) => !shipment.cancelled)?.provider ?? null;
+  // The old rule must not preselect Mahir Li for a town the site says it does not reach.
+  const mahirLiBlocked = Boolean(siteBlockedProviders(order.s3_carrier).mahirLi);
   useEffect(() => {
     if (selectedDeliveryProvider) return;
     if (siteProvider) {
       if (isChecking) return;
       setSelectedDeliveryProvider(existingShipmentProvider ?? siteProvider);
-    } else if (decision?.deliveryType === 'fast') {
+    } else if (decision?.deliveryType === 'fast' && !mahirLiBlocked) {
       setSelectedDeliveryProvider('mahirLi');
     }
-  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider, isChecking, existingShipmentProvider]);
+  }, [decision?.deliveryType, selectedDeliveryProvider, siteProvider, isChecking, existingShipmentProvider, mahirLiBlocked]);
 
   useEffect(() => {
     resetMessaging();

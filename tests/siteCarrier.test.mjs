@@ -55,6 +55,7 @@ test("couriers the site blocks for the town are keyed by our provider ids", () =
     siteBlockedProviders({ blocked: { zipgo: "א", mahirli: "ב" } }),
     { zipGo: "א", mahirLi: "ב" }
   );
+  assert.deepEqual(siteBlockedProviders({ blocked: { negev: "x", zipgo: "א" } }), { zipGo: "א" });
   assert.deepEqual(siteBlockedProviders({ blocked: {} }), {});
   assert.deepEqual(siteBlockedProviders({ blocked: [] }), {});
   assert.deepEqual(siteBlockedProviders({ blocked: { unknown: "x", zipgo: "" } }), {});
