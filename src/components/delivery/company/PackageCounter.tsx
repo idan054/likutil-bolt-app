@@ -5,9 +5,11 @@ interface PackageCounterProps {
   isCreating: boolean;
   onCountChange: (count: number) => void;
   maxCount?: number;
+  /** What the picker does above the courier's limit, shown under the counter. */
+  hint?: string | null;
 }
 
-export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCountChange, maxCount = 99 }) => {
+export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCountChange, maxCount = 99, hint }) => {
   const [count, setCount] = useState(1);
 
   const handleChange = (newCount: number) => {
@@ -42,6 +44,7 @@ export const PackageCounter: React.FC<PackageCounterProps> = ({ isCreating, onCo
           </button>
         </div>
       </div>
+      {hint && <p className="mt-2 text-sm text-blue-700">{hint}</p>}
     </div>
   );
 };

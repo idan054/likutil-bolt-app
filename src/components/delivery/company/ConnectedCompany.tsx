@@ -10,7 +10,7 @@ import { DeliveryAddress } from './address/DeliveryAddress';
 import type { DeliveryIntegration } from '../../../types/delivery';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
 import { OrderDetails } from '../../../types/order';
-import { getLabelCarrier } from '../../../utils/shippingLabel';
+import { maxPackagesPerShipment, packageLimitHint } from '../../../utils/packageLimit';
 
 interface ConnectedCompanyProps {
   order: OrderDetails;
@@ -71,7 +71,8 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
           <PackageCounter 
             isCreating={isCreating || isCreationBlocked || !!deliveryResponse}
             onCountChange={setPackageCount}
-            maxCount={getLabelCarrier(integration.provider) === 'negev' ? 20 : 99}
+            maxCount={maxPackagesPerShipment(integration.provider)}
+            hint={packageLimitHint(integration.provider)}
           />
 
           <DeliveryAddress 
