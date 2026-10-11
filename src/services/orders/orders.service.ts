@@ -12,6 +12,9 @@ import { assertOrderReady, getOrderBlockReason, isPickingStatus, OrderNotReadyEr
 
 // Cache configuration
 const ITEMS_PER_PAGE = 15;
+// A picking queue is loaded whole, so that same-day orders can be sorted ahead of every other order in it.
+const QUEUE_PAGE_SIZE = 50;
+const QUEUE_MAX_PAGES = 2;
 const CACHE_EXPIRATION = 30 * 1000;
 const STATUSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -558,10 +561,14 @@ export const getFilteredOrdersPage = async (
     status, order_number, metadataConfigs,
   ]), platform, config.baseUrl);
   return dedupedApiRequest(cacheKey, async () => {
+    const isWholeQueue = platform === "woo" && Boolean(status) &&
+      !(order_number && order_number !== "null");
+    const pageSize = isWholeQueue ? QUEUE_PAGE_SIZE : ITEMS_PER_PAGE;
+    const wanted = isWholeQueue ? QUEUE_PAGE_SIZE * QUEUE_MAX_PAGES : ITEMS_PER_PAGE;
     // Platform-specific parameters
     const params = new URLSearchParams({
       [platform === "shopify" ? "limit" : "per_page"]:
-        ITEMS_PER_PAGE.toString(),
+        pageSize.toString(),
       orderby: "date",
       order: "desc",
     });
@@ -596,8 +603,8 @@ export const getFilteredOrdersPage = async (
     const seen = new Set<number>();
     // Filtering only page one can falsely report an empty warehouse queue.
     // Woo supports page pagination; bound reads and never report a partial scan as empty.
-    const maxPages = platform === "woo" ? 5 : 1;
-    for (let page = 1; page <= maxPages && hasMore && eligibleOrders.length < ITEMS_PER_PAGE; page++) {
+    const maxPages = isWholeQueue ? QUEUE_MAX_PAGES : platform === "woo" ? 5 : 1;
+    for (let page = 1; page <= maxPages && hasMore && eligibleOrders.length < wanted; page++) {
       if (page > 1) params.set("page", String(page));
       const response = await apiClient<any>({
         method: "GET",
@@ -620,7 +627,7 @@ export const getFilteredOrdersPage = async (
         responseTotal = parsedTotal;
       }
       scanned += rawOrders.length;
-      hasMore = rawOrders.length === ITEMS_PER_PAGE && (responseTotal === null || scanned < responseTotal);
+      hasMore = rawOrders.length === pageSize && (responseTotal === null || scanned < responseTotal);
       for (const rawOrder of rawOrders) {
         if (getOrderBlockReason(rawOrder, platform)) {
           excluded = true;
@@ -635,7 +642,7 @@ export const getFilteredOrdersPage = async (
     if (!eligibleOrders.length && hasMore) {
       throw new Error("הבדיקה טרם הגיעה להזמנות מאושרות. בחרו בסינון בטיפול כדי לטעון את תור הליקוט.");
     }
-    const orders = eligibleOrders.slice(0, ITEMS_PER_PAGE);
+    const orders = eligibleOrders.slice(0, wanted);
 
     console.log(
       `[orders.service] Retrieved ${orders.length} orders for status: ${

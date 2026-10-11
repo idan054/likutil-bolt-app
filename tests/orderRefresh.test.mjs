@@ -168,6 +168,22 @@ test("invalid successful responses cannot silently turn into an empty order list
   await assert.rejects(service.getFilteredOrdersPage("processing"));
 });
 
+test("a picking queue is loaded whole, past the first fifteen orders", async () => {
+  const queue = Array.from({ length: 60 }, (_, index) => order(100 - index));
+  respond = (request, response) => {
+    const url = new URL(request.url, "http://test.invalid");
+    const size = Number(url.searchParams.get("per_page"));
+    const start = (Number(url.searchParams.get("page") ?? 1) - 1) * size;
+    response.writeHead(200, { "Content-Type": "application/json", "X-WP-Total": String(queue.length) });
+    response.end(JSON.stringify(queue.slice(start, start + size)));
+  };
+  const page = await service.getFilteredOrdersPage("processing", undefined, undefined, { forceRefresh: true });
+  assert.equal(page.orders.length, 60);
+  assert.equal(page.total, 60);
+  assert.equal(page.orders.at(-1).id, 41);
+  assert.equal(requests.length, 2);
+});
+
 function Orders({ status }) { latest = useProcessingOrders(status); return null; }
 const mountOrders = async (status) => {
   await act(async () => { renderer = create(React.createElement(Orders, { status })); });
