@@ -15,9 +15,18 @@ export interface PickupCarrierState {
   open_today: boolean;
 }
 
+/**
+ * active: the site and the systems follow the buttons. listen: the buttons are shown and the presses are
+ * only kept. hidden: no buttons, and the site behaves as it always did.
+ */
+export const PICKUP_MODES = ["active", "listen", "hidden"] as const;
+export type PickupMode = (typeof PICKUP_MODES)[number];
+
 export interface PickupState {
   v: number;
   on: boolean;
+  /** Absent on a site that only knows the on/off switch. */
+  mode?: PickupMode;
   day: string;
   now: string;
   delivery_day: boolean;
@@ -82,8 +91,15 @@ export const pickupSwitchEffects = (state: PickupState): string[] | null =>
     ? state.acts.map((act) => ACT_NAMES[act]).filter((name): name is string => Boolean(name))
     : null;
 
-/** The buttons work on delivery days only; on any other day nothing is shown and nothing is sent. */
-export const isPickupDay = (state: PickupState | null | undefined) => Boolean(state?.delivery_day);
+export const pickupMode = (state: PickupState): PickupMode =>
+  state.mode && PICKUP_MODES.includes(state.mode) ? state.mode : state.on ? "active" : "listen";
+
+/**
+ * The buttons work on delivery days only, and not at all in the hidden mode; otherwise nothing is shown
+ * and nothing is sent.
+ */
+export const isPickupDay = (state: PickupState | null | undefined) =>
+  Boolean(state?.delivery_day) && pickupMode(state as PickupState) !== "hidden";
 
 /** A same-day courier that was not reported yet blinks from the reminder hour, while the site still offers "today". */
 export const shouldRemindPickup = (state: PickupState, carrier: PickupCarrier) => {

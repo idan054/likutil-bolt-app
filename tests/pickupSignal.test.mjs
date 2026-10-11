@@ -272,44 +272,86 @@ const mountSwitch = async () => {
   await settle(() => requests.length > 0);
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
 };
+const radios = () => renderer.root.findAllByProps({ role: "radio" });
+const checked = () => radios().map((radio) => radio.props["aria-checked"]);
+const posts = () => requests.filter(({ method }) => method === "POST");
 
-test("the main switch turns on only after a confirmation, and is sent with the signed-in user", async () => {
-  respond = (entry, response) => json(response, entry.method === "POST"
-    ? pickup({ on: true, on_at: "2026-10-11T19:20:00+03:00", acts: ["checkout", "roni", "unknown-code"] })
-    : pickup({ acts: [] }));
-  await mountSwitch();
-  assert.equal(buttons()[0].props["aria-pressed"], false);
-  assert.match(text(), /הדלקה עוד לא משנה דבר ללקוחות/);
-  confirmAnswer = false;
-  await act(async () => { await buttons()[0].props.onClick(); });
-  assert.equal(requests.filter(({ method }) => method === "POST").length, 0);
-  confirmAnswer = true;
-  await act(async () => { await buttons()[0].props.onClick(); });
-  assert.deepEqual(requests.find(({ method }) => method === "POST").body,
-    { action: "switch", on: true, by: "picker@example.test" });
-  assert.equal(buttons()[0].props["aria-pressed"], true);
-  assert.match(text(), /מושפעים כרגע: הקופה, דף התודה והמיילים ללקוח · התשובות של רוני\./);
+test("the hidden mode shows no buttons on any day, and the bar's header stays", async () => {
+  assert.equal(rules.pickupMode(pickup()), "listen");
+  assert.equal(rules.pickupMode(pickup({ on: true })), "active");
+  assert.equal(rules.pickupMode(pickup({ on: true, mode: "hidden" })), "hidden");
+  assert.equal(rules.pickupMode(pickup({ mode: "something-else" })), "listen");
+  respond = (_entry, response) => json(response, pickup({ mode: "hidden" }));
+  await act(async () => {
+    renderer = create(React.createElement(PickupSignalBar, { fallback: React.createElement("h3", null, "הזמנות אחרונות") }));
+  });
+  await settle(() => requests.length > 0);
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+  assert.equal(buttons().length, 0);
+  assert.equal(renderer.root.findAllByType("h3").length, 1);
 });
 
-test("a site that does not know the switch leaves it off and says so", async () => {
+test("the settings show the three modes, with the site's own mode selected", async () => {
+  respond = (_entry, response) => json(response, pickup({ acts: [] }));
+  await mountSwitch();
+  assert.deepEqual(checked(), [false, true, false]);
+  assert.match(text(), /עוד לא משנה דבר ללקוחות/);
+});
+
+test("a mode changes only after a confirmation, and is sent with the signed-in user", async () => {
+  respond = (entry, response) => json(response, entry.method === "POST"
+    ? pickup({ on: true, mode: "active", on_at: "2026-10-11T19:20:00+03:00", acts: ["checkout", "roni", "unknown-code"] })
+    : pickup({ mode: "listen", acts: [] }));
+  await mountSwitch();
+  confirmAnswer = false;
+  await act(async () => { await radios()[0].props.onClick(); });
+  assert.equal(posts().length, 0);
+  confirmAnswer = true;
+  await act(async () => { await radios()[0].props.onClick(); });
+  assert.deepEqual(posts()[0].body, { action: "mode", mode: "active", by: "picker@example.test" });
+  assert.deepEqual(checked(), [true, false, false]);
+  assert.match(text(), /מושפעים: הקופה, דף התודה והמיילים ללקוח · התשובות של רוני\./);
+});
+
+test("choosing the mode that is already set sends nothing", async () => {
+  await mountSwitch();
+  await act(async () => { await radios()[1].props.onClick(); });
+  assert.equal(posts().length, 0);
+  assert.equal(confirmQuestions.length, 0);
+});
+
+test("hiding the buttons is sent as the hidden mode", async () => {
+  respond = (entry, response) => json(response, pickup({ mode: entry.method === "POST" ? "hidden" : "listen" }));
+  await mountSwitch();
+  await act(async () => { await radios()[2].props.onClick(); });
+  assert.deepEqual(posts()[0].body, { action: "mode", mode: "hidden", by: "picker@example.test" });
+  assert.deepEqual(checked(), [false, false, true]);
+});
+
+test("a site that only knows the on/off switch still takes active and listen", async () => {
+  respond = (entry, response) => {
+    if (entry.method !== "POST") return json(response, pickup());
+    if (entry.body.action === "mode") return json(response, { code: "s3_pickup_bad_request" }, 400);
+    return json(response, pickup({ on: entry.body.on }));
+  };
+  await mountSwitch();
+  await act(async () => { await radios()[0].props.onClick(); });
+  assert.deepEqual(posts().map(({ body }) => body.action), ["mode", "switch"]);
+  assert.equal(posts()[1].body.on, true);
+  assert.deepEqual(checked(), [true, false, false]);
+});
+
+test("a site that does not know the hidden mode leaves the mode as it was and says so", async () => {
   respond = (entry, response) => entry.method === "POST"
     ? json(response, { code: "s3_pickup_bad_request", message: "bad" }, 400) : json(response, pickup());
   await mountSwitch();
-  await act(async () => { await buttons()[0].props.onClick(); });
-  assert.equal(buttons()[0].props["aria-pressed"], false);
-  assert.match(text(), /האתר עדיין לא תומך במתג הזה/);
+  await act(async () => { await radios()[2].props.onClick(); });
+  assert.equal(posts().length, 1);
+  assert.deepEqual(checked(), [false, true, false]);
+  assert.match(text(), /האתר עדיין לא תומך במצב הזה/);
 });
 
-test("turning the switch off sends on: false", async () => {
-  respond = (entry, response) => json(response, pickup({ on: entry.method !== "POST" }));
-  await mountSwitch();
-  assert.equal(buttons()[0].props["aria-pressed"], true);
-  await act(async () => { await buttons()[0].props.onClick(); });
-  assert.equal(requests.find(({ method }) => method === "POST").body.on, false);
-  assert.equal(buttons()[0].props["aria-pressed"], false);
-});
-
-test("a shop without the route has no switch in its settings", async () => {
+test("a shop without the route has no mode control in its settings", async () => {
   respond = (_entry, response) => json(response, { code: "rest_no_route" }, 404);
   await mountSwitch();
   assert.equal(renderer.toJSON(), null);

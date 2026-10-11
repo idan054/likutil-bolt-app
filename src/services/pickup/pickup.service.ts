@@ -1,6 +1,6 @@
 import { apiClient } from "../api/client";
 import { ApiError } from "../api/types";
-import { isPickupState, type PickupCarrier, type PickupState } from "../../utils/pickupSignal";
+import { isPickupState, type PickupCarrier, type PickupMode, type PickupState } from "../../utils/pickupSignal";
 
 const PICKUP_PATH = "/s3/pickup";
 
@@ -31,9 +31,26 @@ export const setPickupSwitch = async (on: boolean, by?: string | null): Promise<
     body: { action: "switch", on, ...(by ? { by: by.slice(0, 60) } : {}) },
   }));
 
-/** A site that has the pickup route but not the switch yet answers a switch request as a bad request. */
+/** A site that has the pickup route but not the requested action yet answers it as a bad request. */
 export const isPickupSwitchUnsupported = (error: unknown) =>
   error instanceof ApiError && error.details.responseStatus === 400;
+
+/**
+ * Sets one of the three modes. A site that only knows the on/off switch still takes "active" and
+ * "listen" through it; "hidden" needs a site that knows the modes.
+ */
+export const setPickupMode = async (mode: PickupMode, by?: string | null): Promise<PickupState> => {
+  try {
+    return readState(await apiClient<unknown>({
+      method: "POST",
+      path: PICKUP_PATH,
+      body: { action: "mode", mode, ...(by ? { by: by.slice(0, 60) } : {}) },
+    }));
+  } catch (error) {
+    if (mode === "hidden" || !isPickupSwitchUnsupported(error)) throw error;
+    return setPickupSwitch(mode === "active", by);
+  }
+};
 
 /** A shop whose site has no pickup route: the buttons are simply not part of that shop. */
 export const isPickupRouteMissing = (error: unknown) =>
