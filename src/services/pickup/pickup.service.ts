@@ -23,6 +23,18 @@ export const sendPickup = async (
     body: { carrier, action, ...(by ? { by: by.slice(0, 60) } : {}) },
   }));
 
+/** The main switch: on, the site and the systems around it follow the buttons; off, the presses are only kept. */
+export const setPickupSwitch = async (on: boolean, by?: string | null): Promise<PickupState> =>
+  readState(await apiClient<unknown>({
+    method: "POST",
+    path: PICKUP_PATH,
+    body: { action: "switch", on, ...(by ? { by: by.slice(0, 60) } : {}) },
+  }));
+
+/** A site that has the pickup route but not the switch yet answers a switch request as a bad request. */
+export const isPickupSwitchUnsupported = (error: unknown) =>
+  error instanceof ApiError && error.details.responseStatus === 400;
+
 /** A shop whose site has no pickup route: the buttons are simply not part of that shop. */
 export const isPickupRouteMissing = (error: unknown) =>
   error instanceof ApiError && error.details.responseStatus === 404;

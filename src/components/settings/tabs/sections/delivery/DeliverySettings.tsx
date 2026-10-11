@@ -1,6 +1,7 @@
 import React from 'react';
 import { DeliveryMarketplace } from './marketplace/DeliveryMarketplace';
 import { LockerNotifierToggle } from './LockerNotifierToggle';
+import { PickupSwitchToggle } from './PickupSwitchToggle';
 import { useDeliveryIntegrations } from '../../../../../hooks/settings/useDeliveryIntegrations';
 
 export const DeliverySettings: React.FC = () => {
@@ -27,6 +28,8 @@ export const DeliverySettings: React.FC = () => {
       </div>
 
       <LockerNotifierToggle />
+
+      <PickupSwitchToggle />
 
       <DeliveryMarketplace
         integrations={integrations}

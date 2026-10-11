@@ -25,6 +25,11 @@ export interface PickupState {
   remind_from: string;
   ceiling_hour: number;
   carriers: Partial<Record<PickupCarrier, PickupCarrierState>>;
+  /** When the main switch was last changed, and by whom. */
+  on_at?: string | null;
+  on_by?: string | null;
+  /** What on the site and around it reads the signal once the switch is on; empty while nothing does. */
+  acts?: string[];
 }
 
 const CARRIER_NAMES: Record<PickupCarrier, string> = {
@@ -64,6 +69,18 @@ export const pickupButtonLabel = (carrier: PickupCarrier, state: PickupCarrierSt
   const clock = pickupClock(state.closed_at);
   return clock ? `${name} נאסף ${clock}` : `${name} נאסף`;
 };
+
+const ACT_NAMES: Record<string, string> = {
+  checkout: "הקופה, דף התודה והמיילים ללקוח",
+  texts: "הטקסטים באתר (דף הבית, עמוד מוצר, חיפוש)",
+  roni: "התשובות של רוני",
+};
+
+/** What the main switch changes right now, in words; null when the site did not say. */
+export const pickupSwitchEffects = (state: PickupState): string[] | null =>
+  Array.isArray(state.acts)
+    ? state.acts.map((act) => ACT_NAMES[act]).filter((name): name is string => Boolean(name))
+    : null;
 
 /** The buttons work on delivery days only; on any other day nothing is shown and nothing is sent. */
 export const isPickupDay = (state: PickupState | null | undefined) => Boolean(state?.delivery_day);

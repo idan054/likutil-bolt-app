@@ -10,6 +10,7 @@ let http;
 let rules;
 let service;
 let PickupSignalBar;
+let PickupSwitchToggle;
 let renderer;
 let requests;
 let respond;
@@ -82,7 +83,8 @@ before(async () => {
         if (id === "\0test:react-firebase-hooks/auth") return `
           export const useAuthState = () => [{ email: "picker@example.test" }, false];`;
         if (id === "\0test:lucide-react") return `
-          export const Check = () => null; export const Truck = () => null;`;
+          export const Check = () => null; export const Truck = () => null;
+          export const Loader2 = () => null; export const AlertCircle = () => null;`;
         if (path.endsWith("/config/firebase.ts")) return `export const auth = {};`;
         if (path.endsWith("/services/api/config.ts")) return `
           export const getApiConfig = () => globalThis.__pickupTest.config;`;
@@ -97,6 +99,8 @@ before(async () => {
   rules = await vite.ssrLoadModule("/src/utils/pickupSignal.ts");
   service = await vite.ssrLoadModule("/src/services/pickup/pickup.service.ts");
   ({ PickupSignalBar } = await vite.ssrLoadModule("/src/components/dashboard/PickupSignalBar.tsx"));
+  ({ PickupSwitchToggle } = await vite.ssrLoadModule(
+    "/src/components/settings/tabs/sections/delivery/PickupSwitchToggle.tsx"));
 });
 
 beforeEach(async () => {
@@ -260,4 +264,53 @@ test("a failed refresh keeps the last state and marks it", async () => {
   await act(async () => { window.dispatchEvent(new Event("focus")); });
   await settle(() => renderer.root.findAllByProps({ role: "status" }).length > 0);
   assert.equal(buttons().length, 4);
+});
+
+const text = () => JSON.stringify(renderer.toJSON());
+const mountSwitch = async () => {
+  await act(async () => { renderer = create(React.createElement(PickupSwitchToggle)); });
+  await settle(() => requests.length > 0);
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+};
+
+test("the main switch turns on only after a confirmation, and is sent with the signed-in user", async () => {
+  respond = (entry, response) => json(response, entry.method === "POST"
+    ? pickup({ on: true, on_at: "2026-10-11T19:20:00+03:00", acts: ["checkout", "roni", "unknown-code"] })
+    : pickup({ acts: [] }));
+  await mountSwitch();
+  assert.equal(buttons()[0].props["aria-pressed"], false);
+  assert.match(text(), /הדלקה עוד לא משנה דבר ללקוחות/);
+  confirmAnswer = false;
+  await act(async () => { await buttons()[0].props.onClick(); });
+  assert.equal(requests.filter(({ method }) => method === "POST").length, 0);
+  confirmAnswer = true;
+  await act(async () => { await buttons()[0].props.onClick(); });
+  assert.deepEqual(requests.find(({ method }) => method === "POST").body,
+    { action: "switch", on: true, by: "picker@example.test" });
+  assert.equal(buttons()[0].props["aria-pressed"], true);
+  assert.match(text(), /מושפעים כרגע: הקופה, דף התודה והמיילים ללקוח · התשובות של רוני\./);
+});
+
+test("a site that does not know the switch leaves it off and says so", async () => {
+  respond = (entry, response) => entry.method === "POST"
+    ? json(response, { code: "s3_pickup_bad_request", message: "bad" }, 400) : json(response, pickup());
+  await mountSwitch();
+  await act(async () => { await buttons()[0].props.onClick(); });
+  assert.equal(buttons()[0].props["aria-pressed"], false);
+  assert.match(text(), /האתר עדיין לא תומך במתג הזה/);
+});
+
+test("turning the switch off sends on: false", async () => {
+  respond = (entry, response) => json(response, pickup({ on: entry.method !== "POST" }));
+  await mountSwitch();
+  assert.equal(buttons()[0].props["aria-pressed"], true);
+  await act(async () => { await buttons()[0].props.onClick(); });
+  assert.equal(requests.find(({ method }) => method === "POST").body.on, false);
+  assert.equal(buttons()[0].props["aria-pressed"], false);
+});
+
+test("a shop without the route has no switch in its settings", async () => {
+  respond = (_entry, response) => json(response, { code: "rest_no_route" }, 404);
+  await mountSwitch();
+  assert.equal(renderer.toJSON(), null);
 });
