@@ -3,6 +3,7 @@ import { Package, Rows3 } from "lucide-react";
 import { motion } from "framer-motion";
 import { OrdersHeader } from "./orders/OrdersHeader";
 import { SuperOrderButton } from "./orders/SuperOrderButton";
+import { PickupSignalBar } from "./PickupSignalBar";
 import type { OrderSummary } from "../../types/order";
 
 interface ProcessingOrdersCounterProps {
@@ -96,6 +97,8 @@ export const ProcessingOrdersCounter: React.FC<
           />
         </div>
       </div>
+
+      <PickupSignalBar />
     </motion.div>
   );
 };
