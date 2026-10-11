@@ -1,10 +1,11 @@
 import type { DeliveryTaskResponse } from "../services/delivery/types";
 
-type LabelCarrier = "negev" | "mahirli";
+type LabelCarrier = "negev" | "mahirli" | "zipgo";
 
 export const getLabelCarrier = (provider: string): LabelCarrier | null => {
   if (provider === "negevExpress") return "negev";
   if (provider === "mahirLi") return "mahirli";
+  if (provider === "zipGo") return "zipgo";
   return null;
 };
 
@@ -40,7 +41,7 @@ export const getShipmentNumber = (
     return positiveNumber(response.DeliveryNumber) ??
       positiveNumber(response.track_number);
   }
-  if (carrier === "mahirli") {
+  if (carrier === "mahirli" || carrier === "zipgo") {
     return positiveNumber(response.task_id) ??
       positiveNumber(response.id) ??
       positiveNumber(response.track_number);

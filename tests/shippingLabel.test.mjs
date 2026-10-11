@@ -78,6 +78,22 @@ test("Mahir Li uses the task id and never sends a package parameter", () => {
   assert.equal(new URL(getReprintLabelUrl(base, 85626, "mahirLi", "תל אביב")).searchParams.has("city"), false);
 });
 
+test("ZipGo opens the site's own label with its task id, like Mahir Li", () => {
+  const url = new URL(getShipmentLabelUrl(base, 85626, "zipGo", {
+    ...response,
+    task_id: 28502387,
+    public_id: "OLN4OJO39B",
+  }, "2", "הרצליה"));
+  assert.equal(url.searchParams.get("c"), "zipgo");
+  assert.equal(url.searchParams.get("d"), "28502387");
+  assert.equal(url.searchParams.has("n"), false);
+  assert.equal(url.searchParams.has("city"), false);
+  const reprint = new URL(getReprintLabelUrl(base, 85626, "zipGo", "הרצליה"));
+  assert.equal(reprint.searchParams.get("c"), "zipgo");
+  assert.equal(reprint.searchParams.get("reprint"), "1");
+  assert.equal(reprint.searchParams.has("d"), false);
+});
+
 test("reprinting uses the signed order link without a new shipment number", () => {
   const url = new URL(getReprintLabelUrl(base + "&d=old&n=5", 85626, "negevExpress"));
   assert.equal(url.searchParams.get("c"), "negev");
