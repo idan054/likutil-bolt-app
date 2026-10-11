@@ -6,15 +6,13 @@ interface SuperOrderButtonProps {
   onClick: () => void;
   isDisabled: boolean;
   icon: LucideIcon;
-  isMobile?: boolean;
 }
 
 export const SuperOrderButton: React.FC<SuperOrderButtonProps> = ({ 
   count,
   onClick,
   isDisabled,
-  icon: Icon,
-  isMobile = false
+  icon: Icon
 }) => (
   <button
     onClick={onClick}
@@ -24,7 +22,7 @@ export const SuperOrderButton: React.FC<SuperOrderButtonProps> = ({
       bg-blue-100 text-blue-600 rounded-lg 
       hover:bg-blue-200 disabled:opacity-50 
       disabled:cursor-not-allowed transition-colors
-      ${isMobile ? 'w-full' : ''}
+      w-full sm:w-auto
     `}
   >
     <Icon size={20} />

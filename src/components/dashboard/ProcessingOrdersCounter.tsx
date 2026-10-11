@@ -54,11 +54,14 @@ export const ProcessingOrdersCounter: React.FC<
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="bg-blue-50 rounded-lg p-6 mb-6"
     >
-      {/* Desktop Layout */}
-      <div className="hidden sm:flex items-center justify-between">
-        <OrdersHeader count={loadedCount} total={totalOrders} isLoading={isLoading} icon={Package} selectedStatus={selectedStatus}
- />
-        <div className="flex items-center gap-4">
+      {/* One layout for both widths: the header (or the courier buttons) first, the counter beside or below it. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <PickupSignalBar
+          fallback={
+            <OrdersHeader count={loadedCount} total={totalOrders} isLoading={isLoading} icon={Package} selectedStatus={selectedStatus} />
+          }
+        />
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:gap-4">
           <SuperOrderButton
             count={pendingOrdersCount}
             onClick={handleSuperOrderClick}
@@ -66,7 +69,7 @@ export const ProcessingOrdersCounter: React.FC<
             icon={Rows3}
           />
           <motion.span
-            className="text-4xl font-bold text-blue-600"
+            className="text-4xl font-bold text-blue-600 text-center whitespace-nowrap"
             initial={{ scale: 0.5 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -75,30 +78,6 @@ export const ProcessingOrdersCounter: React.FC<
           </motion.span>
         </div>
       </div>
-
-      {/* Mobile Layout */}
-      <div className="sm:hidden space-y-4">
-        <OrdersHeader count={loadedCount} total={totalOrders} isLoading={isLoading} icon={Package} selectedStatus={selectedStatus} />
-        <div className="flex flex-col gap-3">
-          <motion.span
-            className="text-4xl font-bold text-blue-600 text-center"
-            initial={{ scale: 0.5 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          >
-            {countLabel}
-          </motion.span>
-          <SuperOrderButton
-            count={pendingOrdersCount}
-            onClick={handleSuperOrderClick}
-            isDisabled={isGenerating || pendingOrdersCount === 0}
-            icon={Rows3}
-            isMobile
-          />
-        </div>
-      </div>
-
-      <PickupSignalBar />
     </motion.div>
   );
 };

@@ -172,6 +172,22 @@ test("a day that is not a delivery day shows no buttons", async () => {
   assert.equal(buttons().length, 0);
 });
 
+test("the bar's header stays when there are no buttons, and gives its place to them when there are", async () => {
+  const header = React.createElement("h3", null, "הזמנות אחרונות");
+  respond = (_entry, response) => json(response, pickup({ delivery_day: false }));
+  await act(async () => { renderer = create(React.createElement(PickupSignalBar, { fallback: header })); });
+  await settle(() => requests.length > 0);
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+  assert.equal(renderer.root.findAllByType("h3").length, 1);
+  respond = (_entry, response) => json(response, pickup());
+  await act(async () => { window.dispatchEvent(new Event("focus")); });
+  await settle(() => buttons().length > 0);
+  assert.equal(renderer.root.findAllByType("h3").length, 0);
+  fixture.connected = [];
+  await act(async () => { renderer.update(React.createElement(PickupSignalBar, { fallback: header })); });
+  assert.equal(renderer.root.findAllByType("h3").length, 1);
+});
+
 test("a shop without the route shows nothing and is not asked again", async () => {
   respond = (_entry, response) => json(response, { code: "rest_no_route" }, 404);
   await mount();
