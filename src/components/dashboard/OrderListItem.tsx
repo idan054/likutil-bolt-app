@@ -18,7 +18,15 @@ interface OrderListItemProps {
   muteDeliveryBadge?: boolean;
 }
 
-export const OrderListItem: React.FC<OrderListItemProps> = ({ 
+export const OrderListItem: React.FC<OrderListItemProps> = props => props.order.s3_addition
+  ? <button type="button" onClick={() => props.onSelect(String(props.order.id))} className="w-full rounded-lg border-2 border-amber-400 bg-amber-50 p-4 text-right space-y-1">
+      <strong className="block">תוספת להזמנה #{props.order.s3_addition.parent_number}</strong>
+      <span className="block">{props.order.billing.first_name} {props.order.billing.last_name}</span>
+      <span className="block text-sm">בקשה #{props.order.order_number ?? props.order.id} · אין לשלוח בנפרד</span>
+    </button>
+  : <RegularOrderListItem {...props} />;
+
+const RegularOrderListItem: React.FC<OrderListItemProps> = ({
   order, 
   onSelect,
   isCompleted,

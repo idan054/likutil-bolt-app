@@ -1,4 +1,6 @@
 type StoreOrder = {
+  s3_addition?: unknown;
+  payment_method?: string;
   id?: number | string;
   status?: string;
   meta_data?: Array<{ key: string; value: unknown }>;
@@ -21,6 +23,9 @@ export const isPickingStatus = (status: string, platform = "woo"): boolean => {
 
 export const getOrderBlockReason = (order: StoreOrder, platform: string): string | null => {
   if (platform === "woo") {
+    if (order.s3_addition || order.payment_method === "s3_addition_icredit" || normalizeStatus(order.status) === "s3-addition") {
+      return "זו תוספת להזמנה קיימת. יש להשתמש בשני כפתורי התוספת; אין לשלוח בנפרד או לשנות סטטוס.";
+    }
     const meta = (key: string) => order.meta_data?.find((entry) => entry.key === key)?.value;
     const flag = (key: string) => [true, 1, "1", "yes"].includes(meta(key) as string | number | boolean);
     // RFQ parents are documents, including approved/paid proposals. Only their

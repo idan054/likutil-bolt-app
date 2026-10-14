@@ -553,3 +553,31 @@ test("Shopify payment approval is checked before pending is mapped to the pickin
   assert.deepEqual(page.orders.map(({id})=>id), [2,3]);
   assert.equal(page.orders[0].status, 'pending');
 });
+
+const additionOrder = () => ({...order(42,'s3-addition'), payment_method:'s3_addition_icredit', s3_addition:{
+  v:1,parent_id:41,parent_number:'1041',state:'awaiting_picker',amount_minor:1000,decimals:2,currency:'ILS',
+  can_decide:true,no_separate_shipping:true,cancellation_policy:'manual',
+}});
+test('addition search opens dedicated view without granting ordinary picking permission through cache',async()=>{
+  respond=(_request,response)=>json(response,additionOrder());
+  const found=await service.searchOrderById('42');
+  assert.equal(found.s3_addition.parent_id,41);
+  await assert.rejects(service.getOrderById('42'),/תוספת/);
+  await assert.rejects(service.updateOrderStatus('42','completed'),/תוספת/);
+  await assert.rejects(service.markOrderShipmentCreated('42'),/תוספת/);
+  assert.ok(requests.every(r=>r.method==='GET'));
+});
+test('additions are excluded from ordinary and aggregate queues and retained in their dedicated queue',async()=>{
+  respond=(_request,response)=>json(response,[additionOrder()]);
+  assert.equal((await service.getFilteredOrdersPage('processing')).orders.length,0);
+  assert.equal((await service.getFilteredOrdersPage(null)).orders.length,0);
+  const page=await service.getFilteredOrdersPage('s3-addition');
+  assert.equal(page.orders.length,1);assert.equal(page.orders[0].s3_addition.parent_id,41);
+});
+test('invalid addition contract cannot enter ordinary view or dedicated queue',async()=>{
+  const bad={...additionOrder(),s3_addition:{v:1}};
+  respond=(_request,response)=>json(response,bad);
+  await assert.rejects(service.searchOrderById('42'),/תוספת/);
+  respond=(_request,response)=>json(response,[bad]);
+  assert.equal((await service.getFilteredOrdersPage('s3-addition')).orders.length,0);
+});

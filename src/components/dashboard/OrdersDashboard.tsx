@@ -202,6 +202,11 @@ export const OrdersDashboard: React.FC = () => {
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
             <div className="space-y-2 mb-2">
               <OrderSearch onSearch={handleSearchOrdered} onSearchStart={() => handleBackToList(false)}/>
+              {settings?.authType === "woo" && orderStatuses.some(s => s.slug === "s3-addition") && <button
+                type="button" onClick={() => handleSelectedStatus("s3-addition")}
+                className="w-full rounded-lg border-2 border-amber-400 bg-amber-50 p-3 font-bold text-amber-950">
+                תוספות — לבדיקת המחסן
+              </button>}
               <StatusFilter
                 statuses={orderStatuses.filter(({ slug }) => isPickingStatus(slug, settings?.authType))}
                 selectedStatus={selectedStatus}
@@ -229,7 +234,7 @@ export const OrdersDashboard: React.FC = () => {
           <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ||  filteredOrders.length === 0 ? 'block' : 'hidden md:block'}`}>
             {selectedOrder ? (
               <OrderDetails
-                key={selectedOrder.id}
+                key={`${orderScope}:${selectedOrder.id}`}
                 order={selectedOrder}
                 onReset={handleBackToList}
                 onComplete={handleOrderComplete}

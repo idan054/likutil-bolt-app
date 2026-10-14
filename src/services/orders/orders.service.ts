@@ -1,3 +1,4 @@
+import { parseLinkedAddition } from "./additions.service";
 import { apiClient } from "../api/client";
 import type {
   OrderDetails,
@@ -256,6 +257,7 @@ const mapOrder = (
       s3_print: order.s3_print ?? null,
       s3_label_url: order.s3_label_url ?? null,
       s3_carrier: order.s3_carrier ?? null,
+      s3_addition: null,
     };
   }
 // --------------------------------------------------
@@ -358,6 +360,7 @@ const mapOrder = (
     s3_print: order.s3_print ?? null,
     s3_label_url: order.s3_label_url ?? null,
     s3_carrier: order.s3_carrier ?? null,
+    s3_addition: platform === "woo" ? parseLinkedAddition(order.s3_addition) : null,
   };
 };
 
@@ -501,10 +504,10 @@ const processMultiOrdersMetadata = (
 /**
  * Gets an order by ID
  */
-export const getOrderById = async (orderId: string, forceRefresh = false): Promise<OrderDetails> => {
+export const getOrderById = async (orderId: string, forceRefresh = false, additionView = false): Promise<OrderDetails> => {
   const config = getApiConfig();
   const platform = config.platform;
-  const cacheKey = orderCacheKey("order", orderId, platform, config.baseUrl);
+  const cacheKey = orderCacheKey(additionView ? "addition-view" : "order", orderId, platform, config.baseUrl);
 
   console.log(
     `[orders.service] Getting order by ID: ${orderId} for platform: ${platform}`
@@ -519,7 +522,9 @@ export const getOrderById = async (orderId: string, forceRefresh = false): Promi
       cache: forceRefresh ? "no-store" : undefined,
     });
 
-    assertOrderReady(response, platform);
+    if (!(additionView && platform === "woo" && parseLinkedAddition(response.s3_addition))) {
+      assertOrderReady(response, platform);
+    }
     return mapOrder(response, platform) as OrderDetails;
   };
 
@@ -629,7 +634,7 @@ export const getFilteredOrdersPage = async (
       scanned += rawOrders.length;
       hasMore = rawOrders.length === pageSize && (responseTotal === null || scanned < responseTotal);
       for (const rawOrder of rawOrders) {
-        if (getOrderBlockReason(rawOrder, platform)) {
+        if (getOrderBlockReason(rawOrder, platform) && !(platform === "woo" && status === "s3-addition" && parseLinkedAddition(rawOrder.s3_addition))) {
           excluded = true;
           continue;
         }
@@ -693,7 +698,7 @@ export const searchOrderById = async (
           console.log(`B`);
             order = (await getFilteredOrdersPage(null, undefined, orderId, { forceRefresh: true })).orders[0] as OrderDetails;
           } else {
-              order = await getOrderById(orderId, true);
+              order = await getOrderById(orderId, true, true);
             }
       if (!order) throw new OrderNotReadyError(orderId, "לא נמצאה הזמנה מאושרת לליקוט. יש לפנות למשרד.");
       return processOrderMetadata(order, metadataConfigs || [], platform);
