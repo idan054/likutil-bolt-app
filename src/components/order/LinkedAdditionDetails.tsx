@@ -16,10 +16,11 @@ const messages: Record<string, string> = {
 export const additionMessage = (state: string): string =>
   messages[state] ?? "לא התקבל מצב מאומת. אין לצרף את המוצרים; יש לפנות למשרד.";
 
-export const LinkedAdditionDetails: React.FC<{ order: OrderDetails; onReset: () => void }> = ({ order, onReset }) => {
+export const LinkedAdditionDetails: React.FC<{ order: OrderDetails; onReset: () => void; onOpenParent?: () => Promise<void> }> = ({ order, onReset, onOpenParent }) => {
   const [data, setData] = useState<LinkedAddition | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [openingParent, setOpeningParent] = useState(false);
   const inFlight = useRef(false);
   const active = useRef(false);
   const controller = useRef<AbortController>();
@@ -29,34 +30,50 @@ export const LinkedAdditionDetails: React.FC<{ order: OrderDetails; onReset: () 
     setBusy(true);
     setError("");
     // Never retry POST on timeout. A fresh GET reconciles the persisted decision.
-    controller.current = new AbortController();
-    const timeout = window.setTimeout(() => controller.current?.abort(), 25000);
+    const request = new AbortController();
+    controller.current = request;
+    const isCurrent = () => active.current && controller.current === request;
+    const timeout = window.setTimeout(() => request.abort(), 25000);
     try {
-      const result = await additionRequest(order.id, decision, controller.current.signal);
+      const result = await additionRequest(order.id, decision, request.signal);
       const expected = order.s3_addition;
       if (!expected || result.parent_id !== expected.parent_id ||
           result.amount_minor !== expected.amount_minor || result.currency !== expected.currency ||
           result.decimals !== expected.decimals) throw new Error("addition changed");
-      if (active.current) setData(result);
+      if (isCurrent()) setData(result);
     } catch {
-      if (active.current) {
+      if (isCurrent()) {
         setData(null);
         setError(decision ? "לא התקבלה תשובה ודאית. אין לצרף או ללחוץ שוב; רעננו את המצב." : "לא ניתן לאמת את מצב התוספת. אין לצרף; נסו לרענן.");
       }
     } finally {
       window.clearTimeout(timeout);
-      inFlight.current = false;
-      if (active.current) setBusy(false);
+      if (isCurrent()) { inFlight.current = false; setBusy(false); }
     }
   };
   useEffect(() => {
     active.current = true;
+    setData(null);
     void run();
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void run();
     }, 15000);
-    return () => { active.current = false; controller.current?.abort(); window.clearInterval(interval); };
-  }, [order.id]);
+    return () => {
+      active.current = false; controller.current?.abort(); controller.current = undefined;
+      inFlight.current = false; window.clearInterval(interval);
+    };
+  }, [order.id, order.s3_addition?.parent_id, order.s3_addition?.amount_minor, order.s3_addition?.currency, order.s3_addition?.decimals]);
+  const openParent = async () => {
+    if (!onOpenParent || openingParent) return;
+    const current = controller.current;
+    setOpeningParent(true);
+    try { await onOpenParent(); }
+    catch {
+      if (active.current && controller.current === current) setError("לא ניתן לפתוח את ההזמנה המקורית. נסו שוב או חפשו אותה לפי המספר.");
+    } finally {
+      if (active.current) setOpeningParent(false);
+    }
+  };
   const parent = order.s3_addition!;
   return <section dir="rtl" className="rounded-xl border-2 border-amber-400 bg-white p-5 space-y-5" aria-busy={busy}>
     <button type="button" onClick={onReset} className="text-blue-700 underline">חזרה להזמנות</button>
@@ -65,7 +82,7 @@ export const LinkedAdditionDetails: React.FC<{ order: OrderDetails; onReset: () 
       <h1 className="text-2xl font-bold">לצרף להזמנה #{parent.parent_number}</h1>
       <p>בקשת תוספת #{order.order_number ?? order.id} · {order.billing.first_name} {order.billing.last_name}</p>
       <p className="text-lg font-semibold">סכום לחיוב באישור הצירוף: <bdi>{(parent.amount_minor / 10 ** parent.decimals).toFixed(parent.decimals)} {parent.currency}</bdi></p>
-      <a href={`?order=${parent.parent_id}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">פתיחת ההזמנה המקורית</a>
+      {onOpenParent && <button type="button" onClick={() => void openParent()} disabled={openingParent || busy} className="text-blue-700 underline disabled:opacity-50">{openingParent ? "פותחים את ההזמנה המקורית…" : "פתיחת ההזמנה המקורית"}</button>}
     </header>
     <ul className="divide-y border rounded-lg">
       {order.line_items.map(item => <li key={item.id} className="p-4 flex justify-between gap-4">

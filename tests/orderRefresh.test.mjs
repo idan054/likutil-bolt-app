@@ -581,3 +581,27 @@ test('invalid addition contract cannot enter ordinary view or dedicated queue',a
   respond=(_request,response)=>json(response,[bad]);
   assert.equal((await service.getFilteredOrdersPage('s3-addition')).orders.length,0);
 });
+
+test('opening the parent fetches its current record and selects it in the dashboard',async()=>{
+  await mountDashboard();
+  await act(async()=>renderer.root.findByType('OrderSearch').props.onSearch(additionOrder()));
+  respond=(_request,response)=>json(response,order(41));
+  await act(async()=>renderer.root.findByType('OrderDetails').props.onOpenParent());
+  assert.equal(renderer.root.findByType('OrderDetails').props.order.id,41);
+  assert.ok(requests.some(request=>request.url.endsWith('/orders/41') && request.method==='GET'));
+});
+
+test('a late parent read cannot select an order after changing stores',async()=>{
+  await mountDashboard();
+  await act(async()=>renderer.root.findByType('OrderSearch').props.onSearch(additionOrder()));
+  let parentResponse, opening;
+  respond=(_request,response)=>{parentResponse=response;};
+  await act(async()=>{opening=renderer.root.findByType('OrderDetails').props.onOpenParent();});
+  await settle(()=>!!parentResponse);
+  fixture.settings={...fixture.settings,storeUrl:'other-store.invalid'};
+  respond=(_request,response)=>json(response,[order(5)]);
+  await act(async()=>renderer.update(React.createElement(OrdersDashboard)));
+  await settle(()=>listedIds().includes(5));
+  await act(async()=>{json(parentResponse,order(41));await opening;});
+  assert.equal(renderer.root.findAllByType('OrderDetails').length,0);
+});

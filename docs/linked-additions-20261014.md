@@ -10,6 +10,7 @@ Owner approved implementation on 2026-10-14, including Git and production after 
 - Dedicated queue is visible only for Woo stores publishing the `s3-addition` status. Unrelated stores and Shopify retain their behavior.
 - Ordinary picking, completion and shipment validation reject additions, including completed ones. Search may read additions using a separate cache key without granting shipping permission.
 - Store/user changes unmount the selected order. Malformed addition metadata fails closed.
+- Late requests from a previous order cannot replace the current state. Parent navigation reads the current parent through the existing order service and discards the result if the store or selection changed.
 
 ## Proposed site contract (not deployed)
 
@@ -35,7 +36,7 @@ The source order remains a separate commercial record. Neither button directly u
 
 ## Verification and release blockers
 
-The targeted addition, order refresh and shipment/printing tests passed (77 tests), including after the final same-amount response check. Vite production build passed. Existing dependency warnings remain (large bundle, lottie eval, old Browserslist data). These are HTTP/UI boundary tests with test responses, not proof of a provider transaction or a deployed server authorization boundary.
+The targeted addition, order refresh and shipment/printing tests passed (81 tests), including late responses, parent navigation and a store change while the parent request is pending. The final Vite production build passed on 2026-10-14 before 12:10 UTC. Existing dependency warnings remain (large bundle, lottie eval, old Browserslist data). These are HTTP/UI boundary tests with test responses, not proof of a provider transaction or a deployed server authorization boundary.
 
 The repository-wide `tsc --noEmit` is not green: 86 errors on both the candidate and the unchanged primary checkout. Comparison by source file and TypeScript diagnostic code found no added errors; neither new addition source file had a diagnostic. This is not reported as a passing typecheck.
 

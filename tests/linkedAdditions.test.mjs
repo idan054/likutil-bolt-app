@@ -93,3 +93,33 @@ test('wrong parent or failed read never enables a decision',async()=>{
   assert.equal(button('אפשר לצרף'),undefined);
   assert.match(JSON.stringify(renderer.toJSON()),/לא ניתן לאמת/);
 });
+
+test('switching orders starts a fresh read and ignores a late result from the old order',async()=>{
+  let oldResult, newResult;
+  fixture.answer=request=>new Promise(resolve=>{
+    if(request.path.endsWith('/42')) oldResult=resolve; else newResult=resolve;
+  });
+  await mount();
+  const oldSignal=fixture.calls[0].signal;
+  const next={...order,id:43,s3_addition:{...record,parent_id:51,parent_number:'1051'}};
+  await act(async()=>{renderer.update(React.createElement(Component,{order:next,onReset(){}}));await tick();});
+  assert.equal(oldSignal.aborted,true);
+  assert.equal(fixture.calls.at(-1).path,'/s3-additions/43');
+  await act(async()=>{oldResult({...record,state:'completed',can_decide:false});await tick();});
+  assert.doesNotMatch(JSON.stringify(renderer.toJSON()),/החיוב אושר/);
+  assert.equal(button('אפשר לצרף'),undefined);
+  await act(async()=>{newResult(next.s3_addition);await tick();});
+  assert.ok(button('אפשר לצרף'));
+});
+
+test('parent navigation uses the app callback, with a visible recoverable error',async()=>{
+  let opens=0;
+  await act(async()=>{
+    renderer=create(React.createElement(Component,{order,onReset(){},onOpenParent:async()=>{opens++;throw Error('offline');}}));
+    await tick();
+  });
+  await act(async()=>{button('פתיחת ההזמנה המקורית').props.onClick();await tick();});
+  assert.equal(opens,1);
+  assert.match(JSON.stringify(renderer.toJSON()),/לא ניתן לפתוח/);
+  assert.equal(fixture.calls.filter(c=>c.method==='POST').length,0);
+});

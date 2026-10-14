@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { OrderSearch } from "../OrderSearch";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
 import { StatusFilter } from "./StatusFilter";
@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { analytics } from "../../services/analytics";
 import { isPickingStatus } from "../../services/orders/eligibility";
+import { getOrderById } from "../../services/orders/orders.service";
 
 
 export const OrdersDashboard: React.FC = () => {
@@ -38,6 +39,19 @@ export const OrdersDashboard: React.FC = () => {
 
   const orderScope = JSON.stringify([user?.uid, settings?.authType, settings?.storeUrl, settings?.myShopifyUrl]);
   const { selectedOrder, selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders, orderScope);
+  const selectionIdentity = `${orderScope}:${selectedOrderId}`;
+  const currentSelection = useRef(selectionIdentity);
+  currentSelection.current = selectionIdentity;
+  useEffect(() => {
+    currentSelection.current = selectionIdentity;
+    return () => { currentSelection.current = ""; };
+  }, [selectionIdentity]);
+  const openAdditionParent = async () => {
+    const parentId = selectedOrder?.s3_addition?.parent_id;
+    if (!parentId) return;
+    const parent = await getOrderById(String(parentId), true);
+    if (currentSelection.current === selectionIdentity) handleSearchOrder(parent);
+  };
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
     generateSuperOrder,
@@ -238,6 +252,7 @@ export const OrdersDashboard: React.FC = () => {
                 order={selectedOrder}
                 onReset={handleBackToList}
                 onComplete={handleOrderComplete}
+                onOpenParent={openAdditionParent}
               />
             ) : (
               <div className="flex items-center justify-center h-[800px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">

@@ -34,10 +34,11 @@ interface OrderDetailsProps {
   order: OrderDetailType;
   onReset: () => void;
   onComplete: (updatedOrder?: any) => void;
+  onOpenParent?: () => Promise<void>;
 }
 
 export const OrderDetails: React.FC<OrderDetailsProps> = props => props.order.s3_addition
-  ? <LinkedAdditionDetails order={props.order} onReset={props.onReset} />
+  ? <LinkedAdditionDetails order={props.order} onReset={props.onReset} onOpenParent={props.onOpenParent} />
   : <RegularOrderDetails {...props} />;
 
 const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
