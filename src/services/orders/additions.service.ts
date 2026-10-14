@@ -11,6 +11,8 @@ export const parseLinkedAddition = (value: unknown): LinkedAddition | null => {
     Number.isInteger(v.decimals) && v.decimals >= 0 && v.decimals <= 4 &&
     typeof v.currency === "string" && typeof v.can_decide === "boolean" &&
     (!v.can_decide || v.state === "awaiting_picker") &&
+    (v.can_reject === undefined || (typeof v.can_reject === "boolean" &&
+      (!v.can_reject || ["awaiting_authorization", "awaiting_picker", "payment_failed"].includes(v.state)))) &&
     v.no_separate_shipping === true && v.cancellation_policy === "manual" ? v : null;
 };
 

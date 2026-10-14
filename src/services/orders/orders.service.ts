@@ -361,6 +361,7 @@ const mapOrder = (
     s3_label_url: order.s3_label_url ?? null,
     s3_carrier: order.s3_carrier ?? null,
     s3_addition: platform === "woo" ? parseLinkedAddition(order.s3_addition) : null,
+    s3_addition_hold: platform === "woo" && order.s3_addition_hold === true,
   };
 };
 
@@ -522,7 +523,7 @@ export const getOrderById = async (orderId: string, forceRefresh = false, additi
       cache: forceRefresh ? "no-store" : undefined,
     });
 
-    if (!(additionView && platform === "woo" && parseLinkedAddition(response.s3_addition))) {
+    if (!(additionView && platform === "woo" && (parseLinkedAddition(response.s3_addition) || response.s3_addition_hold === true))) {
       assertOrderReady(response, platform);
     }
     return mapOrder(response, platform) as OrderDetails;
@@ -634,7 +635,7 @@ export const getFilteredOrdersPage = async (
       scanned += rawOrders.length;
       hasMore = rawOrders.length === pageSize && (responseTotal === null || scanned < responseTotal);
       for (const rawOrder of rawOrders) {
-        if (getOrderBlockReason(rawOrder, platform) && !(platform === "woo" && status === "s3-addition" && parseLinkedAddition(rawOrder.s3_addition))) {
+        if (getOrderBlockReason(rawOrder, platform) && !(platform === "woo" && ((status === "s3-addition" && parseLinkedAddition(rawOrder.s3_addition)) || rawOrder.s3_addition_hold === true))) {
           excluded = true;
           continue;
         }

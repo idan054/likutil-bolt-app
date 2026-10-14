@@ -58,6 +58,19 @@ test('two large decisions only after fresh server read; no ordinary status contr
   assert.equal(renderer.root.findAllByType('select').length,0);
   assert.match(JSON.stringify(renderer.toJSON()),/אין לשלוח בנפרד/);
 });
+
+test('unpaid addition can be manually rejected but cannot be attached',async()=>{
+  fixture.answer=async()=>({...record,state:'awaiting_authorization',can_decide:false,can_reject:true});
+  await mount();
+  assert.equal(button('אפשר לצרף').props.disabled,true);
+  assert.equal(button('אי אפשר לצרף').props.disabled,false);
+  fixture.answer=async()=>({...record,state:'cancel_requested',can_decide:false,can_reject:false});
+  await act(async()=>{button('אי אפשר לצרף').props.onClick();await tick();});
+  assert.deepEqual(fixture.calls.at(-1).body,{decision:'reject'});
+  assert.equal(button('אי אפשר לצרף'),undefined);
+  assert.match(JSON.stringify(renderer.toJSON()),/בודקים אם יש אישור כרטיס/);
+  assert.equal(parse({...record,state:'payment_unknown',can_decide:false,can_reject:true}),null);
+});
 test('double click issues one POST, waits for server before reporting completion',async()=>{
   await mount();let finish;
   fixture.answer=request=>request.method==='POST'?new Promise(resolve=>{finish=resolve;}):Promise.resolve(record);

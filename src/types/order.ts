@@ -80,6 +80,7 @@ export interface SiteCarrierDecision {
 
 export interface OrderSummary {
   s3_addition?: LinkedAddition | null;
+  s3_addition_hold?: boolean;
   customer_id: number | null;
   is_vip_member?: boolean;
   id: number;
@@ -118,6 +119,7 @@ export interface LinkedAddition {
   decimals: number;
   currency: string;
   can_decide: boolean;
+  can_reject?: boolean;
   no_separate_shipping: true;
   cancellation_policy: "manual";
   reason?: string;

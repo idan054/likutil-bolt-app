@@ -49,7 +49,7 @@ export const OrdersDashboard: React.FC = () => {
   const openAdditionParent = async () => {
     const parentId = selectedOrder?.s3_addition?.parent_id;
     if (!parentId) return;
-    const parent = await getOrderById(String(parentId), true);
+    const parent = await getOrderById(String(parentId), true, true);
     if (currentSelection.current === selectionIdentity) handleSearchOrder(parent);
   };
   const { markAsCompleted, isCompleted } = useVisitedOrders();
