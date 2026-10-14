@@ -28,14 +28,24 @@ import { useCompanyPrintDocuments } from "../hooks/useCompanyPrintDocuments";
 import { isPickingStatus } from "../services/orders/eligibility";
 import { settingsStorage } from "../services/settings";
 import { markOrderShipmentCreated } from "../services/orders/orders.service";
+import { LinkedAdditionDetails } from "./order/LinkedAdditionDetails";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
   onReset: () => void;
   onComplete: (updatedOrder?: any) => void;
+  onOpenParent?: () => Promise<void>;
 }
 
-export const OrderDetails: React.FC<OrderDetailsProps> = ({
+export const OrderDetails: React.FC<OrderDetailsProps> = props => props.order.s3_addition
+  ? <LinkedAdditionDetails order={props.order} onReset={props.onReset} onOpenParent={props.onOpenParent} />
+  : props.order.s3_addition_hold ? <section dir="rtl" role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-6 space-y-4">
+      <h1 className="text-xl font-bold">הזמנה #{props.order.order_number} — ממתינים לתוספת</h1>
+      <p>תוספת להזמנה נמצאת בחיוב או בבירור. אין למסור את החבילה עד להשלמת התוספת או להכרעת המשרד.</p>
+      <button type="button" onClick={props.onReset} className="rounded-lg border px-4 py-3">חזרה להזמנות</button>
+    </section> : <RegularOrderDetails {...props} />;
+
+const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
   order,
   onReset,
   onComplete,

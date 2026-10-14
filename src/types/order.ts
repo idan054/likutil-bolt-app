@@ -79,6 +79,8 @@ export interface SiteCarrierDecision {
 }
 
 export interface OrderSummary {
+  s3_addition?: LinkedAddition | null;
+  s3_addition_hold?: boolean;
   customer_id: number | null;
   is_vip_member?: boolean;
   id: number;
@@ -106,6 +108,21 @@ export interface OrderSummary {
   s3_print?: CompanyPrintDocuments | null;
   s3_label_url?: string | null;
   s3_carrier?: SiteCarrierDecision | null;
+}
+
+export interface LinkedAddition {
+  v: 1;
+  parent_id: number;
+  parent_number: string;
+  state: string;
+  amount_minor: number;
+  decimals: number;
+  currency: string;
+  can_decide: boolean;
+  can_reject?: boolean;
+  no_separate_shipping: true;
+  cancellation_policy: "manual";
+  reason?: string;
 }
 
 export interface OrderDetails extends OrderSummary {

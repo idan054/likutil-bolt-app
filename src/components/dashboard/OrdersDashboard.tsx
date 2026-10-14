@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { OrderSearch } from "../OrderSearch";
 import { ProcessingOrdersCounter } from "./ProcessingOrdersCounter";
 import { StatusFilter } from "./StatusFilter";
@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { analytics } from "../../services/analytics";
 import { isPickingStatus } from "../../services/orders/eligibility";
+import { getOrderById } from "../../services/orders/orders.service";
 
 
 export const OrdersDashboard: React.FC = () => {
@@ -38,6 +39,19 @@ export const OrdersDashboard: React.FC = () => {
 
   const orderScope = JSON.stringify([user?.uid, settings?.authType, settings?.storeUrl, settings?.myShopifyUrl]);
   const { selectedOrder, selectedOrderId, handleOrderSelect, handleReset, handleSearchOrder } = useOrderSelection(orders, setOrders, orderScope);
+  const selectionIdentity = `${orderScope}:${selectedOrderId}`;
+  const currentSelection = useRef(selectionIdentity);
+  currentSelection.current = selectionIdentity;
+  useEffect(() => {
+    currentSelection.current = selectionIdentity;
+    return () => { currentSelection.current = ""; };
+  }, [selectionIdentity]);
+  const openAdditionParent = async () => {
+    const parentId = selectedOrder?.s3_addition?.parent_id;
+    if (!parentId) return;
+    const parent = await getOrderById(String(parentId), true, true);
+    if (currentSelection.current === selectionIdentity) handleSearchOrder(parent);
+  };
   const { markAsCompleted, isCompleted } = useVisitedOrders();
   const {
     generateSuperOrder,
@@ -202,6 +216,11 @@ export const OrdersDashboard: React.FC = () => {
           <div id="orders-sidebar" className={`w-full md:w-1/4 mb-4 md:mb-0 ${isMobileDetailsVisible ? 'hidden md:block' : 'block'}`}>
             <div className="space-y-2 mb-2">
               <OrderSearch onSearch={handleSearchOrdered} onSearchStart={() => handleBackToList(false)}/>
+              {settings?.authType === "woo" && orderStatuses.some(s => s.slug === "s3-addition") && <button
+                type="button" onClick={() => handleSelectedStatus("s3-addition")}
+                className="w-full rounded-lg border-2 border-amber-400 bg-amber-50 p-3 font-bold text-amber-950">
+                תוספות — לבדיקת המחסן
+              </button>}
               <StatusFilter
                 statuses={orderStatuses.filter(({ slug }) => isPickingStatus(slug, settings?.authType))}
                 selectedStatus={selectedStatus}
@@ -229,10 +248,11 @@ export const OrdersDashboard: React.FC = () => {
           <div id="orders-details" className={`w-full md:w-3/4 ${isMobileDetailsVisible ||  filteredOrders.length === 0 ? 'block' : 'hidden md:block'}`}>
             {selectedOrder ? (
               <OrderDetails
-                key={selectedOrder.id}
+                key={`${orderScope}:${selectedOrder.id}`}
                 order={selectedOrder}
                 onReset={handleBackToList}
                 onComplete={handleOrderComplete}
+                onOpenParent={openAdditionParent}
               />
             ) : (
               <div className="flex items-center justify-center h-[800px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 mr-5">
