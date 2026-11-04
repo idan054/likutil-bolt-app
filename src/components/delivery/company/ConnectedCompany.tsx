@@ -11,6 +11,8 @@ import type { DeliveryIntegration } from '../../../types/delivery';
 import type { DeliveryTaskResponse } from '../../../services/delivery/types';
 import { OrderDetails } from '../../../types/order';
 import { maxPackagesPerShipment, packageLimitHint } from '../../../utils/packageLimit';
+import { DeliveryProgramType } from '../../settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
+import { RoundtripToggle } from './RoundtripToggle';
 
 interface ConnectedCompanyProps {
   order: OrderDetails;
@@ -21,7 +23,7 @@ interface ConnectedCompanyProps {
   createLabel: string;
   isAdditional: boolean;
   onCancelAdditional: () => void;
-  onCreateDelivery: (packNum: string, deliveryType: string) => void;
+  onCreateDelivery: (packNum: string, deliveryType: string, roundtrip?: boolean) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;
@@ -52,6 +54,10 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   const shippingTitle = order.shipping_lines?.length ? order.shipping_lines[0].method_title : '';
   const isPickupDelivery = shippingTitle.includes('נקודות חלוקה') || shippingTitle.includes('נקודת חלוקה') || shippingTitle.includes('epost') || shippingTitle.includes('נקודת איסוף') || shippingTitle.includes('נקודות איסוף');
   const [deliveryType, setDeliveryType] = React.useState<'client' | 'pickup'>(isPickupDelivery ? 'pickup' : 'client');
+  // Delivery + pickup in one visit (exchanges): only LionWheel carriers (Mahir Li, ZipGo) support it.
+  const canRoundtrip = integration.programType === DeliveryProgramType.LION_WHEEL;
+  const [roundtrip, setRoundtrip] = React.useState(false);
+  const sendRoundtrip = canRoundtrip && roundtrip;
 
   return (
     <motion.div 
@@ -83,6 +89,14 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             programType={integration.provider.toLowerCase()}
           />
           
+          {canRoundtrip && !deliveryResponse && (
+            <RoundtripToggle
+              checked={roundtrip}
+              onChange={setRoundtrip}
+              disabled={isCreating || !!isCreationBlocked}
+            />
+          )}
+
           <ConnectionStatus 
             apiKey={apiKey}
             isCreating={isCreating}
@@ -96,10 +110,10 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
             isCreating={isCreating}
             isCompleting={isCompleting}
             isCreationBlocked={isCreationBlocked}
-            createLabel={createLabel}
+            createLabel={sendRoundtrip ? `${isAdditional ? 'הזמן משלוח נוסף' : 'הפק משלוח'} + איסוף ב${integration.name}` : createLabel}
             isAdditional={isAdditional}
             onCancelAdditional={onCancelAdditional}
-            onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString())}
+            onCreateDelivery={() => onCreateDelivery(packageCount.toString(), deliveryType.toString(), sendRoundtrip)}
             onComplete={onComplete}
             packNum={deliveryResponse?.package_count ?? packageCount.toString()}
             deliveryType={deliveryType.toString()} 

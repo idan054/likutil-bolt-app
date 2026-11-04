@@ -309,7 +309,7 @@ const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
                 onCancelAdditional={cancelAdditional}
                 onCancelShipment={cancelShipment}
                 onCheckShipment={checkShipment}
-                onCreateDelivery={(packNum, deliveryType) => createDelivery(packNum, deliveryType)}
+                onCreateDelivery={(packNum, deliveryType, roundtrip) => createDelivery(packNum, deliveryType, roundtrip)}
                 deliveryResponse={deliveryResponse}
                 onComplete={handleComplete}
                 isCompleting={isCompleting || isUpdatingShipment}

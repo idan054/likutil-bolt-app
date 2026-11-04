@@ -5,6 +5,8 @@ export interface DeliveryRequestParams {
   keys: string;
   additionalShipmentRevision?: string;
   replacementShipmentRevision?: string;
+  /** Delivery + pickup from the customer in one task (Mahir Li / ZipGo only). */
+  roundtrip?: boolean;
 }
 
 // Update existing types

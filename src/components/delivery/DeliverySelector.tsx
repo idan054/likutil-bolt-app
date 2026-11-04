@@ -31,7 +31,7 @@ interface DeliverySelectorProps {
   onCancelAdditional: () => void;
   onCancelShipment: (shipment: DeliveryTaskResponse) => Promise<boolean>;
   onCheckShipment: () => void;
-  onCreateDelivery: (packNum: string, deliveryType: string) => void;
+  onCreateDelivery: (packNum: string, deliveryType: string, roundtrip?: boolean) => void;
   deliveryResponse: DeliveryTaskResponse | null;
   onComplete: () => Promise<void>;
   isCompleting: boolean;

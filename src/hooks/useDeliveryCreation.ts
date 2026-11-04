@@ -109,7 +109,7 @@ export const useDeliveryCreation = ({
     return () => { cancelled = true; };
   }, [responseKey, orderId, userId, checkEnabled, checkVersion]);
 
-  const createDeliveryTask = async (packNum: string = "1", deliveryType: string) => {
+  const createDeliveryTask = async (packNum: string = "1", deliveryType: string, roundtrip = false) => {
     if (creatingRef.current || isCreationBlocked) return;
     if (!order) {
       toast.error("לא נבחרה הזמנה");
@@ -169,6 +169,7 @@ export const useDeliveryCreation = ({
         deliveryType,
         requestedAt,
         additionalShipmentRevision: additionalRevision || (shipmentState?.state === 'created' ? shipmentState.revision : undefined),
+        roundtrip,
       });
 
       const result: DeliveryTaskResponse = {

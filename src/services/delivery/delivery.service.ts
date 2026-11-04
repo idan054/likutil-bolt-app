@@ -15,6 +15,7 @@ interface CreateDeliveryParams {
   requestedAt?: string;
   additionalShipmentRevision?: string;
   replacementShipmentRevision?: string;
+  roundtrip?: boolean;
 }
 
 export const createDelivery = async ({
@@ -26,7 +27,8 @@ export const createDelivery = async ({
   deliveryType = "client",
   requestedAt,
   additionalShipmentRevision,
-  replacementShipmentRevision
+  replacementShipmentRevision,
+  roundtrip = false
 }: CreateDeliveryParams): Promise<DeliveryTaskResponse> => {
   if (!order) {
     throw new Error('לא ניתן ליצור משלוח: לא נבחרה הזמנה');
@@ -40,7 +42,8 @@ export const createDelivery = async ({
     orderId: order.id,
     provider,
     packNum,
-    deliveryType
+    deliveryType,
+    roundtrip
   });
 
   const request = mapOrderToDeliveryTask(order, packNum, requestedAt);
@@ -50,7 +53,8 @@ export const createDelivery = async ({
     provider,
     keys: keys,
     additionalShipmentRevision,
-    replacementShipmentRevision
+    replacementShipmentRevision,
+    roundtrip
   });
 };
 
