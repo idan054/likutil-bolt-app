@@ -1,6 +1,7 @@
 import type { OrderSummary } from "../types/order";
 import type { DeliveryDecisionState, DeliveryType } from "../types/fastDelivery";
 import { siteDeliveryType } from "./siteCarrier";
+import { isRoundtripShippingTitle } from "./roundtrip";
 
 type ShippingLine = OrderSummary["shipping_lines"][number];
 
@@ -17,7 +18,7 @@ const includesAny = (value: string, candidates: string[]) =>
 export const isPickupShippingLine = (
   shippingLine: ShippingLine | null | undefined
 ) => {
-  if (!shippingLine) return false;
+  if (!shippingLine || isRoundtripShippingTitle(shippingLine.method_title)) return false;
 
   const methodId = normalizeShippingValue(shippingLine.method_id);
   const title = normalizeShippingValue(shippingLine.method_title);

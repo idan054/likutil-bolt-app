@@ -1,4 +1,5 @@
 import { translations } from '../config/translations';
+import { isRoundtripShippingTitle } from './roundtrip';
 
 export const translateOrderStatus = (status: string): string => {
   const translatedStatus = translations.orderStatus[status as keyof typeof translations.orderStatus];
@@ -92,6 +93,7 @@ export const isLocalPickupShipping = (
 ): boolean => {
   if (!shippingLines || shippingLines.length === 0) return false;
   return shippingLines.some((line) => {
+    if (isRoundtripShippingTitle(line?.method_title)) return false;
     const methodId = normalizeShippingValue(line?.method_id);
     const methodTitle = normalizeShippingValue(line?.method_title);
     return localPickupKeywords.some(

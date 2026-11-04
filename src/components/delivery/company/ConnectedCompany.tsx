@@ -13,6 +13,7 @@ import { OrderDetails } from '../../../types/order';
 import { maxPackagesPerShipment, packageLimitHint } from '../../../utils/packageLimit';
 import { DeliveryProgramType } from '../../settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
 import { RoundtripToggle } from './RoundtripToggle';
+import { hasRoundtripShipping } from '../../../utils/roundtrip';
 
 interface ConnectedCompanyProps {
   order: OrderDetails;
@@ -56,7 +57,10 @@ export const ConnectedCompany: React.FC<ConnectedCompanyProps> = ({
   const [deliveryType, setDeliveryType] = React.useState<'client' | 'pickup'>(isPickupDelivery ? 'pickup' : 'client');
   // Delivery + pickup in one visit (exchanges): only LionWheel carriers (Mahir Li, ZipGo) support it.
   const canRoundtrip = integration.programType === DeliveryProgramType.LION_WHEEL;
-  const [roundtrip, setRoundtrip] = React.useState(false);
+  // An exchange order (round-trip shipping line) starts with it on; never for an additional shipment, or the courier would collect twice.
+  const autoRoundtrip = canRoundtrip && !isAdditional && hasRoundtripShipping(order.shipping_lines);
+  const [roundtrip, setRoundtrip] = React.useState(autoRoundtrip);
+  React.useEffect(() => setRoundtrip(autoRoundtrip), [autoRoundtrip]);
   const sendRoundtrip = canRoundtrip && roundtrip;
 
   return (
