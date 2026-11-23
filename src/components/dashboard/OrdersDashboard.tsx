@@ -15,7 +15,6 @@ import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { OrderDetails } from "../OrderDetails";
 import type { OrderDetails as OrderData } from "../../types/order";
 import { AnimatePresence, motion } from "framer-motion";
-import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { analytics } from "../../services/analytics";
 import { isPickingStatus } from "../../services/orders/eligibility";
 import { getOrderById } from "../../services/orders/orders.service";
@@ -327,7 +326,6 @@ export const OrdersDashboard: React.FC = () => {
         <SuperOrderModal items={superOrderItems} onClose={clearSuperOrder} />
       )}
 
-    <FloatingTipMessage storageKey="keyboard_shortcuts_tip_dismissed" />
     </>
   );
 };

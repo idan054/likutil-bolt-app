@@ -12,7 +12,6 @@ import {
   MonitorSmartphone,
   Camera,
 } from "lucide-react";
-import { FloatingTipMessage } from "../ui/FloatingTipMessage";
 import { AppInfoStatus } from "../ui/AppInfoStatus";
 import { ShopifyAuthButton } from "./ShopifyAuthButton";
 import { ServerOfflineIndicator } from "../ui/OfflineIndicator";

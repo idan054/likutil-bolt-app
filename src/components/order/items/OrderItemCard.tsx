@@ -84,10 +84,10 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
         href={productUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative flex justify-between items-center border-b pb-3 p-2 rounded-lg transition-colors hover:bg-blue-50 group"
+        className="relative flex justify-between items-center gap-3 border-b pb-3 p-2 rounded-lg transition-colors hover:bg-blue-50 group"
       >
 
-        <div className="flex items-center gap-4 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           {(settings?.showProductImages !== false) && (
             <ProductImage 
               src={typeof item.image === 'string' ? item.image : item.image?.src} 
@@ -126,7 +126,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
           />
         </div>
     
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-1 whitespace-nowrap">
           <QuantityBadge quantity={item.quantity} />
           <span className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">
             ₪{item.total}

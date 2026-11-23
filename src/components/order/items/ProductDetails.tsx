@@ -21,11 +21,11 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
     
     <div className="flex items-center gap-2">
-      <h4 className="text-lg font-medium line-clamp-3 truncate group-hover:text-blue-600 transition-colors">{name}</h4>
+      <h4 className="text-lg font-medium [overflow-wrap:anywhere] group-hover:text-blue-600 transition-colors">{name}</h4>
     </div>
 
 
-    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 [overflow-wrap:anywhere]">
       {/* <span>כמות: {quantity}</span> */}
       {sku && <span>מק״ט: {sku || 'N/A'}</span>}
 
