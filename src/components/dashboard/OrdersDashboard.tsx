@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { analytics } from "../../services/analytics";
 import { isPickingStatus } from "../../services/orders/eligibility";
 import { getOrderById } from "../../services/orders/orders.service";
+import { getPickingRoute } from "../../config/pickingRoutes";
 
 
 export const OrdersDashboard: React.FC = () => {
@@ -249,6 +250,7 @@ export const OrdersDashboard: React.FC = () => {
               <OrderDetails
                 key={`${orderScope}:${selectedOrder.id}`}
                 order={selectedOrder}
+                pickingRoute={getPickingRoute(settings)}
                 onReset={handleBackToList}
                 onComplete={handleOrderComplete}
                 onOpenParent={openAdditionParent}

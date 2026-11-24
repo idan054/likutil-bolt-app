@@ -29,9 +29,11 @@ import { isPickingStatus } from "../services/orders/eligibility";
 import { settingsStorage } from "../services/settings";
 import { markOrderShipmentCreated } from "../services/orders/orders.service";
 import { LinkedAdditionDetails } from "./order/LinkedAdditionDetails";
+import type { PickingRoute } from "../utils/pickingRoute";
 
 interface OrderDetailsProps {
   order: OrderDetailType;
+  pickingRoute?: PickingRoute;
   onReset: () => void;
   onComplete: (updatedOrder?: any) => void;
   onOpenParent?: () => Promise<void>;
@@ -47,6 +49,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = props => props.order.s3
 
 const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
   order,
+  pickingRoute,
   onReset,
   onComplete,
 }) => {
@@ -241,7 +244,7 @@ const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
 
           <CustomerNote note={order.customer_note} />
 
-          <OrderItems items={order.line_items} />
+          <OrderItems items={order.line_items} pickingRoute={pickingRoute} />
 
           <OrderSummary
             shippingTotal={order.shipping_total}

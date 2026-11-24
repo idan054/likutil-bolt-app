@@ -9,9 +9,11 @@ import { X, Check, RotateCw, Loader2, Settings2, EyeOff, Eye } from 'lucide-reac
 import { useGetAiMetadata } from '../../../hooks/useGetAiMetadata';
 import toast from 'react-hot-toast';
 import { getOrderItemMetadataDisplay } from '../../../utils/orderItemMetadata';
+import type { PickingLocation } from '../../../utils/pickingRoute';
 
 interface OrderItemCardProps {
   item: LineItem;
+  pickingLocation?: PickingLocation;
   buttonPosition?: {
     top?: number;
     left?: number;
@@ -23,6 +25,7 @@ interface OrderItemCardProps {
 
 export const OrderItemCard: React.FC<OrderItemCardProps> = ({ 
   item, 
+  pickingLocation,
   buttonPosition = { top: -10, left: 2 },
   dir = 'rtl'
 }) => {
@@ -123,6 +126,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
             sku={item.sku}
             quantity={item.quantity}
             stockQuantity={item.product_data?.stock_quantity}
+            pickingLocation={pickingLocation}
           />
         </div>
     

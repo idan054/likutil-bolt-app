@@ -8,6 +8,13 @@ export const translations = {
   shippingAddress: 'כתובת למשלוח',
   shippingMethod: 'שיטת משלוח',
   orderItems: 'פריטים בהזמנה',
+  picking: {
+    route: 'לפי מסלול ליקוט',
+    checkLocation: 'מיקום לבדיקה',
+    primaryShelf: 'מדף ליקוט',
+    otherShelves: 'מדפים נוספים',
+    overflow: 'עודפים',
+  },
   quantity: 'כמות',
   highQuantity: 'כמות גבוהה',
   shipping: 'משלוח',
