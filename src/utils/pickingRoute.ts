@@ -1,4 +1,5 @@
 import type { LineItem } from "../types/order";
+import { planWarehouseWalk, type WarehouseLayout } from "./warehouseWalk";
 
 export interface PickingRoute {
   segments: readonly {
@@ -8,6 +9,7 @@ export interface PickingRoute {
   }[];
   skuSeparator: RegExp;
   locationPattern: RegExp;
+  layout?: WarehouseLayout;
 }
 
 export interface PickingLocation {
@@ -94,5 +96,8 @@ export const orderItemsForPicking = (items: readonly LineItem[], route: PickingR
       || first.level - second.level;
   });
 
-  return rows.map(({ item, picking }) => ({ item, location: picking?.location }));
+  const shelves = rows.flatMap(({ picking }) => picking ? [picking.primary] : []);
+  const walk = route.layout ? planWarehouseWalk(route.layout, shelves) : undefined;
+  const ordered = walk ? [...walk.order.map(index => rows[index]), ...rows.slice(shelves.length)] : rows;
+  return ordered.map(({ item, picking }) => ({ item, location: picking?.location }));
 };

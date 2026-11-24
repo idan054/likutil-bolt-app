@@ -10,9 +10,9 @@ interface OrderItemsProps {
 }
 
 export const OrderItems: React.FC<OrderItemsProps> = ({ items, pickingRoute }) => {
-  const rows = pickingRoute
+  const rows = React.useMemo(() => pickingRoute
     ? orderItemsForPicking(items, pickingRoute)
-    : items.map(item => ({ item, location: undefined }));
+    : items.map(item => ({ item, location: undefined })), [items, pickingRoute]);
   const firstUnmapped = pickingRoute ? rows.findIndex(row => !row.location) : -1;
 
   return (
