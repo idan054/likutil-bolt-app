@@ -46,6 +46,10 @@ export interface DeliveryTaskResponse {
   delivered?: boolean;
   status_checked?: boolean;
   error_text?: string;
+  negev_ref?: string;
+  negev_custom_label?: boolean;
+  delivery_pending?: boolean;
+  negev_status?: string;
 
   // Mahir Li (Lionwheel) task fields returned by the create-delivery API.
   // Not always typed by the proxy, kept optional so we can persist whatever is present.

@@ -210,6 +210,14 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ integration }) => {
 
   const fields = getFieldsByProgramType(integration.programType as DeliveryProgramType);
 
+  if (integration.serverManaged) return <div className="space-y-2">
+    <p className="text-sm text-gray-700">החיבור לחשבון נגב מנוהל בשרת.</p>
+    <button className="rounded-lg border px-3 py-2 text-sm" type="button" disabled={isTesting}
+      onClick={() => { void testIntegration(integration, {}); }}>
+      {isTesting ? 'בודק חיבור…' : 'בדיקת חיבור לנגב'}
+    </button>
+  </div>;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-0">

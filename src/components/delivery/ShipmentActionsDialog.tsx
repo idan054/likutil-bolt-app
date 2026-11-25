@@ -40,7 +40,9 @@ export function ShipmentActionsDialog({ order, companyName, shipments, isCheckin
       : 'נמצאו משלוחים. בדקו לאיזו הזמנה הם שייכים.'
     : message;
   const cancelHint = selected?.can_cancel ? 'מבטל רק את המשלוח שנבחר. יידרש אישור.'
-    : selected?.delivered ? 'המשלוח כבר נמסר ולכן אי אפשר לבטל אותו.' : 'הביטול אינו זמין כרגע בחברת המשלוחים.';
+    : selected?.delivered ? 'המשלוח כבר נמסר ולכן אי אפשר לבטל אותו.'
+    : selected?.negev_ref ? `לביטול פנו לנגב עם ${selected.negev_ref}. לאחר האישור, לחצו על בדיקת מצב.`
+    : 'הביטול אינו זמין כרגע בחברת המשלוחים.';
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;

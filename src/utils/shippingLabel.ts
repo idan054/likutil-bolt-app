@@ -37,6 +37,9 @@ export const getShipmentNumber = (
   response: DeliveryTaskResponse
 ): string | null => {
   const carrier = getLabelCarrier(provider);
+  if (response.negev_ref && (provider === 'negevExpress' || provider === 'negevTovala')) {
+    return positiveNumber(response.track_number);
+  }
   if (carrier === "negev") {
     return positiveNumber(response.DeliveryNumber) ??
       positiveNumber(response.track_number);
@@ -59,12 +62,17 @@ export const getShipmentLabelUrl = (
   reprint = false
 ): string | null => {
   const url = getBaseUrl(labelUrl, orderId);
-  const carrier = getLabelCarrier(provider);
+  const isNewNegev = Boolean(response.negev_ref && /^NE-[0-9]+$/.test(response.negev_ref) &&
+    (provider === 'negevExpress' || provider === 'negevTovala'));
+  if (isNewNegev && (!response.negev_custom_label || response.delivery_pending || !response.print_label)) return null;
+  const carrier = isNewNegev ? 'negev' : getLabelCarrier(provider);
   const shipmentNumber = getShipmentNumber(provider, response);
   if (!url || !carrier || !shipmentNumber) return null;
 
   url.searchParams.set("c", carrier);
   url.searchParams.set("d", shipmentNumber);
+  url.searchParams.delete('nr');
+  if (isNewNegev && response.negev_ref) url.searchParams.set('nr', response.negev_ref);
   if (reprint) url.searchParams.set("reprint", "1");
   else url.searchParams.delete("reprint");
   url.searchParams.delete("n");
@@ -89,6 +97,7 @@ export const getReprintLabelUrl = (
   if (!url || !carrier) return null;
   url.searchParams.set("c", carrier);
   url.searchParams.delete("d");
+  url.searchParams.delete('nr');
   url.searchParams.set("reprint", "1");
   url.searchParams.delete("n");
   url.searchParams.delete("city");

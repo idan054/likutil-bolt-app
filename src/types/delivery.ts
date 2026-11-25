@@ -15,6 +15,7 @@ export interface DeliveryIntegration {
   description: string;
   logoUrl: string;
   isConnected: boolean;
+  serverManaged?: boolean;
   programType: DeliveryProgramType;  
   controlPanelLink: string;
   

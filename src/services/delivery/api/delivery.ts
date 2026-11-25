@@ -28,6 +28,16 @@ const authHeaders = async () => {
   return { ...requestHeaders, Authorization: `Bearer ${token}` };
 };
 
+export const getManagedNegevProviders = async (userId: string): Promise<string[]> => {
+  const query = new URLSearchParams({ userId });
+  const response = await fetch(`${BASE_URL}/api/negev-connections?${query}`, {
+    headers: await authHeaders(), cache: 'no-store', signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return Array.isArray(data.providers) ? data.providers.filter((id: unknown) => typeof id === 'string') : [];
+};
+
 export const getShipmentState = async (orderId: string, userId: string): Promise<ShipmentState> => {
   const query = new URLSearchParams({ orderId, userId });
   const response = await fetch(`${BASE_URL}/api/delivery-status?${query}`, {
@@ -68,8 +78,8 @@ export const createDeliveryTask = async (
   const query = new URLSearchParams({
     userId: params.userId,
     provider: params.provider,
-    keys: params.keys,
   });
+  if (params.keys) query.set('keys', params.keys);
   if (params.additionalShipmentRevision) query.set('additionalShipmentRevision', params.additionalShipmentRevision);
   if (params.replacementShipmentRevision) query.set('replacementShipmentRevision', params.replacementShipmentRevision);
   if (params.roundtrip) query.set('roundtrip', 'true');

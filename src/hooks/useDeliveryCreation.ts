@@ -58,7 +58,8 @@ export const useDeliveryCreation = ({
   const providerShipments = shipments.filter(shipment => shipment.provider === provider && !shipment.cancelled);
   const additionalRequested = additionalRevision !== null;
   const pending = ((shipmentState?.state === 'creating' || shipmentState?.state === 'cancelling') && !(additionalRequested && checkFailed)) ||
-    (shipmentState?.state === 'uncertain' && !additionalRequested);
+    (shipmentState?.state === 'uncertain' && !additionalRequested) || Boolean(shipmentState?.response?.delivery_pending);
+  const pendingNegevRef = shipmentState?.response?.delivery_pending ? shipmentState.response.negev_ref : undefined;
   const isCreationBlocked = isChecking || isCancelling || pending ||
     (shipmentBlocked && !shipmentState?.can_additional && !additionalRequested) || (providerShipments.length > 0 && !additionalRequested);
 
@@ -90,11 +91,11 @@ export const useDeliveryCreation = ({
       setShipmentBlocked(state.blocked);
       const statusUnavailable = state.shipments?.some(shipment => shipment.status_checked === false);
       const allCancelled = Boolean(state.shipments?.length && state.shipments.every(shipment => shipment.cancelled));
-      setShipmentMessage(state.state === 'created' && !state.error_code && !statusUnavailable && !allCancelled ? '' : state.message);
+      setShipmentMessage(state.state === 'created' && !state.response?.delivery_pending && !state.error_code && !statusUnavailable && !allCancelled ? '' : state.message);
       if (isValidDeliveryTaskResponse(state.response)) {
         setDeliveryResponse(state.response);
         try { sessionStorage.setItem(responseKey, JSON.stringify(state.response)); } catch { /* Optional cache. */ }
-        if (!state.response.cancelled) void onSuccessRef.current(false);
+        if (!state.response.cancelled && !state.response.delivery_pending) void onSuccessRef.current(false);
       } else {
         setDeliveryResponse(null);
         try { sessionStorage.removeItem(responseKey); } catch { /* Optional cache. */ }
@@ -108,6 +109,37 @@ export const useDeliveryCreation = ({
     }).finally(() => { if (!cancelled) setIsChecking(false); });
     return () => { cancelled = true; };
   }, [responseKey, orderId, userId, checkEnabled, checkVersion]);
+
+  useEffect(() => {
+    if (!pendingNegevRef || !orderId || !userId) return;
+    let closed = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const poll = async () => {
+      try {
+        const state = await getShipmentState(String(orderId), userId);
+        if (closed) return;
+        const response = state.response;
+        if (response?.negev_ref === pendingNegevRef) {
+          setShipmentState(state);
+          setShipmentBlocked(state.blocked);
+          setShipmentMessage(response.delivery_pending || !response.print_label ? state.message : '');
+          if (!response.delivery_pending) {
+            setDeliveryResponse(response);
+            if (response.print_label && !response.cancelled) {
+              try { sessionStorage.setItem(responseKey, JSON.stringify(response)); } catch { /* Optional cache. */ }
+              toast.success('מדבקת נגב מוכנה להדפסה.');
+              void onSuccessRef.current(false);
+            }
+            return;
+          }
+        }
+      } catch { /* A status read can be retried. The acknowledged shipment remains locked. */ }
+      if (!closed) timer = setTimeout(poll, ++attempts < 10 ? 2500 : 60_000);
+    };
+    timer = setTimeout(poll, 2500);
+    return () => { closed = true; clearTimeout(timer); };
+  }, [pendingNegevRef, orderId, userId, responseKey]);
 
   const createDeliveryTask = async (packNum: string = "1", deliveryType: string, roundtrip = false) => {
     if (creatingRef.current || isCreationBlocked) return;
@@ -130,7 +162,7 @@ export const useDeliveryCreation = ({
     
     // Will skip look for keys if UPS
     const isUpsDelivery = selectedIntegration.programType === DeliveryProgramType.UPS;
-    if (!isUpsDelivery && (!keys || keys === "")) {
+    if (!isUpsDelivery && !selectedIntegration.serverManaged && !keys) {
       toast.error(`${selectedIntegration.name} - מפתח API חסר`);
       return;
     }
@@ -143,7 +175,7 @@ export const useDeliveryCreation = ({
     const signedLabelUrl = getReprintLabelUrl(order.s3_label_url, order.id, provider, sentCity);
     let labelTab: Window | null = null;
     try {
-      if (signedLabelUrl) labelTab = window.open("about:blank", "_blank");
+      if (signedLabelUrl || selectedIntegration.serverManaged) labelTab = window.open("about:blank", "_blank");
     } catch {
       // The shipment can still be created and printed from the manual button.
     }
@@ -177,6 +209,8 @@ export const useDeliveryCreation = ({
         provider: response.provider || provider, track_number: response.track_number,
         id: response.id, task_id: response.task_id, public_id: response.public_id,
         barcode: response.barcode, DeliveryNumber: response.DeliveryNumber, package_count: packNum,
+        negev_ref: response.negev_ref, negev_custom_label: response.negev_custom_label,
+        delivery_pending: response.delivery_pending, negev_status: response.negev_status,
       };
 
       setDeliveryResponse(result);
@@ -185,17 +219,22 @@ export const useDeliveryCreation = ({
       setShipmentState((previous) => ({ state: 'created', blocked: true, message: '', response: result,
         shipments: [...(previous?.shipments ?? []), result] }));
       setShipmentBlocked(true);
-      setShipmentMessage("");
+      setShipmentMessage(result.delivery_pending ? 'המשלוח נקלט בנגב. המדבקה בהכנה.' : '');
       // Keep the confirmed carrier result across refreshes. This contains no
       // API keys and is scoped to user, store, order and carrier.
       try { sessionStorage.setItem(responseKey, JSON.stringify(result)); } catch { /* Printing still works. */ }
+      if (result.delivery_pending) {
+        labelTab?.close();
+        await persistCourierMetaToOrder(order, provider, result, requestedAt);
+        return;
+      }
       toast.success(successMessages.deliveryCreated);
 
       let labelOpened = false;
-      if (signedLabelUrl) {
+      if (signedLabelUrl || result.negev_ref) {
         const printUrl = getShipmentLabelUrl(
           order.s3_label_url, order.id, provider, result, packNum, sentCity
-        );
+        ) ?? (result.negev_ref && result.print_label ? result.print_label : null);
         if (!printUrl) {
           labelTab?.close();
           toast.error("המשלוח הוקם, אך לא התקבל מספר תקין למדבקה. אין להקים משלוח נוסף.");
@@ -226,7 +265,7 @@ export const useDeliveryCreation = ({
         if (isValidDeliveryTaskResponse(error.shipment.response)) {
           setDeliveryResponse(error.shipment.response);
           try { sessionStorage.setItem(responseKey, JSON.stringify(error.shipment.response)); } catch { /* Optional cache. */ }
-          if (!error.shipment.response.cancelled) await onSuccess(false);
+          if (!error.shipment.response.cancelled && !error.shipment.response.delivery_pending) await onSuccess(false);
         } else {
           setDeliveryResponse(null);
           try { sessionStorage.removeItem(responseKey); } catch { /* Optional cache. */ }
@@ -289,13 +328,13 @@ export const useDeliveryCreation = ({
     shipmentMessage,
     checkShipment: () => { if (!creatingRef.current) { setIsChecking(true); setCheckVersion((version) => version + 1); } },
     createDelivery: createDeliveryTask,
-    deliveryResponse: additionalRequested || isChecking ? null : [...providerShipments].reverse().find(shipment => isValidDeliveryTaskResponse(shipment)) ?? null,
+    deliveryResponse: additionalRequested || isChecking ? null : [...providerShipments].reverse().find(shipment => !shipment.delivery_pending && isValidDeliveryTaskResponse(shipment)) ?? null,
     previousShipments: shipments,
     shipmentState,
-    canRequestAdditional: !isChecking && !isCreating && !isCancelling && Boolean((shipmentState?.can_additional && shipmentState.revision) || checkFailed),
+    canRequestAdditional: !isChecking && !isCreating && !isCancelling && !pendingNegevRef && Boolean((shipmentState?.can_additional && shipmentState.revision) || (checkFailed && shipmentState?.can_additional !== false)),
     isAdditional: additionalRequested,
     requestAdditional: () => {
-      if (!creatingRef.current && !isChecking && ((shipmentState?.can_additional && shipmentState.revision) || checkFailed)) {
+      if (!creatingRef.current && !isChecking && !pendingNegevRef && ((shipmentState?.can_additional && shipmentState.revision) || (checkFailed && shipmentState?.can_additional !== false))) {
         setAdditionalRevision(shipmentState?.revision ?? '');
       }
     },

@@ -26,8 +26,8 @@ const order = {
   s3_label_url: "https://store.example.invalid/label?action=s3_label&o=1&t=test-signature",
 };
 const delivery = { print_label: "https://carrier.example.invalid/label", track_number: "1234" };
-const settle = async (predicate) => {
-  const deadline = Date.now() + 2500;
+const settle = async (predicate, timeout = 2500) => {
+  const deadline = Date.now() + timeout;
   while (!predicate()) {
     if (Date.now() > deadline) assert.fail("Timed out waiting for order workflow");
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
@@ -453,6 +453,27 @@ test('corrupt browser cache does not bypass or break the server shipment check',
 const confirmedShipment = (revision = 'first', shipments = [{...delivery,provider:'mahirLi',can_cancel:true,status_checked:true}]) => ({
   state:'created',blocked:true,message:'',revision,can_additional:true,response:shipments.at(-1),shipments});
 const carousel = () => renderer.root.find(node=>node.type?.name==='DeliveryCarousel');
+
+test('a Negev acknowledgement blocks printing and a second send until a read confirms the label', async () => {
+  const pending = { provider:'negevExpress', negev_ref:'NE-823', negev_custom_label:true,
+    delivery_pending:true, print_label:'', track_number:'', control_panel_link:'https://portal.negevdelivery.co.il' };
+  const ready = { ...pending, delivery_pending:false, track_number:'00012', print_label:'https://api.likutil.co.il/api/negev-label' };
+  await mount();
+  await act(async () => carousel().props.onSelect('negevExpress'));
+  await settle(() => button('הפק משלוח בCarrier')?.props.disabled === false);
+  respond = (request, response, body) => request.url.startsWith('/api/create-delivery')
+    ? json(response, pending) : json(response, { ...order, status:body?.status ?? order.status });
+  await act(async () => button('הפק משלוח בCarrier').props.onClick());
+  await settle(() => JSON.stringify(renderer.toJSON()).includes('המדבקה בהכנה'));
+  assert.equal(labelLinks().length, 0);
+  assert.equal(completions, 0);
+  assert.equal(tabs[0].closed, true);
+  fixture.shipmentStatus = (_request, response) => json(response, confirmedShipment('negev-v1', [ready]));
+  await settle(() => labelLinks().length === 1, 6500);
+  assert.equal(new URL(labelLinks()[0].props.href).searchParams.get('nr'), 'NE-823');
+  assert.equal(requests.filter(({url}) => url.startsWith('/api/create-delivery')).length, 1);
+});
+
 const openActions = async (provider='mahirLi') => {
   await settle(()=>!renderer.root.find(node=>node.type?.name==='DeliverySelector').props.isCreating);
   await act(async()=>carousel().props.onSelect(provider));

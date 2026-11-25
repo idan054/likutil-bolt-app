@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { auth, db } from '../../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { testDeliveryConnection } from '../../services/delivery/api/test';
+import { getManagedNegevProviders } from '../../services/delivery/api/delivery';
 import {
   saveDeliverySettings,
   getDeliverySettings,
@@ -16,6 +17,7 @@ import type {
 import { DeliveryProgramType } from '../../components/settings/tabs/sections/delivery/marketplace/AddDeliveryCompanyCard';
 
 export const getKeysByProgramType = (integration: DeliveryIntegration, testData?: Record<string, string>) => {
+  if (integration.serverManaged) return '';
   switch (integration.programType) {
     case DeliveryProgramType.BALDAR:
       // return testData ? `${testData.clientId}` : `${integration.clientId}`;
@@ -66,45 +68,25 @@ export const useDeliveryIntegrations = () => {
 
     try {
       setIsLoading(true);
-      const settings = await getDeliverySettings(userId);
-      const companies = await loadDeliveryCompanies();
-
-      
-      
-      console.log('settings?.connections', settings?.connections)
-      console.log('companies.length', companies.length)
-      
-      if (settings?.connections && companies.length > 0) {
-
-        const updatedIntegrations = companies.map(
-          (integration) => ({
-            ...integration,
-            isConnected: settings.connections.some(
-              (conn) => conn.provider === integration.provider && conn.isConnected
-            ),
-          })
-        );
-
-        
-
-  
-        setIntegrations(updatedIntegrations);  // All possible integrations
-        setActiveIntegrations(settings.connections); // User connected include Token & info
-
-        // Update saved data
-        const newSavedData: Record<string, Record<string, string>> = {};
-        settings.connections.forEach((conn) => {
-          if (conn?.provider && conn.clientId) {
-            newSavedData[conn.provider] = { clientId: conn.clientId };
-          }
-        });
-        setSavedData(newSavedData);
-      } else {
-
-        console.log('companies')
-      console.log(companies)
-        setIntegrations(companies);
-      }
+      const [settings, companies, managed] = await Promise.all([
+        getDeliverySettings(userId), loadDeliveryCompanies(), getManagedNegevProviders(userId).catch(() => []),
+      ]);
+      const connections = settings?.connections ?? [];
+      const updatedIntegrations = companies.map((integration) => {
+        const serverManaged = managed.includes(integration.provider);
+        return { ...integration, serverManaged,
+          isConnected: serverManaged || connections.some(conn => conn.provider === integration.provider && conn.isConnected) };
+      });
+      setIntegrations(updatedIntegrations);
+      setActiveIntegrations([
+        ...connections.filter(conn => !managed.includes(conn.provider)),
+        ...updatedIntegrations.filter(conn => conn.serverManaged),
+      ]);
+      const newSavedData: Record<string, Record<string, string>> = {};
+      connections.forEach((conn) => {
+        if (conn?.provider && conn.clientId) newSavedData[conn.provider] = { clientId: conn.clientId };
+      });
+      setSavedData(newSavedData);
     } catch (error) {
       console.error(
         '[useDeliveryIntegrations] Failed to load settings:',
@@ -305,7 +287,7 @@ export const useDeliveryIntegrations = () => {
         const result = await testDeliveryConnection(integration.provider, getKeysByProgramType(integration, data),userId ??'');
 
         if (result.success) {
-          toast.success('בדיקת החיבור הצליחה, רק וודאו שנפתחה הזמנת בדיקה בחברת המשלוחים (:');
+          toast.success(integration.serverManaged ? 'החיבור לחשבון נגב אומת.' : 'בדיקת החיבור הצליחה. ודאו שהזמנת הבדיקה מופיעה אצל המוביל.');
           return true;
         }
 
@@ -322,7 +304,7 @@ export const useDeliveryIntegrations = () => {
         setIsTesting(false);
       }
     },
-    []
+    [user]
   );
 
   return {

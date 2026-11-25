@@ -49,9 +49,9 @@ export const testDeliveryConnection = async (
     const query = new URLSearchParams({
       userId,
       provider,
-      keys,
       isConnectionTest: 'true',
     });
+    if (keys) query.set('keys', keys);
     const url = `${BASE_URL}/api/create-delivery?${query.toString()}`;
     const safeUrl = `${BASE_URL}/api/create-delivery?provider=${encodeURIComponent(provider)}&isConnectionTest=true`;
     const token = await auth.currentUser?.getIdToken();
@@ -68,7 +68,7 @@ export const testDeliveryConnection = async (
 
     const responseText = await response.text();
 
-    if (isSuccessfulDeliveryResponse(responseText)) {
+    if (response.ok && isSuccessfulDeliveryResponse(responseText)) {
       return { success: true };
     }
 

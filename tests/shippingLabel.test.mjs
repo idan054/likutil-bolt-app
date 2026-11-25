@@ -42,6 +42,17 @@ test("Negev label uses the returned shipment number and package count", () => {
   assert.equal(getShipmentLabelUrl(base, 85626, "negevExpress", response, "21"), null);
 });
 
+test("Negev Ecommerce waits for a ready label and carries the exact shipment reference", () => {
+  const pending = { negev_ref: 'NE-123', negev_custom_label: true, track_number: '05001', delivery_pending: true };
+  assert.equal(getShipmentLabelUrl(base, 85626, 'negevExpress', pending, '2'), null);
+  const ready = { ...pending, delivery_pending: false, print_label: 'https://api.likutil.co.il/api/negev-label' };
+  const label = new URL(getShipmentLabelUrl(base, 85626, 'negevTovala', ready, '2', undefined, true));
+  assert.equal(label.searchParams.get('nr'), 'NE-123');
+  assert.equal(label.searchParams.get('d'), '05001');
+  assert.equal(label.searchParams.get('reprint'), '1');
+  assert.equal(getShipmentLabelUrl(base, 85626, 'negevExpress', { ...ready, negev_custom_label: false }, '2'), null);
+});
+
 test("Negev label and reprint use the exact city sent in the delivery request", () => {
   const order = {
     id: 85626,

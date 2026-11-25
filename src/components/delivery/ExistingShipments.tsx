@@ -15,7 +15,7 @@ export function ExistingShipments({ order, shipments }: {
       const label = getShipmentLabelUrl(order.s3_label_url, order.id, shipment.provider,
         shipment, shipment.package_count ?? '1', getDeliveryCity(order), true) ?? shipment.print_label;
       const source = getPrintLabelSource(label);
-      if (!source) return <button key={index} disabled title="המדבקה זמינה בפאנל חברת המשלוחים" className="w-full rounded-lg bg-slate-100 px-4 py-3 text-slate-500">הדפס מדבקה</button>;
+      if (!source) return <button key={index} disabled title={shipment.delivery_pending ? 'המשלוח נקלט. מדבקת נגב בהכנה.' : 'המדבקה אינה זמינה'} className="w-full rounded-lg bg-slate-100 px-4 py-3 text-slate-500">הדפס מדבקה</button>;
       const text = `הדפס מדבקה${shipments.length > 1 ? ` · ${shipment.track_number || index + 1}` : ''}`;
       const className = 'flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600';
       const title = `הדפסה חוזרת של משלוח #${shipment.track_number}, ללא יצירת משלוח חדש`;

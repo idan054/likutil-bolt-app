@@ -45,7 +45,9 @@ export const isValidDeliveryTaskResponse = (
   const hasProviderError =
     typeof candidate.error_text === 'string' && candidate.error_text.trim().length > 0;
 
-  return !hasProviderError && getPrintLabelSource(candidate.print_label) !== null;
+  const acceptedNegev = (candidate.provider === 'negevExpress' || candidate.provider === 'negevTovala') &&
+    typeof candidate.negev_ref === 'string' && /^NE-[0-9]+$/.test(candidate.negev_ref) && candidate.delivery_pending === true;
+  return !hasProviderError && (acceptedNegev || getPrintLabelSource(candidate.print_label) !== null);
 };
 
 export const isSuccessfulDeliveryResponse = (responseBody: string): boolean => {
