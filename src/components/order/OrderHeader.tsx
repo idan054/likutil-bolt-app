@@ -70,9 +70,10 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
             />
             {shippingUpgraded && (
               <span
-                className="px-3 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 flex items-center justify-center gap-1 whitespace-nowrap"
+                className="relative px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm flex items-center justify-center gap-1 whitespace-nowrap animate-pulse"
                 title="הלקוח שילם משלוח רגיל ויוצא מהיום להיום בלי תשלום"
               >
+                <span className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" aria-hidden="true" />
                 <Zap size={12} />
                 <span>שודרג למהיר</span>
               </span>
