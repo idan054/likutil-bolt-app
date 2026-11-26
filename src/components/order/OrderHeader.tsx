@@ -1,7 +1,7 @@
 import React from 'react';
 import { StatusBadge } from '../ui/StatusBadge';
 import { LocalPickupMarker } from './LocalPickupMarker';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Zap } from 'lucide-react';
 import { translations } from '../../config/translations';
 import { formatDate, formatDateWithTimeAgo } from '../../utils/date';
 import { RoleBadge } from '../ui/RoleBadge';
@@ -17,6 +17,8 @@ interface OrderHeaderProps {
   status: string;
   dateCreated: string;
   isLocalPickup?: boolean;
+  /** The customer paid regular shipping and the order goes out same-day for free. */
+  shippingUpgraded?: boolean;
   customerId: number | null;
   onReset: () => void;
   beforeStatusChange?: (newStatus: string) => boolean;
@@ -30,6 +32,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
   status, 
   dateCreated,
   isLocalPickup,
+  shippingUpgraded,
   customerId,
   onReset,
   beforeStatusChange,
@@ -59,11 +62,22 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
 
 
         <div className="flex items-center gap-2">
-          <RoleBadge 
-            role={customer?.role} 
-            isVipMember={order.is_vip_member ?? customer?.is_vip_member}
-            isLoading={isLoading}
-          />
+          <div className="flex flex-col items-stretch gap-1">
+            <RoleBadge 
+              role={customer?.role} 
+              isVipMember={order.is_vip_member ?? customer?.is_vip_member}
+              isLoading={isLoading}
+            />
+            {shippingUpgraded && (
+              <span
+                className="px-3 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 flex items-center justify-center gap-1 whitespace-nowrap"
+                title="הלקוח שילם משלוח רגיל ויוצא מהיום להיום בלי תשלום"
+              >
+                <Zap size={12} />
+                <span>שודרג למהיר</span>
+              </span>
+            )}
+          </div>
           <StatusBadge status={status} orderId={order.id.toString()} beforeStatusChange={beforeStatusChange} onStatusUpdate={onStatusUpdate} />
           {isLocalPickup && <LocalPickupMarker />}
         </div>

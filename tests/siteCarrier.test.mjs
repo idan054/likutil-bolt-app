@@ -8,6 +8,7 @@ let siteCarrierForProvider;
 let preferredSiteProvider;
 let siteDeliveryType;
 let siteBlockedProviders;
+let isFreeShippingUpgrade;
 let getOrderDeliveryBadgeType;
 let sortOrdersByDeliveryPriority;
 
@@ -17,7 +18,7 @@ before(async () => {
     logLevel: "silent",
     server: { middlewareMode: true },
   });
-  ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType, siteBlockedProviders } =
+  ({ providerForSiteCarrier, siteCarrierForProvider, preferredSiteProvider, siteDeliveryType, siteBlockedProviders, isFreeShippingUpgrade } =
     await viteServer.ssrLoadModule("/src/utils/siteCarrier.ts"));
   ({ getOrderDeliveryBadgeType, sortOrdersByDeliveryPriority } =
     await viteServer.ssrLoadModule("/src/utils/shippingMethod.ts"));
@@ -112,4 +113,19 @@ test("fast or regular follows the site only when it decided", () => {
   assert.equal(siteDeliveryType({ use: "something-new" }), null);
   assert.equal(siteDeliveryType(null), null);
   assert.equal(siteDeliveryType(undefined), null);
+});
+
+test("free upgrade: paid regular and goes same-day, by the site or its saved decision", () => {
+  const club = { s3_carrier: { use: "zipgo", service: "regular", upgrade: true } };
+  assert.equal(isFreeShippingUpgrade(club, null, false, false), true);
+  // The customer paid for same-day: not an upgrade.
+  assert.equal(isFreeShippingUpgrade({ s3_carrier: { use: "zipgo", service: "sameday" } }, null, false, false), false);
+  assert.equal(isFreeShippingUpgrade(club, null, true, false), false);
+  assert.equal(isFreeShippingUpgrade(club, null, false, true), false);
+  // Over 20 kg: part goes same-day although the site does not flag `upgrade`.
+  assert.equal(isFreeShippingUpgrade({ s3_carrier: { use: "mahirli", service: "regular", upgrade: false } }, null, false, false), true);
+  assert.equal(isFreeShippingUpgrade({ s3_carrier: { use: "negev", service: "regular" } }, null, false, false), false);
+  // Shipment opened: the site sends no decision, the saved one from the site counts; a manual one does not.
+  assert.equal(isFreeShippingUpgrade({ s3_carrier: { use: "" } }, { deliveryType: "fast", rulesUpdatedAt: "site-carrier" }, false, false), true);
+  assert.equal(isFreeShippingUpgrade({}, { deliveryType: "fast", rulesUpdatedAt: "2026-11-01" }, false, false), false);
 });

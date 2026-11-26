@@ -64,3 +64,20 @@ export const siteDeliveryType = (
   if (decision?.use === "negev") return decision.service === "sameday" ? "fast" : "regular";
   return null;
 };
+
+/**
+ * The customer paid for regular shipping and the order goes out same-day anyway, for free:
+ * a club member's upgrade, a company order, or a one-parcel order in ZipGo's area.
+ * The site stops sending its decision once a shipment is opened, so a saved decision taken
+ * from the site counts too. A manual choice by the picker is not an upgrade.
+ */
+export const isFreeShippingUpgrade = (
+  order: { s3_carrier?: SiteCarrierDecision | null; shipping_lines?: Array<{ method_id?: string; method_title?: string }> | null },
+  savedDecision?: { deliveryType?: string; rulesUpdatedAt?: string } | null,
+  paidForFast?: boolean,
+  isPickup?: boolean
+): boolean => {
+  if (paidForFast || isPickup) return false;
+  if (order.s3_carrier?.use) return order.s3_carrier.service === "regular" && siteDeliveryType(order.s3_carrier) === "fast";
+  return savedDecision?.rulesUpdatedAt === SITE_DECISION_MARK && savedDecision.deliveryType === "fast";
+};

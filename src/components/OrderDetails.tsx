@@ -15,7 +15,8 @@ import { useDeliveryCreation } from "../hooks/useDeliveryCreation";
 import { LocalPickupSection } from "./order/LocalPickupSection";
 import { useMessagingStore } from "../store/useMessagingStore";
 import { useOrderFastDeliveryDecision } from "../hooks/useOrderFastDeliveryDecision";
-import { SITE_DECISION_MARK, providerForSiteCarrier, siteBlockedProviders } from "../utils/siteCarrier";
+import { SITE_DECISION_MARK, isFreeShippingUpgrade, providerForSiteCarrier, siteBlockedProviders } from "../utils/siteCarrier";
+import { hasSelectedFastShipping } from "../utils/shippingMethod";
 import type { OrderDetails as OrderDetailType } from "../types/order";
 import {
   isCashPaymentMethod,
@@ -219,6 +220,7 @@ const RegularOrderDetails: React.FC<OrderDetailsProps> = ({
             status={shipmentOrder?.status ?? order.status}
             dateCreated={order.date_created}
             isLocalPickup={isLocalPickup}
+            shippingUpgraded={isFreeShippingUpgrade(order, decision, hasSelectedFastShipping(order.shipping_lines), isLocalPickup)}
             customerId={order.customer_id}
             onReset={() => {
               if (!companyPrint.isBlocked) onReset();
